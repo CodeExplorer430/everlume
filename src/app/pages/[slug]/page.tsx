@@ -2,11 +2,37 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { format } from 'date-fns'
 import { GuestbookForm } from '@/components/public/GuestbookForm'
+import { PublicGallery } from '@/components/public/PublicGallery'
+import { Metadata } from 'next'
 
 interface PageProps {
   params: Promise<{
     slug: string
   }>
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params
+  const supabase = await createClient()
+
+  const { data: page } = await supabase
+    .from('pages')
+    .select('*')
+    .eq('slug', slug)
+    .single()
+
+  if (!page) return {}
+
+  return {
+    title: `${page.title} | Digital Tribute`,
+    description: `A digital memorial for ${page.full_name || 'our loved one'}.`,
+    openGraph: {
+      title: page.title,
+      description: `A digital memorial for ${page.full_name || 'our loved one'}.`,
+      images: page.hero_image_url ? [page.hero_image_url] : [],
+      type: 'website',
+    },
+  }
 }
 
 export default async function PublicTributePage({ params }: PageProps) {
@@ -83,28 +109,13 @@ export default async function PublicTributePage({ params }: PageProps) {
 
         {/* Gallery Section */}
         <section className="space-y-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {photos && photos.length > 0 ? (
-              photos.map((photo: any) => {
-                const displayUrl = supabase.storage.from('tributes').getPublicUrl(photo.storage_path).data.publicUrl
-                const thumbUrl = supabase.storage.from('tributes').getPublicUrl(photo.thumb_path).data.publicUrl
-                return (
-                  <div key={photo.id} className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden group cursor-pointer shadow-sm hover:shadow-md transition-shadow">
-                    <img
-                      src={thumbUrl}
-                      alt={photo.caption || 'Memory'}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    />
-                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                )
-              })
-            ) : (
-              <div className="col-span-full text-center py-12 text-gray-400 italic bg-gray-50 rounded-lg">
-                No photos shared yet.
-              </div>
-            )}
-          </div>
+          {photos && photos.length > 0 ? (
+            <PublicGallery photos={photos} />
+          ) : (
+            <div className="text-center py-12 text-gray-400 italic bg-gray-50 rounded-lg">
+              No photos shared yet.
+            </div>
+          )}
         </section>
 
         {/* Videos Section */}

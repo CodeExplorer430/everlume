@@ -12,6 +12,7 @@ interface GuestbookFormProps {
 export function GuestbookForm({ pageId }: GuestbookFormProps) {
   const [name, setName] = useState('')
   const [message, setMessage] = useState('')
+  const [honeypot, setHoneypot] = useState('')
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -19,6 +20,14 @@ export function GuestbookForm({ pageId }: GuestbookFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Simple honeypot check
+    if (honeypot) {
+      console.log('Bot detected')
+      setSubmitted(true) // Pretend it worked
+      return
+    }
+
     setLoading(true)
     setError(null)
 
@@ -61,6 +70,18 @@ export function GuestbookForm({ pageId }: GuestbookFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+      {/* Honeypot field - hidden from users */}
+      <div className="hidden" aria-hidden="true">
+        <input
+          type="text"
+          name="website"
+          tabIndex={-1}
+          value={honeypot}
+          onChange={(e) => setHoneypot(e.target.value)}
+          autoComplete="off"
+        />
+      </div>
+
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
         <Input

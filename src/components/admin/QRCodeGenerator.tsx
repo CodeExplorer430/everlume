@@ -49,6 +49,11 @@ export function QRCodeGenerator({ url }: QRCodeGeneratorProps) {
         className="w-48 h-48 border border-gray-200 rounded-lg p-2 bg-white"
         dangerouslySetInnerHTML={{ __html: svg }}
       />
+      <div className="text-center">
+        <p className="text-xs font-mono text-gray-500 bg-gray-50 px-2 py-1 rounded border border-gray-100">
+          {url}
+        </p>
+      </div>
       <div className="grid grid-cols-1 w-full gap-2">
         <Button variant="outline" size="sm" onClick={downloadSVG}>
           <Download className="mr-2 h-4 w-4" />
