@@ -29,7 +29,7 @@ export default function Home() {
               <Link href="/login">Get Started</Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
-              <Link href="#features">Learn More</Link>
+              <Link href="#how-it-works">Learn More</Link>
             </Button>
           </div>
         </div>
@@ -45,30 +45,87 @@ export default function Home() {
         </div>
       </main>
 
-      <section id="features" className="bg-card py-24">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
-          <div className="space-y-4">
-            <h3 className="text-2xl font-serif font-bold text-foreground">Easy to Share</h3>
-            <p className="text-muted-foreground">
-              Generate a custom QR code to print on memorial tablets, cards, or plaques.
-            </p>
+      <section id="how-it-works" className="bg-card py-24 border-y border-border">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-serif font-bold text-foreground">How it Works</h2>
+            <p className="text-muted-foreground mt-4 text-lg">Creating a lasting legacy in three simple steps.</p>
           </div>
-          <div className="space-y-4">
-            <h3 className="text-2xl font-serif font-bold text-foreground">Multimedia Gallery</h3>
-            <p className="text-muted-foreground">
-              Upload photos and embed videos to capture every precious moment.
-            </p>
-          </div>
-          <div className="space-y-4">
-            <h3 className="text-2xl font-serif font-bold text-foreground">Interactive Guestbook</h3>
-            <p className="text-muted-foreground">
-              Allow visitors to leave messages and share their own memories.
-            </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+            <div className="space-y-4">
+              <div className="text-4xl font-serif text-primary/40 font-bold">01</div>
+              <h3 className="text-xl font-bold text-foreground">Create & Personalize</h3>
+              <p className="text-muted-foreground leading-relaxed">
+                Set up a tribute page with a custom URL. Add a biography, meaningful dates, and a beautiful hero image that captures their spirit.
+              </p>
+            </div>
+            <div className="space-y-4">
+              <div className="text-4xl font-serif text-primary/40 font-bold">02</div>
+              <h3 className="text-xl font-bold text-foreground">Share the Journey</h3>
+              <p className="text-muted-foreground leading-relaxed">
+                Bulk upload cherished photos and embed videos. Create a life timeline to walk visitors through the milestones that mattered most.
+              </p>
+            </div>
+            <div className="space-y-4">
+              <div className="text-4xl font-serif text-primary/40 font-bold">03</div>
+              <div className="flex justify-between items-start">
+                <h3 className="text-xl font-bold text-foreground">Connect with QR</h3>
+              </div>
+              <p className="text-muted-foreground leading-relaxed">
+                Generate a print-ready QR code for memorial plaques or tablets. Visitors scan to instantly access the tribute and leave their own messages.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
-      <footer className="py-12 border-t border-border text-center text-muted-foreground">
+      <section id="features" className="py-24 bg-background">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
+            <div className="space-y-4">
+              <div className="bg-secondary w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Heart className="text-primary h-8 w-8" />
+              </div>
+              <h3 className="text-2xl font-serif font-bold text-foreground">Always Accessible</h3>
+              <p className="text-muted-foreground">
+                A mobile-first experience designed to be viewed anywhere—especially at memorial sites through a durable QR connection.
+              </p>
+            </div>
+            <div className="space-y-4">
+              <div className="bg-secondary w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Heart className="text-primary h-8 w-8" />
+              </div>
+              <h3 className="text-2xl font-serif font-bold text-foreground">Moderated Memories</h3>
+              <p className="text-muted-foreground">
+                A secure guestbook where friends and family can share stories, with full moderation tools to keep the space respectful.
+              </p>
+            </div>
+            <div className="space-y-4">
+              <div className="bg-secondary w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Heart className="text-primary h-8 w-8" />
+              </div>
+              <h3 className="text-2xl font-serif font-bold text-foreground">Family Ownership</h3>
+              <p className="text-muted-foreground">
+                Maintain full control over content and privacy. Export all data and photos at any time for your personal archives.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-foreground py-20 text-center">
+        <div className="max-w-3xl mx-auto px-6 space-y-8">
+          <h2 className="text-3xl md:text-5xl font-serif font-bold text-background">Ready to preserve a legacy?</h2>
+          <p className="text-background/70 text-lg">
+            Start creating a digital sanctuary for your loved one today. It only takes a few minutes to begin.
+          </p>
+          <Button size="lg" variant="secondary" asChild className="px-12 py-8 text-xl">
+            <Link href="/login">Get Started Now</Link>
+          </Button>
+        </div>
+      </section>
+
+      <footer className="py-12 border-t border-border text-center text-muted-foreground bg-background">
         <p>© {new Date().getFullYear()} Digital Tribute. All rights reserved.</p>
       </footer>
     </div>
