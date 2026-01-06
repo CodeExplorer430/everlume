@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { Heart } from 'lucide-react'
 
 export default function Home() {
   return (
@@ -27,19 +28,24 @@ export default function Home() {
             <Button size="lg" asChild>
               <Link href="/login">Get Started</Link>
             </Button>
-            <Button size="lg" variant="outline">
-              Learn More
+            <Button size="lg" variant="outline" asChild>
+              <Link href="#features">Learn More</Link>
             </Button>
           </div>
         </div>
-        <div className="relative aspect-square bg-gray-100 rounded-2xl overflow-hidden shadow-2xl">
-           <div className="absolute inset-0 flex items-center justify-center text-gray-300 italic">
-             [Beautiful Memorial Image Placeholder]
+        <div className="relative aspect-square bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl overflow-hidden shadow-2xl flex items-center justify-center border border-white/50">
+           <div className="text-center p-8">
+             <div className="bg-white/80 p-6 rounded-full inline-block shadow-sm mb-6 backdrop-blur-sm">
+               <Heart className="h-12 w-12 text-rose-500 fill-rose-50" />
+             </div>
+             <p className="text-gray-500 font-serif italic text-lg">
+               &quot;To live in hearts we leave behind is not to die.&quot;
+             </p>
            </div>
         </div>
       </main>
 
-      <section className="bg-gray-50 py-24">
+      <section id="features" className="bg-gray-50 py-24">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
           <div className="space-y-4">
             <h3 className="text-2xl font-serif font-bold text-gray-900">Easy to Share</h3>
