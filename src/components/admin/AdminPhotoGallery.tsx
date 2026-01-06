@@ -59,11 +59,11 @@ export function AdminPhotoGallery({ photos, heroImageUrl, onRefresh, onSetHero }
   }
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-      <h3 className="font-semibold text-gray-800 border-b pb-2 mb-6">Photo Gallery</h3>
+    <div className="bg-card p-6 rounded-lg shadow-sm border border-border">
+      <h3 className="font-semibold text-foreground border-b border-border pb-2 mb-6">Photo Gallery</h3>
       
       {photos.length === 0 ? (
-        <p className="text-center py-12 text-gray-500 italic">No photos uploaded yet.</p>
+        <p className="text-center py-12 text-muted-foreground italic">No photos uploaded yet.</p>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
           {photos.map((photo) => {
@@ -72,7 +72,7 @@ export function AdminPhotoGallery({ photos, heroImageUrl, onRefresh, onSetHero }
 
              return (
               <div key={photo.id} className="group flex flex-col space-y-2">
-                <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                <div className="relative aspect-square bg-secondary rounded-lg overflow-hidden border border-border">
                   <img
                     src={publicUrl}
                     alt={photo.caption}
@@ -113,13 +113,13 @@ export function AdminPhotoGallery({ photos, heroImageUrl, onRefresh, onSetHero }
                     <Input 
                       value={tempCaption} 
                       onChange={(e) => setTempCaption(e.target.value)}
-                      className="h-8 text-xs"
+                      className="h-8 text-xs bg-background border-input"
                     />
                     <Button size="sm" className="h-8 px-2" onClick={() => saveCaption(photo.id)}>Save</Button>
                   </div>
                 ) : (
                   <p 
-                    className="text-xs text-gray-600 truncate cursor-pointer hover:text-blue-600 hover:underline"
+                    className="text-xs text-muted-foreground truncate cursor-pointer hover:text-primary hover:underline"
                     onClick={() => startEditingCaption(photo)}
                     title="Click to edit caption"
                   >

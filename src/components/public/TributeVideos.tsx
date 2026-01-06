@@ -12,9 +12,9 @@ export function TributeVideos({ videos }: TributeVideosProps) {
   if (!videos || videos.length === 0) return null
 
   return (
-    <section className="space-y-12 border-t border-gray-100 pt-16">
+    <section className="space-y-12 border-t border-border pt-16">
       <div className="text-center">
-        <h2 className="text-3xl font-serif font-semibold text-gray-800">Videos</h2>
+        <h2 className="text-3xl font-serif font-semibold text-foreground">Videos</h2>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {videos.map((video) => (
@@ -28,7 +28,7 @@ export function TributeVideos({ videos }: TributeVideosProps) {
               />
             </div>
             {video.title && (
-              <p className="text-center text-gray-700 font-medium">{video.title}</p>
+              <p className="text-center text-muted-foreground font-medium">{video.title}</p>
             )}
           </div>
         ))}

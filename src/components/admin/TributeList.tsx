@@ -14,18 +14,18 @@ interface TributeListProps {
 
 export function TributeList({ pages }: TributeListProps) {
   return (
-    <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200">
-        <h3 className="text-lg font-medium text-gray-800">Your Tribute Pages</h3>
+    <div className="bg-card shadow-sm rounded-lg border border-border overflow-hidden">
+      <div className="px-6 py-4 border-b border-border">
+        <h3 className="text-lg font-medium text-foreground">Your Tribute Pages</h3>
       </div>
-      <ul className="divide-y divide-gray-200">
+      <ul className="divide-y divide-border">
         {pages && pages.length > 0 ? (
           pages.map((page) => (
-            <li key={page.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+            <li key={page.id} className="px-6 py-4 hover:bg-secondary/50 transition-colors">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="text-sm font-bold text-gray-900">{page.title}</h4>
-                  <p className="text-sm text-gray-500">/{page.slug}</p>
+                  <h4 className="text-sm font-bold text-foreground">{page.title}</h4>
+                  <p className="text-sm text-muted-foreground">/{page.slug}</p>
                 </div>
                 <div className="flex space-x-2">
                   <Button variant="outline" size="sm" asChild>
@@ -39,7 +39,7 @@ export function TributeList({ pages }: TributeListProps) {
             </li>
           ))
         ) : (
-          <li className="px-6 py-12 text-center text-gray-500">
+          <li className="px-6 py-12 text-center text-muted-foreground">
             No tribute pages created yet.
           </li>
         )}

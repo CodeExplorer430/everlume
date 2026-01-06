@@ -45,14 +45,14 @@ export function PublicGallery({ photos }: PublicGalleryProps) {
               key={photo.id}
               layoutId={photo.id}
               onClick={() => openLightbox(index)}
-              className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden group cursor-pointer shadow-sm hover:shadow-md transition-shadow"
+              className="relative aspect-square bg-secondary rounded-lg overflow-hidden group cursor-pointer shadow-sm hover:shadow-md transition-shadow"
             >
               <img
                 src={thumbUrl}
                 alt={photo.caption || 'Memory'}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
-              <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute inset-0 bg-foreground/20 opacity-0 group-hover:opacity-100 transition-opacity" />
             </motion.div>
           )
         })}
@@ -64,7 +64,7 @@ export function PublicGallery({ photos }: PublicGalleryProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 md:p-10"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/95 p-4 md:p-10"
           >
             <button
               onClick={closeLightbox}

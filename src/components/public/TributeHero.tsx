@@ -12,7 +12,7 @@ interface TributeHeroProps {
 
 export function TributeHero({ page }: TributeHeroProps) {
   return (
-    <section className="relative h-[60vh] bg-gray-900 flex items-center justify-center text-white overflow-hidden">
+    <section className="relative h-[60vh] bg-foreground flex items-center justify-center text-white overflow-hidden">
       {page.hero_image_url ? (
         <img
           src={page.hero_image_url}

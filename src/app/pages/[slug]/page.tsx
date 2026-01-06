@@ -77,14 +77,14 @@ export default async function PublicTributePage({ params }: PageProps) {
     .order('created_at', { ascending: true })
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       <TributeHero page={page} />
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-6 py-16 space-y-20">
         <section className="text-center space-y-6">
-          <h2 className="text-3xl font-serif font-semibold text-gray-800">Our Memories</h2>
-          <p className="text-gray-600 leading-relaxed max-w-2xl mx-auto">
+          <h2 className="text-3xl font-serif font-semibold text-foreground">Our Memories</h2>
+          <p className="text-muted-foreground leading-relaxed max-w-2xl mx-auto">
             Welcome to the digital tribute for {page.full_name || 'our loved one'}. We invite you to explore the gallery and leave a message in the guestbook.
           </p>
         </section>
@@ -94,7 +94,7 @@ export default async function PublicTributePage({ params }: PageProps) {
           {photos && photos.length > 0 ? (
             <PublicGallery photos={photos} />
           ) : (
-            <div className="text-center py-12 text-gray-400 italic bg-gray-50 rounded-lg">
+            <div className="text-center py-12 text-muted-foreground italic bg-secondary rounded-lg">
               No photos shared yet.
             </div>
           )}
@@ -111,7 +111,7 @@ export default async function PublicTributePage({ params }: PageProps) {
         />
       </main>
 
-      <footer className="bg-gray-50 border-t border-gray-100 py-12 text-center text-gray-500 text-sm">
+      <footer className="bg-card border-t border-border py-12 text-center text-muted-foreground text-sm">
         <p>© {new Date().getFullYear()} Digital Tribute — Created with love.</p>
       </footer>
     </div>

@@ -16,10 +16,10 @@ interface TributeGuestbookProps {
 
 export function TributeGuestbook({ pageId, fullName, entries }: TributeGuestbookProps) {
   return (
-    <section className="space-y-8 border-t border-gray-100 pt-16">
+    <section className="space-y-8 border-t border-border pt-16">
       <div className="text-center">
-        <h2 className="text-3xl font-serif font-semibold text-gray-800">Guestbook</h2>
-        <p className="text-gray-500 mt-2">Leave a message in memory of {fullName || 'our loved one'}.</p>
+        <h2 className="text-3xl font-serif font-semibold text-foreground">Guestbook</h2>
+        <p className="text-muted-foreground mt-2">Leave a message in memory of {fullName || 'our loved one'}.</p>
       </div>
 
       <div className="max-w-xl mx-auto">
@@ -29,16 +29,16 @@ export function TributeGuestbook({ pageId, fullName, entries }: TributeGuestbook
       <div className="space-y-6 mt-12">
         {entries && entries.length > 0 ? (
           entries.map((entry) => (
-            <div key={entry.id} className="bg-gray-50 p-6 rounded-lg shadow-sm border border-gray-100">
-              <p className="text-gray-800 leading-relaxed mb-4 italic">&quot;{entry.message}&quot;</p>
+            <div key={entry.id} className="bg-card p-6 rounded-lg shadow-sm border border-border">
+              <p className="text-foreground leading-relaxed mb-4 italic">&quot;{entry.message}&quot;</p>
               <div className="flex justify-between items-center text-sm">
-                <span className="font-semibold text-gray-900">{entry.name}</span>
-                <span className="text-gray-400">{format(new Date(entry.created_at), 'MMMM d, yyyy')}</span>
+                <span className="font-semibold text-foreground">{entry.name}</span>
+                <span className="text-muted-foreground">{format(new Date(entry.created_at), 'MMMM d, yyyy')}</span>
               </div>
             </div>
           ))
         ) : (
-          <p className="text-center text-gray-400 italic">No messages yet. Be the first to share a memory.</p>
+          <p className="text-center text-muted-foreground italic">No messages yet. Be the first to share a memory.</p>
         )}
       </div>
     </section>

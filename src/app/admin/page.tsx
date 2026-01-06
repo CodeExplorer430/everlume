@@ -22,11 +22,11 @@ export default async function AdminDashboard() {
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {/* Quick stats could go here */}
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">
+        <div className="bg-card p-6 rounded-lg shadow-sm border border-border">
+          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
             Total Pages
           </h3>
-          <p className="mt-2 text-3xl font-semibold text-gray-900">
+          <p className="mt-2 text-3xl font-semibold text-foreground">
             {pages?.length || 0}
           </p>
         </div>

@@ -28,14 +28,14 @@ export function AdminQRCodeSection({ page, redirects }: AdminQRCodeSectionProps)
   }, [page.slug, redirects])
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 space-y-4">
-      <h3 className="font-semibold text-gray-800 border-b pb-2 mb-4">QR Code for Plaque</h3>
+    <div className="bg-card p-6 rounded-lg shadow-sm border border-border space-y-4">
+      <h3 className="font-semibold text-foreground border-b border-border pb-2 mb-4">QR Code for Plaque</h3>
       <div className="flex flex-col items-center space-y-4">
           {redirects.length > 0 && (
             <div className="w-full">
-              <label className="block text-xs font-medium text-gray-700 mb-1">Select URL for QR</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Select URL for QR</label>
               <select 
-              className="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="w-full text-sm bg-background border-input text-foreground rounded-md shadow-sm focus:border-primary focus:ring-primary"
               value={qrUrl}
               onChange={(e) => setQrUrl(e.target.value)}
               >
