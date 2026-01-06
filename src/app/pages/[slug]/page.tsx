@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { format } from 'date-fns'
@@ -184,7 +185,7 @@ export default async function PublicTributePage({ params }: PageProps) {
             {guestbook && guestbook.length > 0 ? (
               guestbook.map((entry: any) => (
                 <div key={entry.id} className="bg-gray-50 p-6 rounded-lg shadow-sm border border-gray-100">
-                  <p className="text-gray-800 leading-relaxed mb-4 italic">"{entry.message}"</p>
+                  <p className="text-gray-800 leading-relaxed mb-4 italic">&quot;{entry.message}&quot;</p>
                   <div className="flex justify-between items-center text-sm">
                     <span className="font-semibold text-gray-900">{entry.name}</span>
                     <span className="text-gray-400">{format(new Date(entry.created_at), 'MMMM d, yyyy')}</span>

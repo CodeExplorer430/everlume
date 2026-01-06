@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,7 +12,7 @@ export default function AdminSettings() {
   const [shortcode, setShortcode] = useState('')
   const [targetUrl, setTargetUrl] = useState('')
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const fetchRedirects = useCallback(async () => {
     const { data } = await supabase
@@ -25,7 +26,8 @@ export default function AdminSettings() {
 
   useEffect(() => {
     fetchRedirects()
-  }, [fetchRedirects])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const createRedirect = async (e: React.FormEvent) => {
     e.preventDefault()

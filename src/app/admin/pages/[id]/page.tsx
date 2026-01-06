@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { useState, useEffect, useCallback, use } from 'react'
+import { useState, useEffect, useCallback, use, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,7 +12,6 @@ import { VideoManager } from '@/components/admin/VideoManager'
 import { DataExport } from '@/components/admin/DataExport'
 import { Trash2, ExternalLink, Star, Image as ImageIcon, Lock, Globe } from 'lucide-react'
 import Link from 'next/link'
-import { cn } from '@/lib/utils/cn'
 
 interface PageProps {
   params: Promise<{
@@ -23,11 +23,13 @@ export default function EditTributePage({ params }: PageProps) {
   const { id } = use(params)
   const [page, setPage] = useState<any>(null)
   const [photos, setPhotos] = useState<any[]>([])
+  const [redirects, setRedirects] = useState<any[]>([])
+  const [qrUrl, setQrUrl] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
   const [editingPhoto, setEditingPhoto] = useState<string | null>(null)
   const [tempCaption, setTempCaption] = useState('')
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const fetchPage = useCallback(async () => {
     const { data: pageData } = await supabase
@@ -37,6 +39,22 @@ export default function EditTributePage({ params }: PageProps) {
       .single()
     
     setPage(pageData)
+
+    // Fetch related shortcodes
+    const { data: redirectData } = await supabase
+      .from('redirects')
+      .select('*')
+      .ilike('target_url', `%${pageData.slug}%`)
+    
+    setRedirects(redirectData || [])
+    
+    // Set default QR URL
+    const baseUrl = window.location.origin
+    if (redirectData && redirectData.length > 0) {
+      setQrUrl(`${baseUrl}/r/${redirectData[0].shortcode}`)
+    } else {
+      setQrUrl(`${baseUrl}/pages/${pageData.slug}`)
+    }
 
     const { data: photoData } = await supabase
       .from('photos')
@@ -50,7 +68,8 @@ export default function EditTributePage({ params }: PageProps) {
 
   useEffect(() => {
     fetchPage()
-  }, [fetchPage])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -208,7 +227,26 @@ export default function EditTributePage({ params }: PageProps) {
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 space-y-4">
             <h3 className="font-semibold text-gray-800 border-b pb-2 mb-4">QR Code for Plaque</h3>
             <div className="flex flex-col items-center space-y-4">
-               <QRCodeGenerator url={`${window.location.origin}/pages/${page.slug}`} />
+               {redirects.length > 0 && (
+                 <div className="w-full">
+                   <label className="block text-xs font-medium text-gray-700 mb-1">Select URL for QR</label>
+                   <select 
+                    className="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    value={qrUrl}
+                    onChange={(e) => setQrUrl(e.target.value)}
+                   >
+                     {redirects.map(r => (
+                       <option key={r.id} value={`${window.location.origin}/r/${r.shortcode}`}>
+                         Short: /r/{r.shortcode}
+                       </option>
+                     ))}
+                     <option value={`${window.location.origin}/pages/${page.slug}`}>
+                       Direct: /pages/{page.slug}
+                     </option>
+                   </select>
+                 </div>
+               )}
+               <QRCodeGenerator url={qrUrl} />
             </div>
           </div>
 

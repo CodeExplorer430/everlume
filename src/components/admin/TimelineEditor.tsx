@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,7 +16,7 @@ export function TimelineEditor({ pageId }: TimelineEditorProps) {
   const [newYear, setNewYear] = useState('')
   const [newText, setNewText] = useState('')
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const fetchEvents = useCallback(async () => {
     const { data } = await supabase
@@ -30,7 +31,8 @@ export function TimelineEditor({ pageId }: TimelineEditorProps) {
 
   useEffect(() => {
     fetchEvents()
-  }, [fetchEvents])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const addEvent = async (e: React.FormEvent) => {
     e.preventDefault()

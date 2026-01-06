@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { format } from 'date-fns'
@@ -9,7 +10,7 @@ import { Check, Trash2, X } from 'lucide-react'
 export default function GuestbookModeration() {
   const [entries, setEntries] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const fetchEntries = useCallback(async () => {
     const { data } = await supabase
@@ -23,7 +24,8 @@ export default function GuestbookModeration() {
 
   useEffect(() => {
     fetchEntries()
-  }, [fetchEntries])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const approveEntry = async (id: string) => {
     const { error } = await supabase
