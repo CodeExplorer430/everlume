@@ -48,8 +48,18 @@ npm run typecheck
 npm run build
 ```
 
+## Testing
+```bash
+npm run test:unit
+npm run test:coverage
+npm run test:e2e:install
+npm run test:e2e
+```
+
+Coverage gates are enforced at 90% global thresholds in CI.
+
 ## CI/CD
-- **GitHub Actions CI:** lint + typecheck + build on PRs/pushes (`.github/workflows/ci.yml`)
+- **GitHub Actions CI:** lint, typecheck, unit coverage, e2e, and build on PRs/pushes (`.github/workflows/ci.yml`)
 - **Vercel deploys:** previews on PRs and production on merge to main branch
 - **Cloudflare Worker deploy:** `.github/workflows/deploy-worker.yml`
 
@@ -57,6 +67,8 @@ Operational docs:
 - `docs/operations/ci-cd.md`
 - `docs/operations/media-policy.md`
 - `docs/operations/short-links.md`
+- `docs/testing-strategy.md`
+- `docs/repo-governance.md`
 
 ## Video Upload Policy
 For large files, admins must use YouTube Unlisted:

@@ -9,9 +9,12 @@ Checks:
 - `npm ci`
 - `npm run lint`
 - `npm run typecheck`
+- `npm run test:coverage`
+- `npm run test:e2e`
 - `npm run build`
 
 This workflow should be configured as a required status check before merge.
+Required statuses: `lint`, `typecheck`, `unit_coverage`, `e2e`, `build`.
 
 ### 2) Next.js Deployment (Vercel)
 Vercel Git integration handles deployments:
@@ -48,5 +51,5 @@ Required GitHub secrets:
 ## Branch Protection
 Recommended for `main`:
 - Require PR reviews.
-- Require `CI / build` status check.
+- Require status checks: `lint`, `typecheck`, `unit_coverage`, `e2e`, `build`.
 - Restrict direct pushes.

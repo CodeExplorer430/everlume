@@ -4,8 +4,11 @@
 - `src/app/`: Next.js App Router routes and layouts (public pages, admin pages, auth, redirects).
 - `src/components/`: Reusable UI split by domain: `admin/`, `public/`, and shared `ui/` primitives.
 - `src/lib/`: Utilities and integrations (`supabase/` clients, middleware helpers, common utils).
+- `tests/e2e/`: Playwright end-to-end suites.
+- `src/test/`: shared unit-test setup for Vitest.
 - `public/`: Static assets (SVGs, icons).
 - `supabase/migrations/`: Ordered SQL migrations for schema, RLS, and storage setup.
+- `.github/`: CI workflows, templates, CODEOWNERS, Dependabot config.
 - Root config: `next.config.ts`, `eslint.config.mjs`, `tsconfig.json`, `postcss.config.mjs`.
 
 ## Build, Test, and Development Commands
@@ -14,8 +17,12 @@
 - `npm run start`: Run the built app in production mode.
 - `npm run lint`: Run ESLint checks across the codebase.
 - `npm run typecheck`: Run TypeScript checks with `tsc --noEmit`.
+- `npm run test:unit`: Run Vitest unit/component tests.
+- `npm run test:coverage`: Run unit tests with coverage thresholds.
+- `npm run test:e2e:install`: Install Chromium for Playwright.
+- `npm run test:e2e`: Run Playwright end-to-end tests.
 
-Run `npm run lint && npm run typecheck` before opening a PR.
+Run `npm run lint && npm run typecheck && npm run test:coverage` before opening a PR.
 
 ## Coding Style & Naming Conventions
 - Language: TypeScript + React function components.
@@ -26,17 +33,27 @@ Run `npm run lint && npm run typecheck` before opening a PR.
 - Linting: ESLint (`eslint-config-next`) is the baseline style gate.
 
 ## Testing Guidelines
-- There is currently no dedicated unit/integration test framework configured.
-- Minimum quality gate: `npm run lint` and `npm run typecheck` must pass.
-- For feature changes, include manual verification steps in PRs (affected routes, admin/public flows, edge cases).
-- If adding tests, colocate them near the feature (`*.test.ts`/`*.test.tsx`) and document how to run them.
+- Frameworks:
+  - Unit/component: Vitest + React Testing Library (`jsdom`)
+  - E2E: Playwright (Chromium)
+- Coverage gate (CI-enforced): 90% global for lines/functions/statements/branches.
+- Mock-first strategy in CI for external services (Supabase/Cloudinary/Worker integrations).
+- Test placement:
+  - Unit/component tests colocated as `*.test.ts`/`*.test.tsx`
+  - E2E tests under `tests/e2e/`
+- Minimum quality gate before merge:
+  - `npm run lint`
+  - `npm run typecheck`
+  - `npm run test:coverage`
+  - `npm run test:e2e`
 
 ## Commit & Pull Request Guidelines
 - Prefer concise, imperative commit messages. Existing history includes both plain and Conventional Commits (for example, `feat: add ...`); either is acceptable, but be consistent per PR.
 - Keep commits focused by concern (UI, data model, auth, etc.).
+- Branching model: trunk-based with short-lived branches. Use prefixes: `feat/*`, `fix/*`, `chore/*`, `docs/*`, `refactor/*`, `test/*`.
 - PRs should include:
   - clear summary and scope,
   - linked issue/task (if available),
   - screenshots or short recordings for UI changes,
   - notes on migrations/env updates,
-  - local validation results (`lint`, `typecheck`, and manual checks).
+  - local validation results (`lint`, `typecheck`, `test:coverage`, `test:e2e`).

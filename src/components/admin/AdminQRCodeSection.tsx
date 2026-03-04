@@ -31,8 +31,11 @@ export function AdminQRCodeSection({ page, redirects }: AdminQRCodeSectionProps)
       <div className="flex flex-col items-center space-y-4">
         {options.length > 1 && (
           <div className="w-full">
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">Select URL for QR</label>
+            <label htmlFor="qr-url-selector" className="mb-1 block text-xs font-medium text-muted-foreground">
+              Select URL for QR
+            </label>
             <select
+              id="qr-url-selector"
               className="w-full rounded-md border border-input bg-[var(--surface-1)] px-3 py-2 text-sm"
               value={qrUrl}
               onChange={(e) => setSelectedUrl(e.target.value)}

@@ -1,0 +1,12 @@
+# Default ownership
+* @CodeExplorer430
+
+# Platform and workflows
+/.github/ @CodeExplorer430
+/workers/ @CodeExplorer430
+
+# Frontend app
+/src/ @CodeExplorer430
+
+# Database schema and migrations
+/supabase/ @CodeExplorer430

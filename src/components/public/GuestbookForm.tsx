@@ -79,12 +79,23 @@ export function GuestbookForm({ pageId }: GuestbookFormProps) {
       </div>
 
       <div>
-        <label className="mb-1.5 block text-sm font-medium">Your Name</label>
-        <Input required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., John Smith" />
+        <label htmlFor="guestbook-name" className="mb-1.5 block text-sm font-medium">
+          Your Name
+        </label>
+        <Input
+          id="guestbook-name"
+          required
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="e.g., John Smith"
+        />
       </div>
       <div>
-        <label className="mb-1.5 block text-sm font-medium">Your Message</label>
+        <label htmlFor="guestbook-message" className="mb-1.5 block text-sm font-medium">
+          Your Message
+        </label>
         <textarea
+          id="guestbook-message"
           required
           rows={4}
           className="flex w-full rounded-md border border-input bg-[var(--surface-1)] px-3 py-2 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] placeholder:text-muted-foreground/90 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/70"
