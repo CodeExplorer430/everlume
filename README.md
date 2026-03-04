@@ -1,108 +1,66 @@
 # Digital Tribute Web App
 
-A full-stack web application for creating, managing, and sharing digital memorial tribute pages. This project allows families to preserve memories of loved ones through photos, videos, timelines, and guestbooks, accessible via a scannable QR code intended for memorial tablets or plaques.
+A full-stack web app for creating, managing, and sharing memorial tribute pages with QR-friendly short links.
+
+## Core Stack
+- **Frontend:** Next.js 16 (App Router) + TypeScript + Tailwind CSS
+- **Hosting:** Vercel (Git integration)
+- **Database/Auth:** Supabase (Postgres + Auth)
+- **Image Storage/CDN:** Cloudinary (Upload Widget + URL transformations)
+- **Video:** YouTube Unlisted (required for large files)
+- **Short Links/DNS:** Cloudflare Workers + Cloudflare DNS
 
 ## Features
+- Authenticated admin dashboard for managing tribute pages
+- Cloudinary bulk photo upload and optimized gallery rendering
+- YouTube video embedding workflow in admin/public pages
+- Timeline editor and moderated guestbook
+- QR code generation with short-link support
+- CSV/ZIP export tools for guestbook and media metadata
 
-### For Families (Admin)
-- **Secure Dashboard:** Authenticated admin area to manage multiple tribute pages.
-- **Media Management:** Bulk upload photos with automatic client-side compression.
-- **Video Integration:** Embed YouTube videos easily.
-- **Life Timeline:** Create a chronological timeline of significant life events.
-- **Guestbook Moderation:** Review and approve messages from visitors before they go public.
-- **QR Code Generation:** Generate high-resolution SVG/PNG QR codes for printing/engraving.
-- **Data Export:** Download guestbook entries (CSV), photo metadata (CSV), or a full ZIP archive of all original photos.
-- **Privacy Controls:** Toggle pages between Public and Private visibility.
+## Local Setup
 
-### For Visitors (Public)
-- **Mobile-First Design:** Optimized for viewing on mobile devices at the cemetery or memorial site.
-- **Rich Media Gallery:** Smooth, animated lightbox for viewing photos.
-- **Interactive Guestbook:** Leave messages and condolences (subject to moderation).
-- **Short URLs:** easy-to-type redirect links (e.g., `/r/grandma`).
-
-## Tech Stack
-
-- **Framework:** [Next.js 16](https://nextjs.org/) (App Router)
-- **Language:** TypeScript
-- **Styling:** Tailwind CSS + `clsx` / `tailwind-merge`
-- **Database & Auth:** [Supabase](https://supabase.com/) (PostgreSQL, GoTrue)
-- **Storage:** Supabase Storage (S3-compatible)
-- **Icons:** Lucide React
-- **Animations:** Framer Motion
-
-## Getting Started
-
-Follow these instructions to set up the project locally on your machine.
-
-### Prerequisites
-
-- [Node.js](https://nodejs.org/) (v18 or higher recommended)
-- A [Supabase](https://supabase.com/) account (free tier is sufficient)
-
-### Installation
-
-1. **Clone the repository:**
-   ```bash
-   git clone <your-repo-url>
-   cd digital-tribute-web-app
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-### Configuration
-
-1. **Set up Supabase:**
-   - Create a new project in your Supabase dashboard.
-   - Go to **Project Settings > API** to find your `Project URL` and `anon` public key.
-
-2. **Environment Variables:**
-   - Copy the example environment file:
-     ```bash
-     cp .env.local.example .env.local
-     ```
-     *(If `.env.local.example` doesn't exist, create `.env.local` manually)*
-   - Update `.env.local` with your Supabase credentials:
-     ```env
-     NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-     NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-     ```
-
-3. **Database Migration:**
-   - Go to the **SQL Editor** in your Supabase dashboard.
-   - Copy the contents of the migration files located in `supabase/migrations/` (in order) and run them to set up the tables, RLS policies, and storage buckets.
-     - `20251227000000_initial_schema.sql`
-     - `20251227000001_storage_setup.sql`
-
-   *Alternatively, if you have the Supabase CLI installed, you can link the project and push the migrations.*
-
-### Running the App
-
-Run the development server:
-
+### 1) Install
 ```bash
-npm run dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+### 2) Environment variables
+Create `.env.local`:
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your_unsigned_upload_preset
+```
 
-### Initial Setup
+### 3) Database migrations
+Run SQL migrations in order from `supabase/migrations/`:
+- `20251227000000_initial_schema.sql`
+- `20251227000001_storage_setup.sql` (legacy)
+- `20260304000000_cloudinary_photo_fields.sql`
 
-1. Navigate to `/login`.
-2. Since user sign-ups might be disabled or restricted in production, you can manually create a user in the Supabase Authentication dashboard, or temporarily enable sign-ups to create your first admin account.
-3. Once logged in, you will be redirected to the Admin Dashboard.
+## Run and Validate
+```bash
+npm run dev
+npm run lint
+npm run typecheck
+npm run build
+```
 
-## Deployment
+## CI/CD
+- **GitHub Actions CI:** lint + typecheck + build on PRs/pushes (`.github/workflows/ci.yml`)
+- **Vercel deploys:** previews on PRs and production on merge to main branch
+- **Cloudflare Worker deploy:** `.github/workflows/deploy-worker.yml`
 
-The easiest way to deploy this app is using [Vercel](https://vercel.com/):
+Operational docs:
+- `docs/operations/ci-cd.md`
+- `docs/operations/media-policy.md`
+- `docs/operations/short-links.md`
 
-1. Push your code to a Git repository (GitHub, GitLab, etc.).
-2. Import the project into Vercel.
-3. Add the `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` environment variables in the Vercel project settings.
-4. Deploy.
+## Video Upload Policy
+For large files, admins must use YouTube Unlisted:
+- Upload to YouTube first
+- Paste the YouTube URL in admin video manager
 
-## License
-
-[MIT](LICENSE)
+Project threshold: files above **100MB** should be treated as YouTube-only.

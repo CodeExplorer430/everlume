@@ -13,7 +13,7 @@ export function AdminQRCodeSection({ page, redirects }: AdminQRCodeSectionProps)
   const [qrUrl, setQrUrl] = useState<string>('')
 
   useEffect(() => {
-    const baseUrl = window.location.origin
+    const baseUrl = process.env.NEXT_PUBLIC_SHORT_DOMAIN || window.location.origin
     let newUrl = ''
     if (redirects && redirects.length > 0) {
       newUrl = `${baseUrl}/r/${redirects[0].shortcode}`
@@ -40,11 +40,11 @@ export function AdminQRCodeSection({ page, redirects }: AdminQRCodeSectionProps)
               onChange={(e) => setQrUrl(e.target.value)}
               >
                 {redirects.map((r: any) => (
-                  <option key={r.id} value={`${window.location.origin}/r/${r.shortcode}`}>
+                  <option key={r.id} value={`${process.env.NEXT_PUBLIC_SHORT_DOMAIN || window.location.origin}/r/${r.shortcode}`}>
                     Short: /r/{r.shortcode}
                   </option>
                 ))}
-                <option value={`${window.location.origin}/pages/${page.slug}`}>
+                <option value={`${process.env.NEXT_PUBLIC_SHORT_DOMAIN || window.location.origin}/pages/${page.slug}`}>
                   Direct: /pages/{page.slug}
                 </option>
               </select>

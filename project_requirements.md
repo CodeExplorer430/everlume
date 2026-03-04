@@ -1,6 +1,6 @@
 # Project Requirements — Digital Tribute Full-Stack App
 
-**Last updated:** 2025-12-19
+**Last updated:** 2026-03-04
 
 > Purpose: a full-stack web application allowing family members to create, manage, and share a digital memorial/tribute page for a loved one. The site must be accessible via a short URL and QR code printed on the memorial tablet. The application must provide an authenticated admin area for media management and guestbook moderation while offering a clean, fast, mobile-first public experience.
 
@@ -86,8 +86,8 @@
 ### 6.1 Admin / Management
 - FR-A1: Admin login using secure auth (email/password or magic link) via chosen auth provider.
 - FR-A2: Admin can create and edit a tribute page (title, full name, DOB, DOD, dedication text, slug).
-- FR-A3: Admin can bulk upload images; client-side compression/resizing occurs before upload.
-- FR-A4: Admin can add video links (YouTube unlisted) and optionally upload small video files.
+- FR-A3: Admin can bulk upload images using Cloudinary Upload Widget; app stores Cloudinary IDs/URLs and renders transformed variants.
+- FR-A4: Admin can add video links (YouTube unlisted). Videos above 100MB are YouTube-only.
 - FR-A5: Admin can edit photo metadata (caption, date, order), set hero image, and remove assets.
 - FR-A6: Admin can moderate guestbook entries (approve/delete) and export guestbook to CSV/JSON.
 - FR-A7: Admin can generate/download a print-ready QR (SVG + recommended PNG sizes) and manage short redirect codes.
@@ -100,8 +100,8 @@
 - FR-P5: OG/Twitter meta tags for social sharing.
 
 ### 6.3 Media & Exports
-- FR-M1: Images stored in object storage with publicly-accessible (or signed) URLs.
-- FR-M2: Thumbnails and web-optimized images generated client-side or by lightweight background job.
+- FR-M1: Images stored in Cloudinary and referenced by `cloudinary_public_id` and URLs in the database.
+- FR-M2: Thumbnails and web-optimized images generated with Cloudinary URL transformations (`w_400,f_auto,q_auto` etc.).
 - FR-M3: Exportable ZIP of selected assets and CSV/JSON of guestbook and metadata.
 
 ---
@@ -130,7 +130,7 @@
 
 **US-02 (Upload images)**
 - *Story:* As an admin I want to upload photos so I can populate the gallery.
-- *Acceptance:* Admin can select multiple images, client-side compress happens, images stored in storage, thumbnails appear in gallery within 10s for small batches.
+- *Acceptance:* Admin can select multiple images in Cloudinary widget, image metadata is saved in DB, and transformed thumbnails appear in gallery within 10s for small batches.
 
 **US-03 (Generate QR)**
 - *Story:* As an admin I want an SVG QR for the short URL so I can send to the engraver.
@@ -158,8 +158,7 @@ High-level entities: `users`, `pages`, `photos`, `videos`, `timeline_events`, `g
 **Admin (auth required)**
 - `POST /api/admin/pages` — create
 - `PUT /api/admin/pages/:id` — update
-- `POST /api/admin/pages/:id/upload-url` — request presigned upload details
-- `POST /api/admin/photos` — register uploaded photo metadata
+- `POST /api/admin/photos` — register uploaded photo metadata from Cloudinary uploads
 - `POST /api/admin/videos` — register video link
 - `GET /api/admin/guestbook` — list
 - `POST /api/admin/guestbook/:id/approve` — approve
@@ -185,18 +184,18 @@ Design notes: mobile-first, progressive enhancement, keep keyboard navigation in
 ---
 
 ## 13. Media Upload & Processing Workflows
-### Client-side flow (preferred-free)
-1. Admin selects images.
-2. Client compresses & resizes (create `orig`, `display`(~1600px), `thumb`(~400px)) and optionally WebP.
-3. Client requests presigned upload URL (Supabase or S3 presigned POST) and uploads directly.
-4. Client triggers `POST /api/admin/photos` to persist metadata.
+### Cloudinary flow (preferred)
+1. Admin opens Cloudinary Upload Widget and selects images.
+2. Cloudinary stores original images and returns upload metadata (`public_id`, `secure_url`, dimensions, bytes).
+3. App writes image metadata to Supabase `photos` table.
+4. Public/admin galleries use Cloudinary URL transformations for responsive variants.
 
 ### Video handling
 - Preferred: admin uploads to YouTube (unlisted) and pastes video ID.
-- Optional: if uploading raw videos, store original offline; allow small compressed clips in storage.
+- Policy: videos above 100MB must be uploaded to YouTube; no direct in-app upload for large files.
 
 ### Background processing (optional)
-- Storage event triggers worker to generate further derivatives if needed.
+- Optional scheduled jobs can precompute or warm image variants if needed.
 
 ---
 
@@ -229,15 +228,17 @@ Design notes: mobile-first, progressive enhancement, keep keyboard navigation in
 
 ## 17. Deployment & Hosting (free-first)
 - **Frontend:** Vercel (Next.js integration) — free tier sufficient for initial usage.
-- **DB/Auth/Storage:** Supabase free tier.
-- **Short redirect / DNS:** Cloudflare (free) + Workers (free tier) or implement a redirect route on Next.js serverless route.
-- **CI:** GitHub Actions for lint/test/build.
+- **DB/Auth:** Supabase free tier.
+- **Images/CDN:** Cloudinary.
+- **Short redirect / DNS:** Cloudflare (free) + Workers (free tier) with short domain routing.
+- **CI:** GitHub Actions for lint/typecheck/build.
+- **CD:** Vercel Git integration for Next.js; GitHub Actions worker deploy for Cloudflare Worker.
 
 ---
 
 ## 18. Testing & QA Plan
 - Unit tests (backend logic): Jest / Playwright for E2E.
-- Integration tests for storage flow (mock presigned uploads in dev).
+- Integration tests for media flow (mock Cloudinary responses in dev when needed).
 - E2E: login, upload images, register photo, view public page, post guestbook, approve entry.
 - Manual QA: multiple phone models for scanning QR and loading pages in expected network conditions.
 - Accessibility audit: axe / Lighthouse.
@@ -247,7 +248,7 @@ Design notes: mobile-first, progressive enhancement, keep keyboard navigation in
 ## 19. Development Roadmap & Milestones (suggested order)
 1. Project setup: repo, supabase project, Vercel link, env config.
 2. Auth & basic admin flow (login + create page).
-3. Presigned upload + client-side image processing + register metadata.
+3. Cloudinary upload widget + transformed image rendering + metadata persistence.
 4. Public page rendering (SSR) + gallery and lightbox.
 5. Guestbook + moderation.
 6. Short redirect + QR generation; print test.
@@ -258,7 +259,7 @@ Design notes: mobile-first, progressive enhancement, keep keyboard navigation in
 
 ## 20. Risk Register & Mitigations (top items)
 - **Printed QR becomes unreachable (hosting change):** use short redirect so target can be changed. Test redirect frequently.
-- **Storage fills quota / cost rises:** keep only web-optimized derivatives on cloud; keep originals offline; monitor usage.
+- **Cloud storage costs rise:** keep only delivery variants online, apply transformation limits, and back up originals offline.
 - **Guestbook spam:** moderate, use reCAPTCHA, and rate-limiting.
 - **Unauthorized access:** use strong auth, RLS for private content, and enforce secure cookies.
 
@@ -306,12 +307,13 @@ CREATE TABLE IF NOT EXISTS pages (
 CREATE TABLE IF NOT EXISTS photos (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   page_id uuid REFERENCES pages(id) ON DELETE CASCADE,
-  storage_path text NOT NULL,
-  thumb_path text,
+  cloudinary_public_id text,
+  image_url text,
+  thumb_url text,
   caption text,
   taken_at date,
   sort_index int DEFAULT 0,
-  metadata jsonb,
+  metadata jsonb, -- optional additional Cloudinary payload
   uploaded_by uuid,
   created_at timestamptz DEFAULT now()
 );
@@ -363,4 +365,3 @@ CREATE TABLE IF NOT EXISTS redirects (
 ---
 
 *End of requirements document.*
-

@@ -3,12 +3,11 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
 
 interface Photo {
   id: string
-  storage_path: string
-  thumb_path: string
+  image_url?: string | null
+  thumb_url?: string | null
   caption?: string
 }
 
@@ -18,11 +17,10 @@ interface PublicGalleryProps {
 
 export function PublicGallery({ photos }: PublicGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
-  const supabase = createClient()
 
   const openLightbox = (index: number) => setSelectedIndex(index)
   const closeLightbox = () => setSelectedIndex(null)
-  
+
   const nextImage = () => {
     if (selectedIndex !== null) {
       setSelectedIndex((selectedIndex + 1) % photos.length)
@@ -39,7 +37,7 @@ export function PublicGallery({ photos }: PublicGalleryProps) {
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {photos.map((photo, index) => {
-          const thumbUrl = supabase.storage.from('tributes').getPublicUrl(photo.thumb_path).data.publicUrl
+          const thumbUrl = photo.thumb_url || photo.image_url || ''
           return (
             <motion.div
               key={photo.id}
@@ -47,11 +45,17 @@ export function PublicGallery({ photos }: PublicGalleryProps) {
               onClick={() => openLightbox(index)}
               className="relative aspect-square bg-secondary rounded-lg overflow-hidden group cursor-pointer shadow-sm hover:shadow-md transition-shadow"
             >
-              <img
-                src={thumbUrl}
-                alt={photo.caption || 'Memory'}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-              />
+              {thumbUrl ? (
+                <img
+                  src={thumbUrl}
+                  alt={photo.caption || 'Memory'}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
+                  Missing image URL
+                </div>
+              )}
               <div className="absolute inset-0 bg-foreground/20 opacity-0 group-hover:opacity-100 transition-opacity" />
             </motion.div>
           )
@@ -93,7 +97,7 @@ export function PublicGallery({ photos }: PublicGalleryProps) {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                src={supabase.storage.from('tributes').getPublicUrl(photos[selectedIndex].storage_path).data.publicUrl}
+                src={photos[selectedIndex].image_url || photos[selectedIndex].thumb_url || ''}
                 alt={photos[selectedIndex].caption || 'Memory'}
                 className="max-w-full max-h-[85vh] object-contain shadow-2xl"
               />

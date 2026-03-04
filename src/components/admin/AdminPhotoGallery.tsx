@@ -8,8 +8,11 @@ import { Trash2, Star, Image as ImageIcon } from 'lucide-react'
 
 interface Photo {
   id: string
-  storage_path: string
-  thumb_path: string
+  storage_path?: string | null
+  thumb_path?: string | null
+  cloudinary_public_id?: string | null
+  image_url?: string | null
+  thumb_url?: string | null
   caption: string
   sort_index: number
 }
@@ -26,18 +29,15 @@ export function AdminPhotoGallery({ photos, heroImageUrl, onRefresh, onSetHero }
   const [tempCaption, setTempCaption] = useState('')
   const supabase = createClient()
 
-  const deletePhoto = async (photoId: string, storagePath: string, thumbPath: string) => {
+  const deletePhoto = async (photoId: string) => {
     if (!confirm('Are you sure you want to delete this photo?')) return
 
-    await supabase.storage.from('tributes').remove([storagePath, thumbPath])
     await supabase.from('photos').delete().eq('id', photoId)
-    
     onRefresh()
   }
 
-  const setHeroImage = async (photoPath: string) => {
-    // Just pass the path to parent
-    onSetHero(photoPath)
+  const setHeroImage = async (photoUrl: string) => {
+    onSetHero(photoUrl)
   }
 
   const startEditingCaption = (photo: Photo) => {
@@ -46,10 +46,7 @@ export function AdminPhotoGallery({ photos, heroImageUrl, onRefresh, onSetHero }
   }
 
   const saveCaption = async (photoId: string) => {
-    const { error } = await supabase
-      .from('photos')
-      .update({ caption: tempCaption })
-      .eq('id', photoId)
+    const { error } = await supabase.from('photos').update({ caption: tempCaption }).eq('id', photoId)
 
     if (error) alert(error.message)
     else {
@@ -61,40 +58,42 @@ export function AdminPhotoGallery({ photos, heroImageUrl, onRefresh, onSetHero }
   return (
     <div className="bg-card p-6 rounded-lg shadow-sm border border-border">
       <h3 className="font-semibold text-foreground border-b border-border pb-2 mb-6">Photo Gallery</h3>
-      
+
       {photos.length === 0 ? (
         <p className="text-center py-12 text-muted-foreground italic">No photos uploaded yet.</p>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
           {photos.map((photo) => {
-             const publicUrl = supabase.storage.from('tributes').getPublicUrl(photo.thumb_path).data.publicUrl;
-             const isHero = heroImageUrl && heroImageUrl.includes(photo.storage_path.split('/').pop() || ''); // Simple check
+            const publicUrl = photo.thumb_url || photo.image_url || ''
+            const fullImageUrl = photo.image_url || photo.thumb_url || ''
+            const isHero = Boolean(heroImageUrl && fullImageUrl && heroImageUrl === fullImageUrl)
 
-             return (
+            return (
               <div key={photo.id} className="group flex flex-col space-y-2">
                 <div className="relative aspect-square bg-secondary rounded-lg overflow-hidden border border-border">
-                  <img
-                    src={publicUrl}
-                    alt={photo.caption}
-                    className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                  />
-                  {/* Overlay Actions */}
+                  {publicUrl ? (
+                    <img
+                      src={publicUrl}
+                      alt={photo.caption}
+                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
+                      Missing image URL
+                    </div>
+                  )}
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center space-y-2">
-                    <Button 
-                      variant="secondary" 
-                      size="sm" 
+                    <Button
+                      variant="secondary"
+                      size="sm"
                       className="h-8 text-xs bg-white/90 hover:bg-white"
-                      onClick={() => setHeroImage(photo.storage_path)}
+                      onClick={() => setHeroImage(fullImageUrl)}
+                      disabled={!fullImageUrl}
                     >
                       <ImageIcon className="mr-1 h-3 w-3" />
                       Set as Hero
                     </Button>
-                    <Button 
-                      variant="danger" 
-                      size="sm" 
-                      className="h-8 text-xs"
-                      onClick={() => deletePhoto(photo.id, photo.storage_path, photo.thumb_path)}
-                    >
+                    <Button variant="danger" size="sm" className="h-8 text-xs" onClick={() => deletePhoto(photo.id)}>
                       <Trash2 className="mr-1 h-3 w-3" />
                       Delete
                     </Button>
@@ -106,19 +105,20 @@ export function AdminPhotoGallery({ photos, heroImageUrl, onRefresh, onSetHero }
                     </div>
                   )}
                 </div>
-                
-                {/* Caption Edit */}
+
                 {editingPhoto === photo.id ? (
                   <div className="flex space-x-2">
-                    <Input 
-                      value={tempCaption} 
+                    <Input
+                      value={tempCaption}
                       onChange={(e) => setTempCaption(e.target.value)}
                       className="h-8 text-xs bg-background border-input"
                     />
-                    <Button size="sm" className="h-8 px-2" onClick={() => saveCaption(photo.id)}>Save</Button>
+                    <Button size="sm" className="h-8 px-2" onClick={() => saveCaption(photo.id)}>
+                      Save
+                    </Button>
                   </div>
                 ) : (
-                  <p 
+                  <p
                     className="text-xs text-muted-foreground truncate cursor-pointer hover:text-primary hover:underline"
                     onClick={() => startEditingCaption(photo)}
                     title="Click to edit caption"
@@ -127,7 +127,7 @@ export function AdminPhotoGallery({ photos, heroImageUrl, onRefresh, onSetHero }
                   </p>
                 )}
               </div>
-             )
+            )
           })}
         </div>
       )}

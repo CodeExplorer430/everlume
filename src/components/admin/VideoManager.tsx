@@ -72,6 +72,9 @@ export function VideoManager({ pageId }: VideoManagerProps) {
 
   return (
     <div className="space-y-6">
+      <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+        Upload videos to YouTube first, then paste the link here. For files larger than 100MB, direct app uploads are not supported.
+      </div>
       <form onSubmit={addVideo} className="space-y-4">
         <div className="space-y-2">
           <Input

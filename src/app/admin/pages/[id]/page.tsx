@@ -60,17 +60,15 @@ export default function EditTributePage({ params }: PageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const handleSetHero = async (photoPath: string) => {
-    const { data } = supabase.storage.from('tributes').getPublicUrl(photoPath)
-    
+  const handleSetHero = async (photoUrl: string) => {
     const { error } = await supabase
       .from('pages')
-      .update({ hero_image_url: data.publicUrl })
+      .update({ hero_image_url: photoUrl })
       .eq('id', id)
 
     if (error) alert(error.message)
     else {
-      setPage({ ...page, hero_image_url: data.publicUrl })
+      setPage({ ...page, hero_image_url: photoUrl })
     }
   }
 
@@ -124,7 +122,6 @@ export default function EditTributePage({ params }: PageProps) {
         {/* Right: Photo Gallery */}
         <div className="lg:col-span-2 space-y-6">
           <AdminPhotoGallery 
-            pageId={id} 
             photos={photos} 
             heroImageUrl={page.hero_image_url}
             onRefresh={fetchPage}
