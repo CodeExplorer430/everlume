@@ -20,6 +20,6 @@ describe('AdminShell', () => {
 
     const toggle = screen.getByRole('button', { name: '' })
     await user.click(toggle)
-    expect(screen.getByText('Create Tribute')).toBeInTheDocument()
+    expect(screen.getByText('Create Memorial')).toBeInTheDocument()
   })
 })

@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Digital Tribute",
+  title: "Everlume",
   description: "Create and share memorial pages with photos, timelines, videos, and moderated guestbook messages.",
 };
 

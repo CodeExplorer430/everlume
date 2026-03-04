@@ -1,4 +1,4 @@
-name = "digital-tribute-redirector"
+name = "everlume-redirector"
 main = "src/index.ts"
 compatibility_date = "2026-03-04"
 

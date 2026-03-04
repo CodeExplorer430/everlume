@@ -1,6 +1,6 @@
-# Digital Tribute Web App
+# Everlume
 
-A full-stack web app for creating, managing, and sharing memorial tribute pages with QR-friendly short links.
+A full-stack web app for creating, managing, and sharing memorial pages with QR-friendly short links.
 
 ## Core Stack
 - **Frontend:** Next.js 16 (App Router) + TypeScript + Tailwind CSS
@@ -11,7 +11,7 @@ A full-stack web app for creating, managing, and sharing memorial tribute pages 
 - **Short Links/DNS:** Cloudflare Workers + Cloudflare DNS
 
 ## Features
-- Authenticated admin dashboard for managing tribute pages
+- Authenticated admin dashboard for managing memorial pages
 - Cloudinary bulk photo upload and optimized gallery rendering
 - YouTube video embedding workflow in admin/public pages
 - Timeline editor and moderated guestbook
@@ -32,6 +32,7 @@ NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
 NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your_unsigned_upload_preset
+NEXT_PUBLIC_SHORT_DOMAIN=https://go.yourdomain.com
 ```
 
 ### 3) Database migrations
@@ -67,6 +68,7 @@ Operational docs:
 - `docs/operations/ci-cd.md`
 - `docs/operations/media-policy.md`
 - `docs/operations/short-links.md`
+- `docs/operations/predeploy-checklist.md`
 - `docs/testing-strategy.md`
 - `docs/repo-governance.md`
 

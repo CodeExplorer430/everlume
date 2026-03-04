@@ -1,8 +1,8 @@
-# Project Requirements — Digital Tribute Full-Stack App
+# Project Requirements — Everlume Full-Stack App
 
 **Last updated:** 2026-03-04
 
-> Purpose: a full-stack web application allowing family members to create, manage, and share a digital memorial/tribute page for a loved one. The site must be accessible via a short URL and QR code printed on the memorial tablet. The application must provide an authenticated admin area for media management and guestbook moderation while offering a clean, fast, mobile-first public experience.
+> Purpose: a full-stack web application allowing family members to create, manage, and share a digital memorial page for a loved one. The site must be accessible via a short URL and QR code printed on the memorial tablet. The application must provide an authenticated admin area for media management and guestbook moderation while offering a clean, fast, mobile-first public experience.
 
 ---
 
@@ -33,10 +33,10 @@
 ---
 
 ## 1. Overview & Goals
-**Goal:** Build a production-capable full-stack web app that lets family administrators upload and manage photos, videos, timeline entries, and guestbook messages for a memorial tribute page. Public visitors access the tribute via an easy-to-scan QR and short URL printed on the memorial tablet.
+**Goal:** Build a production-capable full-stack web app that lets family administrators upload and manage photos, videos, timeline entries, and guestbook messages for a memorial page. Public visitors access the memorial via an easy-to-scan QR and short URL printed on the memorial tablet.
 
 **Primary success criteria:**
-- Admin can sign in, upload media, and publish a tribute page without requiring technical knowledge.
+- Admin can sign in, upload media, and publish a memorial page without requiring technical knowledge.
 - Public page loads on mobile within 5 seconds on typical 4G connections.
 - A high-resolution, durable QR image can be generated and tested for engraving/printing.
 - Family can export/backup all media + guestbook entries.
@@ -59,10 +59,10 @@
 ---
 
 ## 4. Glossary
-- **Admin:** authenticated user who can manage a tribute page.
+- **Admin:** authenticated user who can manage a memorial page.
 - **Guestbook:** public message list; entries may be moderated by admin.
 - **Short URL / Redirect:** stable URL used on plaque that can be repointed without reprinting.
-- **Public page:** the publicly visible tribute page.
+- **Public page:** the publicly visible memorial page.
 
 ---
 
@@ -71,7 +71,7 @@
 - Admin authentication and user management.
 - Media upload (images, poster for videos), metadata editing, gallery UI.
 - Video embedding (YouTube unlisted by default) + poster thumbnails.
-- Public tribute page with hero, gallery, timeline, guestbook, share/OG meta.
+- Public memorial page with hero, gallery, timeline, guestbook, share/OG meta.
 - Short redirect route + QR generation (SVG/PNG) for printing.
 - Export of media metadata and guestbook (ZIP/CSV/JSON).
 
@@ -85,7 +85,7 @@
 ## 6. Functional Requirements
 ### 6.1 Admin / Management
 - FR-A1: Admin login using secure auth (email/password or magic link) via chosen auth provider.
-- FR-A2: Admin can create and edit a tribute page (title, full name, DOB, DOD, dedication text, slug).
+- FR-A2: Admin can create and edit a memorial page (title, full name, DOB, DOD, dedication text, slug).
 - FR-A3: Admin can bulk upload images using Cloudinary Upload Widget; app stores Cloudinary IDs/URLs and renders transformed variants.
 - FR-A4: Admin can add video links (YouTube unlisted). Videos above 100MB are YouTube-only.
 - FR-A5: Admin can edit photo metadata (caption, date, order), set hero image, and remove assets.
@@ -93,7 +93,7 @@
 - FR-A7: Admin can generate/download a print-ready QR (SVG + recommended PNG sizes) and manage short redirect codes.
 
 ### 6.2 Public
-- FR-P1: Public page accessible at `/pages/:slug` and via short redirect `/r/:code`.
+- FR-P1: Public page accessible at `/memorials/:slug` and via short redirect `/r/:code`.
 - FR-P2: Show hero image, dates, dedication text, gallery with captions, embedded videos, and timeline.
 - FR-P3: Guestbook posting endpoint (POST), optionally protected by reCAPTCHA or rate limiting.
 - FR-P4: Images are lazy-loaded with responsive `srcset`; clicking opens lightbox/fullscreen.
@@ -125,7 +125,7 @@
 
 ## 9. User Stories & Acceptance Criteria (selected)
 **US-01 (Admin login)**
-- *Story:* As an admin I want to sign in so I can manage the tribute.
+- *Story:* As an admin I want to sign in so I can manage the memorial.
 - *Acceptance:* Admin can log in via email and see admin dashboard within 5s.
 
 **US-02 (Upload images)**
@@ -151,13 +151,13 @@ High-level entities: `users`, `pages`, `photos`, `videos`, `timeline_events`, `g
 
 ## 11. API Endpoints (summary)
 **Public**
-- `GET /api/pages/:slug` — return page JSON
-- `GET /api/pages/:slug/photos` — paginated
-- `POST /api/pages/:slug/guestbook` — add entry (rate-limited)
+- `GET /api/memorials/:slug` — return page JSON
+- `GET /api/memorials/:slug/photos` — paginated
+- `POST /api/memorials/:slug/guestbook` — add entry (rate-limited)
 
 **Admin (auth required)**
-- `POST /api/admin/pages` — create
-- `PUT /api/admin/pages/:id` — update
+- `POST /api/admin/memorials` — create
+- `PUT /api/admin/memorials/:id` — update
 - `POST /api/admin/photos` — register uploaded photo metadata from Cloudinary uploads
 - `POST /api/admin/videos` — register video link
 - `GET /api/admin/guestbook` — list
@@ -169,7 +169,7 @@ High-level entities: `users`, `pages`, `photos`, `videos`, `timeline_events`, `g
 ## 12. UI Structure & Pages
 **Public pages**
 - Homepage (optional family listing)
-- Tribute page (`/pages/:slug`): hero, gallery, videos, timeline, guestbook, share/print info
+- Memorial page (`/memorials/:slug`): hero, gallery, videos, timeline, guestbook, share/print info
 
 **Admin pages**
 - Login / Profile

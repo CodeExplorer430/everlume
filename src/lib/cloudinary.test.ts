@@ -29,12 +29,16 @@ describe('cloudinary helpers', () => {
   })
 
   it('normalizes public id from cloudinary URL', () => {
-    expect(normalizeCloudinaryPublicId('https://res.cloudinary.com/demo/image/upload/v1740/tributes/a.jpg')).toBe(
-      'tributes/a.jpg'
+    expect(normalizeCloudinaryPublicId('https://res.cloudinary.com/demo/image/upload/v1740/everlume/a.jpg')).toBe(
+      'everlume/a.jpg'
     )
   })
 
   it('returns raw value when value is already a public id', () => {
-    expect(normalizeCloudinaryPublicId('tributes/raw.jpg')).toBe('tributes/raw.jpg')
+    expect(normalizeCloudinaryPublicId('everlume/raw.jpg')).toBe('everlume/raw.jpg')
+  })
+
+  it('returns empty string when the value is empty', () => {
+    expect(normalizeCloudinaryPublicId('')).toBe('')
   })
 })

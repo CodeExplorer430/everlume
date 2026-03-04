@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils/cn'
 
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutGrid },
-  { href: '/admin/pages/new', label: 'Create Tribute', icon: BookOpenText },
+  { href: '/admin/memorials/new', label: 'Create Memorial', icon: BookOpenText },
   { href: '/admin/guestbook', label: 'Guestbook', icon: MessageCircle },
   { href: '/admin/settings', label: 'Short Links', icon: Link2 },
 ]
@@ -32,7 +32,7 @@ export function AdminShell({ userEmail, children }: AdminShellProps) {
               {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </Button>
             <div>
-              <p className="text-sm font-semibold tracking-wide">Tribute Admin</p>
+              <p className="text-sm font-semibold tracking-wide">Everlume Admin</p>
               <p className="text-xs text-muted-foreground">Manage pages and memories</p>
             </div>
           </div>

@@ -31,7 +31,7 @@ export function QRCodeGenerator({ url }: QRCodeGeneratorProps) {
     const blob = new Blob([svg], { type: 'image/svg+xml' })
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
-    link.download = `tribute-qr-${url.split('/').pop()}.svg`
+    link.download = `everlume-qr-${url.split('/').pop()}.svg`
     link.click()
   }
 
@@ -39,7 +39,7 @@ export function QRCodeGenerator({ url }: QRCodeGeneratorProps) {
     if (!canvasRef.current) return
     const link = document.createElement('a')
     link.href = canvasRef.current.toDataURL('image/png')
-    link.download = `tribute-qr-${url.split('/').pop()}.png`
+    link.download = `everlume-qr-${url.split('/').pop()}.png`
     link.click()
   }
 

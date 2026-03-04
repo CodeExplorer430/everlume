@@ -43,7 +43,7 @@ export default function LoginPage() {
                 <Shield className="h-3.5 w-3.5" />
                 Secure family admin access
               </p>
-              <h1 className="section-title max-w-sm">Welcome back to Tribute Admin</h1>
+              <h1 className="section-title max-w-sm">Welcome back to Everlume Admin</h1>
               <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
                 Sign in to manage memorial pages, publish new memories, moderate messages, and generate short-link QR codes for plaques.
               </p>
@@ -59,7 +59,7 @@ export default function LoginPage() {
             <div className="rounded-full bg-primary/30 p-2">
               <HeartHandshake className="h-4 w-4" />
             </div>
-            <p className="text-sm font-medium">Digital Tribute</p>
+            <p className="text-sm font-medium">Everlume</p>
           </div>
 
           <div className="mb-6">

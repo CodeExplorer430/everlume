@@ -1,5 +1,5 @@
 {
-  "name": "dtwa-init",
+  "name": "everlume",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -16,6 +16,7 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:install": "playwright install chromium",
     "test:all": "npm run test:coverage && npm run test:e2e",
+    "ops:check-prereqs": "node scripts/ops/check-deploy-prereqs.mjs",
     "prepare": "husky"
   },
   "dependencies": {

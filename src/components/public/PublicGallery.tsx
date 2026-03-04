@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 
@@ -48,10 +49,12 @@ export function PublicGallery({ photos }: PublicGalleryProps) {
               whileTap={{ scale: 0.99 }}
             >
               {thumbUrl ? (
-                <img
+                <Image
                   src={thumbUrl}
                   alt={photo.caption || 'Memory'}
-                  className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+                  fill
+                  sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
+                  className="object-cover transition-transform duration-300 hover:scale-105"
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">Missing image URL</div>
@@ -82,15 +85,22 @@ export function PublicGallery({ photos }: PublicGalleryProps) {
             </button>
 
             <div className="relative flex h-full w-full flex-col items-center justify-center">
-              <motion.img
+              <motion.div
                 key={photos[selectedIndex].id}
                 initial={{ opacity: 0, scale: 0.96 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                src={photos[selectedIndex].image_url || photos[selectedIndex].thumb_url || ''}
-                alt={photos[selectedIndex].caption || 'Memory'}
-                className="max-h-[84vh] max-w-full rounded-md object-contain shadow-2xl"
-              />
+                className="relative h-[84vh] w-full max-w-6xl"
+              >
+                <Image
+                  src={photos[selectedIndex].image_url || photos[selectedIndex].thumb_url || ''}
+                  alt={photos[selectedIndex].caption || 'Memory'}
+                  fill
+                  sizes="100vw"
+                  className="rounded-md object-contain shadow-2xl"
+                  priority
+                />
+              </motion.div>
               {photos[selectedIndex].caption && <p className="mt-5 text-center text-sm text-white/90 md:text-base">{photos[selectedIndex].caption}</p>}
             </div>
           </motion.div>

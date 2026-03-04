@@ -28,7 +28,7 @@ describe('AdminQRCodeSection', () => {
       />
     )
 
-    await user.selectOptions(screen.getByLabelText('Select URL for QR'), 'http://localhost:3000/pages/jane')
-    expect(screen.getByTestId('qr-url').textContent).toContain('/pages/jane')
+    await user.selectOptions(screen.getByLabelText('Select URL for QR'), 'http://localhost:3000/memorials/jane')
+    expect(screen.getByTestId('qr-url').textContent).toContain('/memorials/jane')
   })
 })

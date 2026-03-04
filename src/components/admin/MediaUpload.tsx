@@ -88,7 +88,7 @@ export function MediaUpload({ pageId, onUploadComplete }: MediaUploadProps) {
       {
         cloudName,
         uploadPreset,
-        folder: `tributes/${pageId}`,
+        folder: `everlume/${pageId}`,
         resourceType: 'image',
         sources: ['local', 'camera'],
         multiple: true,

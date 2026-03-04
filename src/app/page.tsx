@@ -28,7 +28,7 @@ export default function Home() {
           <div className="rounded-full bg-primary/25 p-2">
             <Sparkles className="h-4 w-4 text-foreground" />
           </div>
-          <h1 className="text-lg font-semibold tracking-wide">Digital Tribute</h1>
+          <h1 className="text-lg font-semibold tracking-wide">Everlume</h1>
         </div>
         <Button variant="outline" asChild>
           <Link href="/login">Admin Login</Link>
@@ -44,7 +44,7 @@ export default function Home() {
             Preserve their story with a beautiful, mobile-first digital memorial.
           </h2>
           <p className="max-w-xl text-base leading-relaxed text-muted-foreground md:text-lg">
-            Collect photos, timeline moments, guestbook messages, and videos in one tribute page. Share it through a short URL and a print-ready QR for memorial plaques.
+            Collect photos, timeline moments, guestbook messages, and videos in one memorial page. Share it through a short URL and a print-ready QR for memorial plaques.
           </p>
           <div className="flex flex-wrap items-center gap-3">
             <Button size="lg" asChild>
@@ -99,7 +99,7 @@ export default function Home() {
       <section className="page-container py-12">
         <div className="surface-card flex flex-col items-start justify-between gap-5 p-6 md:flex-row md:items-center md:p-8">
           <div className="space-y-1">
-            <h3 className="text-2xl font-semibold">Ready to start building a tribute page?</h3>
+            <h3 className="text-2xl font-semibold">Ready to start building a memorial page?</h3>
             <p className="text-sm text-muted-foreground">Set up your first memorial page and publish when you are ready.</p>
           </div>
           <Button size="lg" asChild>

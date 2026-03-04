@@ -1,4 +1,5 @@
 import { format } from 'date-fns'
+import Image from 'next/image'
 
 interface TributeHeroProps {
   page: {
@@ -13,9 +14,16 @@ interface TributeHeroProps {
 export function TributeHero({ page }: TributeHeroProps) {
   return (
     <section className="relative isolate overflow-hidden">
-      <div className="h-[54vh] min-h-[340px] w-full bg-foreground">
+      <div className="relative h-[54vh] min-h-[340px] w-full bg-foreground">
         {page.hero_image_url ? (
-          <img src={page.hero_image_url} alt={page.full_name || page.title} className="h-full w-full object-cover opacity-70" />
+          <Image
+            src={page.hero_image_url}
+            alt={page.full_name || page.title}
+            fill
+            sizes="100vw"
+            className="object-cover opacity-70"
+            priority
+          />
         ) : (
           <div className="h-full w-full bg-gradient-to-b from-stone-700 via-stone-800 to-stone-900" />
         )}

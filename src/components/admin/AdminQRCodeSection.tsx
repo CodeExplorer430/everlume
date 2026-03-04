@@ -20,7 +20,7 @@ export function AdminQRCodeSection({ page, redirects }: AdminQRCodeSectionProps)
       value: `${baseUrl}/r/${r.shortcode}`,
     }))
 
-    return [...redirectOptions, { key: 'direct', label: `Direct: /pages/${page.slug}`, value: `${baseUrl}/pages/${page.slug}` }]
+    return [...redirectOptions, { key: 'direct', label: `Direct: /memorials/${page.slug}`, value: `${baseUrl}/memorials/${page.slug}` }]
   }, [page.slug, redirects])
 
   const qrUrl = selectedUrl || options[0]?.value || ''

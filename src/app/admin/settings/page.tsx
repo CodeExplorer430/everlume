@@ -69,7 +69,7 @@ export default function AdminSettings() {
           </div>
           <div>
             <label className="mb-1.5 block text-sm font-medium">Target URL</label>
-            <Input required value={targetUrl} onChange={(e) => setTargetUrl(e.target.value)} placeholder="https://.../pages/sample" />
+            <Input required value={targetUrl} onChange={(e) => setTargetUrl(e.target.value)} placeholder="https://.../memorials/sample" />
           </div>
         </div>
         <Button type="submit" className="w-full sm:w-auto">

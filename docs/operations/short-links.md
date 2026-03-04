@@ -23,3 +23,21 @@
 - Keep DNS managed in Cloudflare.
 - Route short-domain traffic to Worker route.
 - Keep Next.js frontend deployed in Vercel.
+
+## Recommended Initial Setup (Before Vercel)
+- Use a real Cloudflare subdomain (example: `go.yourdomain.com`).
+- Route: `go.yourdomain.com/*` -> `everlume-redirector`.
+- Set `FALLBACK_URL` to a temporary public page so root `/` is not dead while frontend is still pending.
+- Set `NEXT_PUBLIC_SHORT_DOMAIN` in app env to the same short domain.
+
+## Quick Validation
+```bash
+curl -I https://go.yourdomain.com/test
+curl -I https://go.yourdomain.com/unknown
+curl -I https://go.yourdomain.com/
+```
+
+Expected:
+- `/test` -> `302` with `Location` target from Supabase `redirects`.
+- `/unknown` -> `404`.
+- `/` -> `302` to `FALLBACK_URL` (if configured).

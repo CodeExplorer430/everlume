@@ -7,6 +7,11 @@
   - `image_url`
   - `thumb_url`
 - Rendered media should use Cloudinary transformed URLs (`f_auto`, `q_auto`, width-specific variants).
+- Required upload preset baseline:
+  - Unsigned preset enabled for widget upload.
+  - Preset name should be stable (recommended: `everlume_unsigned_upload`).
+  - Asset folder should be `everlume`.
+  - Public ID should be auto-generated and unguessable.
 
 ## Video Policy
 - Admin flow is YouTube-first.

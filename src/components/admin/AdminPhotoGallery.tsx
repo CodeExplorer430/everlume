@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -72,10 +73,12 @@ export function AdminPhotoGallery({ photos, heroImageUrl, onRefresh, onSetHero }
               <div key={photo.id} className="group flex flex-col space-y-2">
                 <div className="relative aspect-square bg-secondary rounded-lg overflow-hidden border border-border">
                   {publicUrl ? (
-                    <img
+                    <Image
                       src={publicUrl}
-                      alt={photo.caption}
-                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                      alt={photo.caption || 'Memorial photo'}
+                      fill
+                      sizes="(max-width: 640px) 50vw, 33vw"
+                      className="object-cover transition-transform group-hover:scale-105"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">

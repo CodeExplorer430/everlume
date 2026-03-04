@@ -14,10 +14,10 @@ export default async function AdminDashboard() {
       <section className="surface-card flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
         <div className="space-y-1">
           <h2 className="text-2xl font-semibold">Dashboard</h2>
-          <p className="text-sm text-muted-foreground">Manage tribute pages, guestbook entries, and short links.</p>
+          <p className="text-sm text-muted-foreground">Manage memorial pages, guestbook entries, and short links.</p>
         </div>
         <Button asChild>
-          <Link href="/admin/pages/new">Create New Tribute</Link>
+          <Link href="/admin/memorials/new">Create New Memorial</Link>
         </Button>
       </section>
 
