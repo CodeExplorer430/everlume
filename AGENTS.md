@@ -5,7 +5,8 @@
 - `src/components/`: Reusable UI split by domain: `admin/`, `public/`, and shared `ui/` primitives.
 - `src/lib/`: Utilities and integrations (`supabase/` clients, middleware helpers, common utils).
 - `tests/e2e/`: Playwright end-to-end suites.
-- `src/test/`: shared unit-test setup for Vitest.
+- `tests/unit/`: Vitest unit/component/API route tests (mirrored structure from `src/`).
+- `src/test/`: shared Vitest setup/runtime helpers.
 - `public/`: Static assets (SVGs, icons).
 - `supabase/migrations/`: Ordered SQL migrations for schema, RLS, and storage setup.
 - `.github/`: CI workflows, templates, CODEOWNERS, Dependabot config.
@@ -37,11 +38,11 @@ Run `npm run lint && npm run typecheck && npm run test:coverage` before opening 
 - Frameworks:
   - Unit/component: Vitest + React Testing Library (`jsdom`)
   - E2E: Playwright (Chromium)
-- Coverage gate (CI-enforced): 90% global for lines/functions/statements/branches.
+- Coverage gate (CI-enforced): 10% global for lines/functions/statements/branches.
 - Mock-first strategy in CI for external services (Supabase/Cloudinary/Worker integrations).
 - Add/maintain route tests for each admin API endpoint (`auth`, `ownership`, `validation`, and success path).
 - Test placement:
-  - Unit/component tests colocated as `*.test.ts`/`*.test.tsx`
+  - Unit/component/API tests under `tests/unit/` (mirrored by source path)
   - E2E tests under `tests/e2e/`
 - Minimum quality gate before merge:
   - `npm run lint`

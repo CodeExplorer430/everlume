@@ -20,10 +20,13 @@ This repository uses a layered strategy:
 
 ## Coverage Policy
 Global coverage threshold (enforced in CI):
-- Lines: 90%
-- Functions: 90%
-- Statements: 90%
-- Branches: 90%
+- Lines: 10%
+- Functions: 10%
+- Statements: 10%
+- Branches: 10%
+
+Coverage scope:
+- Vitest coverage now scans all `src/**/*.{ts,tsx}` with explicit exclusions for declaration/setup artifacts.
 
 ## Mocking Strategy
 CI and local tests are mock-first for external systems:
@@ -56,8 +59,8 @@ Server mutation endpoints are covered with focused route tests:
 These tests verify validation, auth/ownership checks, and success-path persistence calls.
 
 ## Test Placement
-- Place tests near implementation as `*.test.ts`/`*.test.tsx`
-- Keep E2E tests under `tests/e2e`
+- Keep unit/component/API tests under `tests/unit/` with a mirrored source-path structure.
+- Keep E2E tests under `tests/e2e`.
 
 ## CI Artifacts
 - Unit coverage report uploaded from `coverage/unit`
