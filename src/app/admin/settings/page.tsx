@@ -1,24 +1,39 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Trash2 } from 'lucide-react'
+import { Loader2, Trash2 } from 'lucide-react'
+
+type RedirectItem = {
+  id: string
+  shortcode: string
+  target_url: string
+  created_at: string
+}
 
 export default function AdminSettings() {
-  const [redirects, setRedirects] = useState<any[]>([])
+  const [redirects, setRedirects] = useState<RedirectItem[]>([])
   const [shortcode, setShortcode] = useState('')
   const [targetUrl, setTargetUrl] = useState('')
   const [loading, setLoading] = useState(true)
-  const supabase = useMemo(() => createClient(), [])
-
+  const [creating, setCreating] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const fetchRedirects = useCallback(async () => {
-    const { data } = await supabase.from('redirects').select('*').order('created_at', { ascending: false })
-    setRedirects(data || [])
+    const response = await fetch('/api/admin/redirects', { cache: 'no-store' })
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { message?: string } | null
+      setErrorMessage(payload?.message || 'Unable to load redirects.')
+      setRedirects([])
+      setLoading(false)
+      return
+    }
+
+    const payload = (await response.json()) as { redirects?: RedirectItem[] }
+    setRedirects(payload.redirects ?? [])
     setLoading(false)
-  }, [supabase])
+  }, [])
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -27,28 +42,52 @@ export default function AdminSettings() {
 
   const createRedirect = async (e: React.FormEvent) => {
     e.preventDefault()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    setErrorMessage(null)
+    setCreating(true)
 
-    const { error } = await supabase.from('redirects').insert({
-      shortcode,
-      target_url: targetUrl,
-      created_by: user?.id,
+    const response = await fetch('/api/admin/redirects', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        shortcode,
+        targetUrl,
+      }),
     })
 
-    if (error) alert(error.message)
-    else {
-      setShortcode('')
-      setTargetUrl('')
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { message?: string } | null
+      setErrorMessage(payload?.message || 'Unable to create redirect.')
+      setCreating(false)
+      return
+    }
+
+    const payload = (await response.json()) as { redirect?: RedirectItem }
+    setShortcode('')
+    setTargetUrl('')
+    if (payload.redirect) {
+      setRedirects((current) => [payload.redirect!, ...current])
+    } else {
       fetchRedirects()
     }
+    setCreating(false)
   }
 
   const deleteRedirect = async (id: string) => {
-    const { error } = await supabase.from('redirects').delete().eq('id', id)
-    if (error) alert(error.message)
-    fetchRedirects()
+    if (deletingId) return
+    const previous = redirects
+    setDeletingId(id)
+    setRedirects((current) => current.filter((item) => item.id !== id))
+
+    const response = await fetch(`/api/admin/redirects/${id}`, { method: 'DELETE' })
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { message?: string } | null
+      setErrorMessage(payload?.message || 'Unable to delete redirect.')
+      setRedirects(previous)
+      setDeletingId(null)
+      return
+    }
+    setErrorMessage(null)
+    setDeletingId(null)
   }
 
   if (loading) return <div className="surface-card p-8 text-sm text-muted-foreground">Loading short links...</div>
@@ -72,8 +111,16 @@ export default function AdminSettings() {
             <Input required value={targetUrl} onChange={(e) => setTargetUrl(e.target.value)} placeholder="https://.../memorials/sample" />
           </div>
         </div>
-        <Button type="submit" className="w-full sm:w-auto">
-          Create Redirect
+        {errorMessage && <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{errorMessage}</p>}
+        <Button type="submit" className="w-full sm:w-auto" disabled={creating}>
+          {creating ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating...
+            </>
+          ) : (
+            'Create Redirect'
+          )}
         </Button>
       </form>
 
@@ -97,8 +144,8 @@ export default function AdminSettings() {
                     <td className="px-4 py-3 font-medium">/r/{r.shortcode}</td>
                     <td className="px-4 py-3 max-w-sm truncate text-muted-foreground">{r.target_url}</td>
                     <td className="px-4 py-3 text-right">
-                      <Button variant="ghost" size="sm" onClick={() => deleteRedirect(r.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
+                      <Button variant="ghost" size="sm" onClick={() => deleteRedirect(r.id)} disabled={deletingId === r.id}>
+                        {deletingId === r.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 text-destructive" />}
                       </Button>
                     </td>
                   </tr>

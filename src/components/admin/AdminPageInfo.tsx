@@ -1,21 +1,29 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Globe, Lock } from 'lucide-react'
 
+type AdminPage = {
+  id: string
+  title: string
+  slug: string
+  full_name: string | null
+  dob: string | null
+  dod: string | null
+  privacy: 'public' | 'private'
+}
+
 interface AdminPageInfoProps {
-  page: any
+  page: AdminPage
   onUpdate: () => void
 }
 
 export function AdminPageInfo({ page, onUpdate }: AdminPageInfoProps) {
   const [formData, setFormData] = useState(page)
   const [updating, setUpdating] = useState(false)
-  const supabase = createClient()
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   useEffect(() => {
     setFormData(page)
@@ -24,20 +32,29 @@ export function AdminPageInfo({ page, onUpdate }: AdminPageInfoProps) {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
     setUpdating(true)
-    const { error } = await supabase
-      .from('pages')
-      .update({
+    setErrorMessage(null)
+
+    const response = await fetch(`/api/admin/pages/${page.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         title: formData.title,
         slug: formData.slug,
-        full_name: formData.full_name,
+        fullName: formData.full_name,
         dob: formData.dob,
         dod: formData.dod,
         privacy: formData.privacy,
       })
-      .eq('id', page.id)
+    })
 
-    if (error) alert(error.message)
-    else onUpdate()
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { message?: string } | null
+      setErrorMessage(payload?.message || 'Unable to save page details.')
+      setUpdating(false)
+      return
+    }
+
+    onUpdate()
     setUpdating(false)
   }
 
@@ -81,6 +98,7 @@ export function AdminPageInfo({ page, onUpdate }: AdminPageInfoProps) {
           <Input type="date" value={formData.dod || ''} onChange={(e) => setFormData({ ...formData, dod: e.target.value })} />
         </div>
       </div>
+      {errorMessage && <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{errorMessage}</p>}
       <Button type="submit" className="w-full" disabled={updating}>
         {updating ? 'Saving...' : 'Save Changes'}
       </Button>

@@ -1,29 +1,42 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Trash2, Plus } from 'lucide-react'
+import { Loader2, Trash2, Plus } from 'lucide-react'
 
 interface TimelineEditorProps {
   pageId: string
 }
 
 export function TimelineEditor({ pageId }: TimelineEditorProps) {
-  const [events, setEvents] = useState<any[]>([])
+  type TimelineEvent = {
+    id: string
+    year: number
+    text: string
+  }
+
+  const [events, setEvents] = useState<TimelineEvent[]>([])
   const [newYear, setNewYear] = useState('')
   const [newText, setNewText] = useState('')
   const [loading, setLoading] = useState(true)
-  const supabase = useMemo(() => createClient(), [])
-
+  const [adding, setAdding] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const fetchEvents = useCallback(async () => {
-    const { data } = await supabase.from('timeline_events').select('*').eq('page_id', pageId).order('year', { ascending: true })
+    const response = await fetch(`/api/admin/pages/${pageId}/timeline`, { cache: 'no-store' })
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { message?: string } | null
+      setErrorMessage(payload?.message || 'Unable to load timeline events.')
+      setEvents([])
+      setLoading(false)
+      return
+    }
 
-    setEvents(data || [])
+    const payload = (await response.json()) as { events?: TimelineEvent[] }
+    setEvents(payload.events ?? [])
     setLoading(false)
-  }, [pageId, supabase])
+  }, [pageId])
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -32,23 +45,54 @@ export function TimelineEditor({ pageId }: TimelineEditorProps) {
 
   const addEvent = async (e: React.FormEvent) => {
     e.preventDefault()
-    const { error } = await supabase.from('timeline_events').insert({
-      page_id: pageId,
-      year: parseInt(newYear),
-      text: newText,
+    setErrorMessage(null)
+    setAdding(true)
+
+    const year = parseInt(newYear, 10)
+    const response = await fetch('/api/admin/timeline', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pageId,
+        year,
+        text: newText,
+      }),
     })
 
-    if (error) alert(error.message)
-    else {
-      setNewYear('')
-      setNewText('')
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { message?: string } | null
+      setErrorMessage(payload?.message || 'Unable to add timeline event.')
+      setAdding(false)
+      return
+    }
+
+    const payload = (await response.json()) as { event?: TimelineEvent }
+    setNewYear('')
+    setNewText('')
+    if (payload.event) {
+      setEvents((current) => [...current, payload.event!].sort((a, b) => a.year - b.year))
+    } else {
       fetchEvents()
     }
+    setAdding(false)
   }
 
   const deleteEvent = async (id: string) => {
-    await supabase.from('timeline_events').delete().eq('id', id)
-    fetchEvents()
+    if (deletingId) return
+    setErrorMessage(null)
+    const previous = events
+    setDeletingId(id)
+    setEvents((current) => current.filter((event) => event.id !== id))
+
+    const response = await fetch(`/api/admin/timeline/${id}`, { method: 'DELETE' })
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { message?: string } | null
+      setErrorMessage(payload?.message || 'Unable to delete timeline event.')
+      setEvents(previous)
+      setDeletingId(null)
+      return
+    }
+    setDeletingId(null)
   }
 
   if (loading) return <div className="text-sm text-muted-foreground">Loading timeline...</div>
@@ -59,11 +103,12 @@ export function TimelineEditor({ pageId }: TimelineEditorProps) {
         <div className="flex flex-col gap-2 sm:flex-row">
           <Input className="sm:w-24" type="number" placeholder="Year" value={newYear} onChange={(e) => setNewYear(e.target.value)} required />
           <Input className="flex-1" placeholder="Event description..." value={newText} onChange={(e) => setNewText(e.target.value)} required />
-          <Button type="submit" size="icon" aria-label="Add timeline event">
-            <Plus className="h-4 w-4" />
+          <Button type="submit" size="icon" aria-label="Add timeline event" disabled={adding}>
+            {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
           </Button>
         </div>
       </form>
+      {errorMessage && <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{errorMessage}</p>}
 
       <ul className="space-y-2">
         {events.map((event) => (
@@ -72,8 +117,14 @@ export function TimelineEditor({ pageId }: TimelineEditorProps) {
               <span className="mr-2 font-semibold">{event.year}</span>
               <span className="text-muted-foreground">{event.text}</span>
             </div>
-            <Button variant="ghost" size="sm" onClick={() => deleteEvent(event.id)} aria-label="Delete timeline event">
-              <Trash2 className="h-4 w-4 text-destructive" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => deleteEvent(event.id)}
+              aria-label="Delete timeline event"
+              disabled={deletingId === event.id}
+            >
+              {deletingId === event.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 text-destructive" />}
             </Button>
           </li>
         ))}

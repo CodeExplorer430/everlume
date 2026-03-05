@@ -1,22 +1,38 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { format } from 'date-fns'
-import { Check, Trash2, X } from 'lucide-react'
+import { Check, Loader2, Trash2, X } from 'lucide-react'
 
 export default function GuestbookModeration() {
-  const [entries, setEntries] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const supabase = useMemo(() => createClient(), [])
+  type Entry = {
+    id: string
+    name: string
+    message: string
+    is_approved: boolean
+    created_at: string
+    pages?: { title?: string | null } | null
+  }
 
+  const [entries, setEntries] = useState<Entry[]>([])
+  const [loading, setLoading] = useState(true)
+  const [pendingAction, setPendingAction] = useState<{ id: string; kind: 'approve' | 'unapprove' | 'delete' } | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const fetchEntries = useCallback(async () => {
-    const { data } = await supabase.from('guestbook').select('*, pages(title)').order('created_at', { ascending: false })
-    setEntries(data || [])
+    const response = await fetch('/api/admin/guestbook', { cache: 'no-store' })
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { message?: string } | null
+      setErrorMessage(payload?.message || 'Unable to load guestbook entries.')
+      setEntries([])
+      setLoading(false)
+      return
+    }
+
+    const payload = (await response.json()) as { entries?: Entry[] }
+    setEntries(payload.entries ?? [])
     setLoading(false)
-  }, [supabase])
+  }, [])
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -24,23 +40,58 @@ export default function GuestbookModeration() {
   }, [fetchEntries])
 
   const approveEntry = async (id: string) => {
-    const { error } = await supabase.from('guestbook').update({ is_approved: true }).eq('id', id)
-    if (error) alert(error.message)
-    fetchEntries()
+    if (pendingAction) return
+    const previous = entries
+    setPendingAction({ id, kind: 'approve' })
+    setEntries((current) => current.map((entry) => (entry.id === id ? { ...entry, is_approved: true } : entry)))
+
+    setErrorMessage(null)
+    const response = await fetch(`/api/admin/guestbook/${id}/approve`, { method: 'POST' })
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { message?: string } | null
+      setErrorMessage(payload?.message || 'Unable to approve entry.')
+      setEntries(previous)
+      setPendingAction(null)
+      return
+    }
+    setPendingAction(null)
   }
 
   const deleteEntry = async (id: string) => {
     if (!confirm('Are you sure you want to delete this entry?')) return
+    if (pendingAction) return
+    const previous = entries
+    setPendingAction({ id, kind: 'delete' })
+    setEntries((current) => current.filter((entry) => entry.id !== id))
 
-    const { error } = await supabase.from('guestbook').delete().eq('id', id)
-    if (error) alert(error.message)
-    fetchEntries()
+    setErrorMessage(null)
+    const response = await fetch(`/api/admin/guestbook/${id}`, { method: 'DELETE' })
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { message?: string } | null
+      setErrorMessage(payload?.message || 'Unable to delete entry.')
+      setEntries(previous)
+      setPendingAction(null)
+      return
+    }
+    setPendingAction(null)
   }
 
   const unapproveEntry = async (id: string) => {
-    const { error } = await supabase.from('guestbook').update({ is_approved: false }).eq('id', id)
-    if (error) alert(error.message)
-    fetchEntries()
+    if (pendingAction) return
+    const previous = entries
+    setPendingAction({ id, kind: 'unapprove' })
+    setEntries((current) => current.map((entry) => (entry.id === id ? { ...entry, is_approved: false } : entry)))
+
+    setErrorMessage(null)
+    const response = await fetch(`/api/admin/guestbook/${id}/unapprove`, { method: 'POST' })
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { message?: string } | null
+      setErrorMessage(payload?.message || 'Unable to unapprove entry.')
+      setEntries(previous)
+      setPendingAction(null)
+      return
+    }
+    setPendingAction(null)
   }
 
   if (loading) return <div className="surface-card p-8 text-sm text-muted-foreground">Loading entries...</div>
@@ -51,6 +102,7 @@ export default function GuestbookModeration() {
         <h2 className="text-2xl font-semibold">Guestbook Moderation</h2>
         <p className="text-sm text-muted-foreground">Approve or remove messages before they appear publicly.</p>
       </div>
+      {errorMessage && <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{errorMessage}</p>}
 
       <div className="surface-card overflow-hidden">
         <div className="overflow-x-auto">
@@ -92,16 +144,28 @@ export default function GuestbookModeration() {
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-2">
                         {!entry.is_approved ? (
-                          <Button variant="ghost" size="sm" onClick={() => approveEntry(entry.id)}>
-                            <Check className="h-4 w-4 text-emerald-700" />
+                          <Button variant="ghost" size="sm" onClick={() => approveEntry(entry.id)} disabled={pendingAction?.id === entry.id}>
+                            {pendingAction?.id === entry.id && pendingAction.kind === 'approve' ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-emerald-700" />
+                            ) : (
+                              <Check className="h-4 w-4 text-emerald-700" />
+                            )}
                           </Button>
                         ) : (
-                          <Button variant="ghost" size="sm" onClick={() => unapproveEntry(entry.id)}>
-                            <X className="h-4 w-4 text-amber-700" />
+                          <Button variant="ghost" size="sm" onClick={() => unapproveEntry(entry.id)} disabled={pendingAction?.id === entry.id}>
+                            {pendingAction?.id === entry.id && pendingAction.kind === 'unapprove' ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-amber-700" />
+                            ) : (
+                              <X className="h-4 w-4 text-amber-700" />
+                            )}
                           </Button>
                         )}
-                        <Button variant="ghost" size="sm" onClick={() => deleteEntry(entry.id)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
+                        <Button variant="ghost" size="sm" onClick={() => deleteEntry(entry.id)} disabled={pendingAction?.id === entry.id}>
+                          {pendingAction?.id === entry.id && pendingAction.kind === 'delete' ? (
+                            <Loader2 className="h-4 w-4 animate-spin text-destructive" />
+                          ) : (
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          )}
                         </Button>
                       </div>
                     </td>

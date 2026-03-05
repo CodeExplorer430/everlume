@@ -1,9 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
 import Script from 'next/script'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Loader2, Upload } from 'lucide-react'
 import { buildCloudinaryUrl, normalizeCloudinaryPublicId } from '@/lib/cloudinary'
@@ -42,7 +40,6 @@ export function MediaUpload({ pageId, onUploadComplete }: MediaUploadProps) {
   const [uploading, setUploading] = useState(false)
   const [uploadedCount, setUploadedCount] = useState(0)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const supabase = useMemo(() => createClient(), [])
 
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
   const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
@@ -58,21 +55,28 @@ export function MediaUpload({ pageId, onUploadComplete }: MediaUploadProps) {
         quality: 'auto',
       })
 
-      const { error } = await supabase.from('photos').insert({
-        page_id: pageId,
-        caption: info.original_filename || '',
-        cloudinary_public_id: publicId,
-        image_url: imageUrl,
-        thumb_url: thumbUrl,
-        bytes: info.bytes ?? null,
-        format: info.format ?? null,
-        width: info.width ?? null,
-        height: info.height ?? null,
+      const response = await fetch('/api/admin/photos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pageId,
+          caption: info.original_filename || '',
+          cloudinaryPublicId: publicId,
+          imageUrl,
+          thumbUrl,
+          bytes: info.bytes ?? null,
+          format: info.format ?? null,
+          width: info.width ?? null,
+          height: info.height ?? null,
+        }),
       })
 
-      if (error) throw error
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { message?: string } | null
+        throw new Error(payload?.message || 'Failed to save uploaded image metadata.')
+      }
     },
-    [pageId, supabase]
+    [pageId]
   )
 
   const openWidget = useCallback(() => {
@@ -108,8 +112,9 @@ export function MediaUpload({ pageId, onUploadComplete }: MediaUploadProps) {
           try {
             await registerPhoto(result.info)
             setUploadedCount((prev) => prev + 1)
-          } catch (dbError: any) {
-            setErrorMessage(dbError.message || 'Failed to save uploaded image metadata.')
+          } catch (dbError: unknown) {
+            const message = dbError instanceof Error ? dbError.message : 'Failed to save uploaded image metadata.'
+            setErrorMessage(message)
           }
         }
 

@@ -1,8 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { FileText, Images, Archive, Loader2 } from 'lucide-react'
 import JSZip from 'jszip'
@@ -22,11 +20,21 @@ type PhotoRow = {
   taken_at: string | null
 }
 
+type GuestbookRow = {
+  id: string
+  name: string
+  email: string | null
+  message: string
+  is_approved: boolean
+  created_at: string
+}
+
 export function DataExport({ pageId, pageTitle }: DataExportProps) {
   const [loadingGuestbook, setLoadingGuestbook] = useState(false)
   const [loadingPhotos, setLoadingPhotos] = useState(false)
   const [loadingZip, setLoadingZip] = useState(false)
-  const supabase = createClient()
+  const [noticeMessage, setNoticeMessage] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const downloadCSV = (content: string, filename: string) => {
     const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' })
@@ -42,12 +50,19 @@ export function DataExport({ pageId, pageTitle }: DataExportProps) {
 
   const exportGuestbook = async () => {
     setLoadingGuestbook(true)
+      setNoticeMessage(null)
+    setErrorMessage(null)
     try {
-      const { data, error } = await supabase.from('guestbook').select('*').eq('page_id', pageId).order('created_at', { ascending: false })
+      const response = await fetch(`/api/admin/pages/${pageId}/guestbook`, { cache: 'no-store' })
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { message?: string } | null
+        throw new Error(payload?.message || 'Unable to load guestbook entries.')
+      }
+      const payload = (await response.json()) as { entries?: GuestbookRow[] }
+      const data = payload.entries ?? []
 
-      if (error) throw error
       if (!data || data.length === 0) {
-        alert('No guestbook entries to export.')
+        setNoticeMessage('No guestbook entries to export.')
         return
       }
 
@@ -62,8 +77,9 @@ export function DataExport({ pageId, pageTitle }: DataExportProps) {
 
       const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n')
       downloadCSV(csvContent, `${pageTitle.replace(/[^a-z0-9]/gi, '_')}_guestbook.csv`)
-    } catch (err: any) {
-      alert(`Export failed: ${err.message}`)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Export failed.'
+      setErrorMessage(`Export failed: ${message}`)
     } finally {
       setLoadingGuestbook(false)
     }
@@ -71,21 +87,24 @@ export function DataExport({ pageId, pageTitle }: DataExportProps) {
 
   const exportPhotoMetadata = async () => {
     setLoadingPhotos(true)
+    setNoticeMessage(null)
+    setErrorMessage(null)
     try {
-      const { data, error } = await supabase
-        .from('photos')
-        .select('id, caption, cloudinary_public_id, image_url, thumb_url, taken_at, created_at')
-        .eq('page_id', pageId)
-        .order('sort_index', { ascending: true })
+      const response = await fetch(`/api/admin/pages/${pageId}/photos`, { cache: 'no-store' })
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { message?: string } | null
+        throw new Error(payload?.message || 'Unable to load photos.')
+      }
+      const payload = (await response.json()) as { photos?: PhotoRow[] }
+      const data = payload.photos ?? []
 
-      if (error) throw error
       if (!data || data.length === 0) {
-        alert('No photos to export.')
+        setNoticeMessage('No photos to export.')
         return
       }
 
       const headers = ['ID', 'Caption', 'Cloudinary Public ID', 'Image URL', 'Thumb URL', 'Taken At', 'Uploaded At']
-      const rows = (data as PhotoRow[]).map((photo) => [
+      const rows = data.map((photo) => [
         photo.id,
         `"${photo.caption?.replace(/"/g, '""') || ''}"`,
         photo.cloudinary_public_id || '',
@@ -97,8 +116,9 @@ export function DataExport({ pageId, pageTitle }: DataExportProps) {
 
       const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n')
       downloadCSV(csvContent, `${pageTitle.replace(/[^a-z0-9]/gi, '_')}_photo_metadata.csv`)
-    } catch (err: any) {
-      alert(`Export failed: ${err.message}`)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Export failed.'
+      setErrorMessage(`Export failed: ${message}`)
     } finally {
       setLoadingPhotos(false)
     }
@@ -106,12 +126,19 @@ export function DataExport({ pageId, pageTitle }: DataExportProps) {
 
   const exportPhotosZip = async () => {
     setLoadingZip(true)
+    setNoticeMessage(null)
+    setErrorMessage(null)
     try {
-      const { data, error } = await supabase.from('photos').select('id, image_url, cloudinary_public_id').eq('page_id', pageId)
+      const response = await fetch(`/api/admin/pages/${pageId}/photos`, { cache: 'no-store' })
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { message?: string } | null
+        throw new Error(payload?.message || 'Unable to load photos.')
+      }
+      const payload = (await response.json()) as { photos?: PhotoRow[] }
+      const data = payload.photos ?? []
 
-      if (error) throw error
       if (!data || data.length === 0) {
-        alert('No photos to export.')
+        setNoticeMessage('No photos to export.')
         return
       }
 
@@ -139,8 +166,9 @@ export function DataExport({ pageId, pageTitle }: DataExportProps) {
       link.href = URL.createObjectURL(content)
       link.download = `${pageTitle.replace(/[^a-z0-9]/gi, '_')}_photos.zip`
       link.click()
-    } catch (err: any) {
-      alert(`ZIP export failed: ${err.message}`)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'ZIP export failed.'
+      setErrorMessage(`ZIP export failed: ${message}`)
     } finally {
       setLoadingZip(false)
     }
@@ -162,6 +190,8 @@ export function DataExport({ pageId, pageTitle }: DataExportProps) {
         {loadingZip ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Archive className="mr-2 h-4 w-4" />}
         {loadingZip ? 'Preparing ZIP...' : 'Download All Photos (ZIP)'}
       </Button>
+      {noticeMessage && <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">{noticeMessage}</p>}
+      {errorMessage && <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">{errorMessage}</p>}
     </div>
   )
 }

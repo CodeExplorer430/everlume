@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Trash2, Star, Image as ImageIcon } from 'lucide-react'
@@ -28,12 +27,18 @@ interface AdminPhotoGalleryProps {
 export function AdminPhotoGallery({ photos, heroImageUrl, onRefresh, onSetHero }: AdminPhotoGalleryProps) {
   const [editingPhoto, setEditingPhoto] = useState<string | null>(null)
   const [tempCaption, setTempCaption] = useState('')
-  const supabase = createClient()
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const deletePhoto = async (photoId: string) => {
     if (!confirm('Are you sure you want to delete this photo?')) return
+    setErrorMessage(null)
 
-    await supabase.from('photos').delete().eq('id', photoId)
+    const response = await fetch(`/api/admin/photos/${photoId}`, { method: 'DELETE' })
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { message?: string } | null
+      setErrorMessage(payload?.message || 'Unable to delete photo.')
+      return
+    }
     onRefresh()
   }
 
@@ -47,18 +52,27 @@ export function AdminPhotoGallery({ photos, heroImageUrl, onRefresh, onSetHero }
   }
 
   const saveCaption = async (photoId: string) => {
-    const { error } = await supabase.from('photos').update({ caption: tempCaption }).eq('id', photoId)
+    setErrorMessage(null)
+    const response = await fetch(`/api/admin/photos/${photoId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ caption: tempCaption }),
+    })
 
-    if (error) alert(error.message)
-    else {
-      setEditingPhoto(null)
-      onRefresh()
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { message?: string } | null
+      setErrorMessage(payload?.message || 'Unable to update caption.')
+      return
     }
+
+    setEditingPhoto(null)
+    onRefresh()
   }
 
   return (
     <div className="bg-card p-6 rounded-lg shadow-sm border border-border">
       <h3 className="font-semibold text-foreground border-b border-border pb-2 mb-6">Photo Gallery</h3>
+      {errorMessage && <p className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">{errorMessage}</p>}
 
       {photos.length === 0 ? (
         <p className="text-center py-12 text-muted-foreground italic">No photos uploaded yet.</p>

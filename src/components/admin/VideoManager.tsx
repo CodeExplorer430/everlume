@@ -1,67 +1,97 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Trash2, Plus, Youtube } from 'lucide-react'
+import { Loader2, Trash2, Plus, Youtube } from 'lucide-react'
 
 interface VideoManagerProps {
   pageId: string
 }
 
+type VideoItem = {
+  id: string
+  provider_id: string
+  title: string | null
+}
+
 export function VideoManager({ pageId }: VideoManagerProps) {
-  const [videos, setVideos] = useState<any[]>([])
+  const [videos, setVideos] = useState<VideoItem[]>([])
   const [url, setUrl] = useState('')
   const [title, setTitle] = useState('')
   const [loading, setLoading] = useState(true)
-  const supabase = useMemo(() => createClient(), [])
-
+  const [adding, setAdding] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const fetchVideos = useCallback(async () => {
-    const { data } = await supabase.from('videos').select('*').eq('page_id', pageId).order('created_at', { ascending: true })
+    const response = await fetch(`/api/admin/pages/${pageId}/videos`, { cache: 'no-store' })
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { message?: string } | null
+      setErrorMessage(payload?.message || 'Unable to load videos.')
+      setVideos([])
+      setLoading(false)
+      return
+    }
 
-    setVideos(data || [])
+    const payload = (await response.json()) as { videos?: VideoItem[] }
+    setVideos(payload.videos ?? [])
     setLoading(false)
-  }, [pageId, supabase])
+  }, [pageId])
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchVideos()
   }, [fetchVideos])
 
-  const getYoutubeId = (youtubeUrl: string) => {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/
-    const match = youtubeUrl.match(regExp)
-    return match && match[2].length === 11 ? match[2] : null
-  }
-
   const addVideo = async (e: React.FormEvent) => {
     e.preventDefault()
-    const videoId = getYoutubeId(url)
-    if (!videoId) {
-      alert('Invalid YouTube URL')
+    setErrorMessage(null)
+    setAdding(true)
+
+    const response = await fetch('/api/admin/videos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pageId,
+        url,
+        title,
+      }),
+    })
+
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { message?: string } | null
+      setErrorMessage(payload?.message || 'Unable to add video.')
+      setAdding(false)
       return
     }
 
-    const { error } = await supabase.from('videos').insert({
-      page_id: pageId,
-      provider: 'youtube',
-      provider_id: videoId,
-      title,
-    })
-
-    if (error) alert(error.message)
-    else {
-      setUrl('')
-      setTitle('')
+    const payload = (await response.json()) as { video?: VideoItem }
+    setUrl('')
+    setTitle('')
+    if (payload.video) {
+      setVideos((current) => [...current, payload.video!])
+    } else {
       fetchVideos()
     }
+    setAdding(false)
   }
 
   const deleteVideo = async (id: string) => {
-    await supabase.from('videos').delete().eq('id', id)
-    fetchVideos()
+    if (deletingId) return
+    const previous = videos
+    setDeletingId(id)
+    setVideos((current) => current.filter((video) => video.id !== id))
+
+    const response = await fetch(`/api/admin/videos/${id}`, { method: 'DELETE' })
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { message?: string } | null
+      setErrorMessage(payload?.message || 'Unable to delete video.')
+      setVideos(previous)
+      setDeletingId(null)
+      return
+    }
+    setErrorMessage(null)
+    setDeletingId(null)
   }
 
   if (loading) return <div className="text-sm text-muted-foreground">Loading videos...</div>
@@ -80,10 +110,11 @@ export function VideoManager({ pageId }: VideoManagerProps) {
         />
         <div className="flex gap-2">
           <Input className="flex-1" placeholder="Video Title (Optional)" value={title} onChange={(e) => setTitle(e.target.value)} />
-          <Button type="submit" size="icon" aria-label="Add video">
-            <Plus className="h-4 w-4" />
+          <Button type="submit" size="icon" aria-label="Add video" disabled={adding}>
+            {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
           </Button>
         </div>
+        {errorMessage && <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{errorMessage}</p>}
       </form>
 
       <div className="space-y-2">
@@ -96,8 +127,8 @@ export function VideoManager({ pageId }: VideoManagerProps) {
               <p className="truncate text-sm font-medium">{video.title || 'Untitled Video'}</p>
               <p className="truncate text-xs text-muted-foreground">ID: {video.provider_id}</p>
             </div>
-            <Button variant="ghost" size="sm" onClick={() => deleteVideo(video.id)} aria-label="Delete video">
-              <Trash2 className="h-4 w-4 text-destructive" />
+            <Button variant="ghost" size="sm" onClick={() => deleteVideo(video.id)} aria-label="Delete video" disabled={deletingId === video.id}>
+              {deletingId === video.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 text-destructive" />}
             </Button>
           </div>
         ))}

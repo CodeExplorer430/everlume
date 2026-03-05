@@ -1,12 +1,20 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import { useMemo, useState } from 'react'
 import { QRCodeGenerator } from '@/components/admin/QRCodeGenerator'
 
+interface PageRecord {
+  slug: string
+}
+
+interface RedirectRecord {
+  id: string
+  shortcode: string
+}
+
 interface AdminQRCodeSectionProps {
-  page: any
-  redirects: any[]
+  page: PageRecord
+  redirects: RedirectRecord[]
 }
 
 export function AdminQRCodeSection({ page, redirects }: AdminQRCodeSectionProps) {
@@ -14,7 +22,7 @@ export function AdminQRCodeSection({ page, redirects }: AdminQRCodeSectionProps)
 
   const options = useMemo(() => {
     const baseUrl = process.env.NEXT_PUBLIC_SHORT_DOMAIN || window.location.origin
-    const redirectOptions = (redirects || []).map((r: any) => ({
+    const redirectOptions = (redirects || []).map((r) => ({
       key: r.id,
       label: `Short: /r/${r.shortcode}`,
       value: `${baseUrl}/r/${r.shortcode}`,

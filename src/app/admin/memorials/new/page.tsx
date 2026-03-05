@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -15,34 +14,27 @@ export default function NewTributePage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
-  const supabase = createClient()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError(null)
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      setError('You must be logged in')
-      setLoading(false)
-      return
-    }
-
-    const { error: insertError } = await supabase.from('pages').insert({
-      title,
-      slug,
-      full_name: fullName,
-      dob: dob || null,
-      dod: dod || null,
-      owner_id: user.id,
+    const response = await fetch('/api/admin/pages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title,
+        slug,
+        fullName,
+        dob: dob || null,
+        dod: dod || null,
+      }),
     })
 
-    if (insertError) {
-      setError(insertError.message)
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { message?: string } | null
+      setError(payload?.message || 'Unable to create memorial page.')
       setLoading(false)
       return
     }

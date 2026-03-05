@@ -1,8 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { useState, useEffect, useCallback, use, useMemo } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useState, useEffect, useCallback, use } from 'react'
 import { Button } from '@/components/ui/button'
 import { MediaUpload } from '@/components/admin/MediaUpload'
 import { TimelineEditor } from '@/components/admin/TimelineEditor'
@@ -20,28 +18,75 @@ interface PageProps {
   }>
 }
 
+interface MemorialPageRecord {
+  id: string
+  title: string
+  slug: string
+  full_name: string | null
+  dob: string | null
+  dod: string | null
+  privacy: 'public' | 'private'
+  hero_image_url: string | null
+}
+
+interface PhotoRecord {
+  id: string
+  caption: string
+  sort_index: number
+  image_url: string | null
+  thumb_url: string | null
+  cloudinary_public_id: string | null
+}
+
+interface RedirectRecord {
+  id: string
+  shortcode: string
+}
+
 export default function EditTributePage({ params }: PageProps) {
   const { id } = use(params)
-  const [page, setPage] = useState<any>(null)
-  const [photos, setPhotos] = useState<any[]>([])
-  const [redirects, setRedirects] = useState<any[]>([])
+  const [page, setPage] = useState<MemorialPageRecord | null>(null)
+  const [photos, setPhotos] = useState<PhotoRecord[]>([])
+  const [redirects, setRedirects] = useState<RedirectRecord[]>([])
   const [loading, setLoading] = useState(true)
-  const supabase = useMemo(() => createClient(), [])
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const fetchPage = useCallback(async () => {
-    const { data: pageData } = await supabase.from('pages').select('*').eq('id', id).single()
+    setErrorMessage(null)
+    const pageResponse = await fetch(`/api/admin/pages/${id}`, { cache: 'no-store' })
+    if (!pageResponse.ok) {
+      const payload = (await pageResponse.json().catch(() => null)) as { message?: string } | null
+      setErrorMessage(payload?.message || 'Unable to load memorial page.')
+      setPage(null)
+      setRedirects([])
+      setPhotos([])
+      setLoading(false)
+      return
+    }
+    const pagePayload = (await pageResponse.json()) as { page: MemorialPageRecord }
+    setPage(pagePayload.page)
 
-    setPage(pageData)
+    const [redirectsResponse, photosResponse] = await Promise.all([
+      fetch(`/api/admin/pages/${id}/redirects`, { cache: 'no-store' }),
+      fetch(`/api/admin/pages/${id}/photos`, { cache: 'no-store' }),
+    ])
 
-    const { data: redirectData } = await supabase.from('redirects').select('*').ilike('target_url', `%${pageData.slug}%`)
+    if (redirectsResponse.ok) {
+      const redirectsPayload = (await redirectsResponse.json()) as { redirects?: RedirectRecord[] }
+      setRedirects(redirectsPayload.redirects ?? [])
+    } else {
+      setRedirects([])
+    }
 
-    setRedirects(redirectData || [])
+    if (photosResponse.ok) {
+      const photosPayload = (await photosResponse.json()) as { photos?: PhotoRecord[] }
+      setPhotos(photosPayload.photos ?? [])
+    } else {
+      setPhotos([])
+    }
 
-    const { data: photoData } = await supabase.from('photos').select('*').eq('page_id', id).order('sort_index', { ascending: true })
-
-    setPhotos(photoData || [])
     setLoading(false)
-  }, [id, supabase])
+  }, [id])
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -49,12 +94,20 @@ export default function EditTributePage({ params }: PageProps) {
   }, [fetchPage])
 
   const handleSetHero = async (photoUrl: string) => {
-    const { error } = await supabase.from('pages').update({ hero_image_url: photoUrl }).eq('id', id)
+    setErrorMessage(null)
+    const response = await fetch(`/api/admin/pages/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ heroImageUrl: photoUrl }),
+    })
 
-    if (error) alert(error.message)
-    else {
-      setPage({ ...page, hero_image_url: photoUrl })
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { message?: string } | null
+      setErrorMessage(payload?.message || 'Unable to update hero image.')
+      return
     }
+
+    setPage((current) => (current ? { ...current, hero_image_url: photoUrl } : current))
   }
 
   if (loading) return <div className="surface-card p-8 text-sm text-muted-foreground">Loading memorial editor...</div>
@@ -76,6 +129,7 @@ export default function EditTributePage({ params }: PageProps) {
           </Button>
         )}
       </div>
+      {errorMessage && <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{errorMessage}</p>}
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
         <div className="space-y-6">
