@@ -14,13 +14,13 @@ export function QRCodeGenerator({ url }: QRCodeGeneratorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
-    QRCode.toString(url, { type: 'svg', errorCorrectionLevel: 'H' }, (err, string) => {
+    QRCode.toString(url, { type: 'svg', errorCorrectionLevel: 'H', margin: 2 }, (err, string) => {
       if (!err) setSvg(string)
     })
 
     if (canvasRef.current) {
       QRCode.toCanvas(canvasRef.current, url, {
-        width: 1200,
+        width: 2048,
         margin: 2,
         errorCorrectionLevel: 'H',
       })
@@ -31,7 +31,7 @@ export function QRCodeGenerator({ url }: QRCodeGeneratorProps) {
     const blob = new Blob([svg], { type: 'image/svg+xml' })
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
-    link.download = `everlume-qr-${url.split('/').pop()}.svg`
+    link.download = `everlume-qr-print-${url.split('/').pop()}.svg`
     link.click()
   }
 
@@ -39,7 +39,7 @@ export function QRCodeGenerator({ url }: QRCodeGeneratorProps) {
     if (!canvasRef.current) return
     const link = document.createElement('a')
     link.href = canvasRef.current.toDataURL('image/png')
-    link.download = `everlume-qr-${url.split('/').pop()}.png`
+    link.download = `everlume-qr-print-2048-${url.split('/').pop()}.png`
     link.click()
   }
 
@@ -50,15 +50,15 @@ export function QRCodeGenerator({ url }: QRCodeGeneratorProps) {
       <div className="grid grid-cols-1 gap-2">
         <Button variant="outline" size="sm" onClick={downloadSVG}>
           <Download className="mr-2 h-4 w-4" />
-          Download SVG (Vector)
+          Download SVG (Engraving Safe)
         </Button>
         <Button variant="outline" size="sm" onClick={downloadPNG}>
           <Download className="mr-2 h-4 w-4" />
-          Download PNG (300+ DPI)
+          Download PNG (2048px Print)
         </Button>
       </div>
       <canvas ref={canvasRef} style={{ display: 'none' }} />
-      <p className="text-[11px] text-muted-foreground">SVG is best for engraving vendors.</p>
+      <p className="text-[11px] text-muted-foreground">Use SVG for engravers. Use 2048px PNG for print shops.</p>
     </div>
   )
 }

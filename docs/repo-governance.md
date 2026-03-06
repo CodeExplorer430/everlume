@@ -11,7 +11,12 @@ Require these statuses before merge:
 - `lint`
 - `typecheck`
 - `unit_coverage`
-- `e2e`
+- `worker_tests`
+- `e2e_webpack`
+- `e2e_turbopack`
+- `a11y`
+- `launch_readiness`
+- `perf_a11y_gate`
 - `build`
 
 ## GitHub Settings Checklist

@@ -34,7 +34,7 @@ export function LoginScreen() {
   }
 
   return (
-    <div className="min-h-screen px-4 py-8">
+    <main id="main-content" className="min-h-screen px-4 py-8">
       <div className="page-container grid gap-6 md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] md:items-stretch">
         <section className="surface-card hidden p-8 md:block">
           <div className="flex h-full flex-col justify-between">
@@ -99,7 +99,11 @@ export function LoginScreen() {
               />
             </div>
 
-            {error && <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>}
+            {error && (
+              <div role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {error}
+              </div>
+            )}
 
             <Button type="submit" className="mt-1 w-full" disabled={loading}>
               {loading ? 'Signing in...' : 'Sign in to Admin'}
@@ -114,6 +118,6 @@ export function LoginScreen() {
           </p>
         </section>
       </div>
-    </div>
+    </main>
   )
 }

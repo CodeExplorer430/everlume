@@ -362,6 +362,13 @@ CREATE TABLE IF NOT EXISTS redirects (
 - This document is intended as the single source of truth for feature and technical requirements. Use it to guide scoping, sprint planning, and acceptance testing.
 - If you’d like, I can now generate one or more of the following artifacts from this doc: a starter Next.js repo scaffold, Supabase migration SQL file, Prisma schema, backend API OpenAPI spec, or admin UI wireframes.
 
+## Implementation Status (2026-03-06)
+- Role-based admin API authorization implemented (`viewer`/`editor`/`admin`) via shared guard in `src/lib/server/admin-auth.ts`.
+- Private media flow implemented for `privacy=private` pages using short-lived signed proxy URLs.
+- Guestbook anti-abuse upgraded with durable rate-limit adapter support (Upstash) plus optional CAPTCHA verification.
+- Admin mutation audit logging implemented with `admin_audit_logs` migration and `/api/admin/audit-logs` endpoint.
+- RLS hardening migration added for `admin_audit_logs` and stricter `profiles` read/update policies.
+
 ---
 
 *End of requirements document.*

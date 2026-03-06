@@ -1,4 +1,5 @@
 import { assertPageOwnership, databaseError, forbidden, requireAdminUser } from '@/lib/server/admin-auth'
+import { logAdminAudit } from '@/lib/server/admin-audit'
 import { getYoutubeId } from '@/lib/server/youtube'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -25,9 +26,9 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const auth = await requireAdminUser()
+  const auth = await requireAdminUser({ minRole: 'editor' })
   if (!auth.ok) return auth.response
-  const { supabase, userId } = auth
+  const { supabase, userId, role } = auth
 
   const { pageId, url, title } = parsed.data
   const videoId = getYoutubeId(url)
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ code: 'INVALID_VIDEO_URL', message: 'Invalid YouTube URL.' }, { status: 400 })
   }
 
-  const ownsPage = await assertPageOwnership(supabase, pageId, userId)
+  const ownsPage = await assertPageOwnership(supabase, pageId, userId, role)
   if (!ownsPage) return forbidden('You do not have access to this page.')
 
   const { data, error } = await supabase
@@ -53,6 +54,14 @@ export async function POST(request: NextRequest) {
   if (error) {
     return databaseError('Unable to add video right now.')
   }
+
+  await logAdminAudit(supabase, {
+    actorId: userId,
+    action: 'video.create',
+    entity: 'video',
+    entityId: data.id,
+    metadata: { pageId, providerId: data.provider_id },
+  })
 
   return NextResponse.json({ video: data }, { status: 201 })
 }

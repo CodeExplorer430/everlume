@@ -22,7 +22,7 @@ Then set:
 2. Add route: `go.yourdomain.com/*` -> `everlume-redirector`.
 3. Set worker secrets:
    - `SUPABASE_URL`
-   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `SUPABASE_SECRET_KEY` (or legacy `SUPABASE_SERVICE_ROLE_KEY`)
    - `FALLBACK_URL` (temporary public page until Vercel is live)
 4. Set app env:
    - `NEXT_PUBLIC_SHORT_DOMAIN=https://go.yourdomain.com`
@@ -37,11 +37,29 @@ Check:
 - `https://go.yourdomain.com/unknown` -> `404`.
 - `https://go.yourdomain.com/` -> `302` to fallback (if set).
 
+Also verify app-side fallback:
+- `https://app.yourdomain.com/r/unknown` -> `/r/not-found?reason=missing`.
+- `https://app.yourdomain.com/r/test` -> `302` to target URL.
+
 ## 4) Local Validation
 Run before deploy:
 ```bash
 npm run ops:check-prereqs
+npm run ops:check-prereqs:production
 npm run lint
 npm run typecheck
 npm run test:coverage
+npm run test:e2e:webpack
 ```
+
+Production gate note:
+- `ops:check-prereqs:production` enforces durable anti-spam config:
+  - `RATE_LIMIT_BACKEND=upstash`
+  - `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`
+  - `CAPTCHA_ENABLED=1` + `CAPTCHA_SECRET`
+
+## 5) QR Print Validation
+- Generate QR assets from admin memorial editor.
+- Print test one small and one large sample.
+- Scan on iOS and Android.
+- Mark tested short links as `Verified` in Admin Settings.

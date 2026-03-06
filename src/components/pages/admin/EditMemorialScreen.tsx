@@ -35,6 +35,8 @@ interface PhotoRecord {
 interface RedirectRecord {
   id: string
   shortcode: string
+  print_status?: 'unverified' | 'verified'
+  is_active?: boolean
 }
 
 interface EditMemorialScreenProps {

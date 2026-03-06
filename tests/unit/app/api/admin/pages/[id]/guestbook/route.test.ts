@@ -1,6 +1,9 @@
 import { GET } from '@/app/api/admin/pages/[id]/guestbook/route'
 
 const mockGetUser = vi.fn()
+const mockProfileSingle = vi.fn()
+const mockProfileEq = vi.fn(() => ({ single: mockProfileSingle }))
+const mockProfileSelect = vi.fn(() => ({ eq: mockProfileEq }))
 const mockPageSingle = vi.fn()
 const mockPageEqOwner = vi.fn(() => ({ single: mockPageSingle }))
 const mockPageEqId = vi.fn(() => ({ eq: mockPageEqOwner }))
@@ -14,6 +17,7 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
     auth: { getUser: mockGetUser },
     from: (table: string) => {
+      if (table === 'profiles') return { select: mockProfileSelect }
       if (table === 'pages') return { select: mockPageSelect }
       return { select: mockSelect }
     },
@@ -23,8 +27,10 @@ vi.mock('@/lib/supabase/server', () => ({
 describe('GET /api/admin/pages/[id]/guestbook', () => {
   beforeEach(() => {
     mockGetUser.mockReset()
+    mockProfileSingle.mockReset()
     mockPageSingle.mockReset()
     mockOrder.mockReset()
+    mockProfileSingle.mockResolvedValue({ data: { role: 'editor', is_active: true }, error: null })
   })
 
   it('returns unauthorized without user', async () => {

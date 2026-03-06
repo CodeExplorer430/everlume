@@ -1,4 +1,5 @@
 import { databaseError, requireAdminUser } from '@/lib/server/admin-auth'
+import { logAdminAudit } from '@/lib/server/admin-audit'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ code: 'VALIDATION_ERROR', message: 'Please provide valid memorial details.' }, { status: 400 })
   }
 
-  const auth = await requireAdminUser()
+  const auth = await requireAdminUser({ minRole: 'editor' })
   if (!auth.ok) return auth.response
   const { supabase, userId } = auth
 
@@ -47,6 +48,14 @@ export async function POST(request: NextRequest) {
     }
     return databaseError('Unable to create memorial page.')
   }
+
+  await logAdminAudit(supabase, {
+    actorId: userId,
+    action: 'page.create',
+    entity: 'page',
+    entityId: data.id,
+    metadata: { slug: data.slug },
+  })
 
   return NextResponse.json({ page: data }, { status: 201 })
 }

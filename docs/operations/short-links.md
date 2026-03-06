@@ -11,13 +11,22 @@
 
 ## Runtime Secrets
 - `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_SECRET_KEY` (or legacy `SUPABASE_SERVICE_ROLE_KEY`)
 - `FALLBACK_URL`
 
 ## Redirect Rules
-- Valid code -> HTTP 302 redirect to `target_url`
+- Active code (`is_active=true`) -> HTTP 302 redirect to `target_url`
+- Inactive code (`is_active=false`) -> HTTP 404
 - Missing/invalid code -> HTTP 404
 - Root path -> redirect to `FALLBACK_URL` when provided
+
+## App Redirect Route Rules (`/r/[code]`)
+- Active code -> HTTP 302 to `target_url` (short cache).
+- Missing/invalid/disabled code -> redirect to `/r/not-found` with reason query.
+- Redirect records carry:
+  - `is_active` (boolean),
+  - `print_status` (`unverified` | `verified`),
+  - `last_verified_at` (timestamp).
 
 ## DNS
 - Keep DNS managed in Cloudflare.
@@ -41,3 +50,9 @@ Expected:
 - `/test` -> `302` with `Location` target from Supabase `redirects`.
 - `/unknown` -> `404`.
 - `/` -> `302` to `FALLBACK_URL` (if configured).
+
+For app route checks:
+```bash
+curl -I https://app.yourdomain.com/r/test
+curl -I https://app.yourdomain.com/r/unknown
+```

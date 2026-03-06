@@ -18,7 +18,7 @@ describe('AdminShell', () => {
     const user = userEvent.setup()
     render(<AdminShell userEmail="admin@example.com"><div>Child Content</div></AdminShell>)
 
-    const toggle = screen.getByRole('button', { name: '' })
+    const toggle = screen.getByRole('button', { name: /toggle navigation menu/i })
     await user.click(toggle)
     expect(screen.getByText('Create Memorial')).toBeInTheDocument()
   })

@@ -1,0 +1,85 @@
+name: Backup Restore Drill
+
+on:
+  schedule:
+    - cron: "20 4 1 */3 *"
+  workflow_dispatch:
+
+concurrency:
+  group: backup-restore-drill-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  restore-drill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: restore_drill
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d restore_drill"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+      AWS_EC2_METADATA_DISABLED: "true"
+      BACKUP_PREFIX: ${{ vars.BACKUP_PREFIX || 'everlume/db-backups' }}
+      RESTORE_DB_URL: postgresql://postgres:postgres@127.0.0.1:5433/restore_drill
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PostgreSQL client and jq
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client jq
+
+      - name: Find latest backup key
+        id: latest
+        shell: bash
+        run: |
+          key="$(aws --endpoint-url "$R2_ENDPOINT" s3api list-objects-v2 \
+            --bucket "$R2_BUCKET" \
+            --prefix "${BACKUP_PREFIX}/" \
+            --query "reverse(sort_by(Contents,&LastModified))[0].Key" \
+            --output text)"
+          if [[ -z "$key" || "$key" == "None" ]]; then
+            echo "No backup found under prefix ${BACKUP_PREFIX}/"
+            exit 1
+          fi
+          echo "key=${key}" >> "$GITHUB_OUTPUT"
+          echo "Latest backup key: ${key}"
+
+      - name: Download latest backup
+        id: download
+        run: |
+          backup_file="/tmp/latest-backup.sql.gz"
+          aws --endpoint-url "$R2_ENDPOINT" s3 cp "s3://${R2_BUCKET}/${{ steps.latest.outputs.key }}" "$backup_file"
+          echo "backup_file=${backup_file}" >> "$GITHUB_OUTPUT"
+
+      - name: Restore and run smoke checks
+        id: restore
+        env:
+          BACKUP_FILE: ${{ steps.download.outputs.backup_file }}
+        run: |
+          scripts/ops/restore-smoke.sh /tmp/restore-smoke-report.txt
+
+      - name: Upload restore drill report
+        uses: actions/upload-artifact@v4
+        with:
+          name: restore-drill-report-${{ github.run_id }}
+          path: /tmp/restore-smoke-report.txt
+          retention-days: 90

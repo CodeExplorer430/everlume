@@ -52,11 +52,24 @@ jobs:
           name: unit-coverage
           path: coverage/unit
 
-  e2e:
+  worker_tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run test:worker
+
+  e2e_webpack:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
       NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: test_publishable_key
       NEXT_PUBLIC_SUPABASE_ANON_KEY: test_anon_key
       NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: test-cloud
       NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET: test-preset
@@ -74,15 +87,119 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-webpack
           path: |
             playwright-report
             test-results
 
+  e2e_turbopack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: test_publishable_key
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: test_anon_key
+      NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: test-cloud
+      NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET: test-preset
+      NEXT_PUBLIC_SHORT_DOMAIN: https://fam.test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run test:e2e:install
+      - run: npm run test:e2e:turbopack
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-turbopack
+          path: |
+            playwright-report
+            test-results
+
+
+  a11y:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: test_publishable_key
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: test_anon_key
+      NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: test-cloud
+      NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET: test-preset
+      NEXT_PUBLIC_SHORT_DOMAIN: https://fam.test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run test:e2e:install
+      - run: npm run test:a11y
+
+  launch_readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: test_publishable_key
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: test_anon_key
+      NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: test-cloud
+      NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET: test-preset
+      NEXT_PUBLIC_SHORT_DOMAIN: https://fam.test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run test:e2e:install
+      - run: npm run test:launch-readiness
+
+  perf_a11y_gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: test_publishable_key
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: test_anon_key
+      NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: test-cloud
+      NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET: test-preset
+      NEXT_PUBLIC_SHORT_DOMAIN: https://fam.test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      - run: npm ci
+      - run: mkdir -p .lighthouseci
+      - run: npm run test:perf
+      - name: Upload Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-reports
+          path: .lighthouseci
+          if-no-files-found: ignore
+
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: [lint, typecheck, unit_coverage]
+    needs: [lint, typecheck, unit_coverage, worker_tests, e2e_webpack, e2e_turbopack, a11y, launch_readiness, perf_a11y_gate]
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: test_publishable_key
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: test_anon_key
+      NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: test-cloud
+      NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET: test-preset
+      NEXT_PUBLIC_SHORT_DOMAIN: https://fam.test
+      NEXT_TELEMETRY_DISABLED: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

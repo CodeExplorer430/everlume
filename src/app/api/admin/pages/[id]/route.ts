@@ -1,4 +1,6 @@
 import { assertPageOwnership, databaseError, forbidden, getOwnedPage, requireAdminUser } from '@/lib/server/admin-auth'
+import { logAdminAudit } from '@/lib/server/admin-audit'
+import { hashPagePassword } from '@/lib/server/page-password'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -13,8 +15,12 @@ const pageUpdateSchema = z
     fullName: z.string().trim().max(120).nullable().optional(),
     dob: z.string().nullable().optional(),
     dod: z.string().nullable().optional(),
-    privacy: z.enum(['public', 'private']).optional(),
+    accessMode: z.enum(['public', 'private', 'password']).optional(),
+    password: z.string().min(6).max(128).optional(),
     heroImageUrl: z.string().trim().url().nullable().optional(),
+  })
+  .refine((value) => value.accessMode !== 'password' || Boolean(value.password), {
+    message: 'Password is required when access mode is password.',
   })
   .refine((value) => Object.keys(value).length > 0, { message: 'No fields to update.' })
 
@@ -25,12 +31,12 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
     return NextResponse.json({ code: 'VALIDATION_ERROR', message: 'Invalid page id.' }, { status: 400 })
   }
 
-  const auth = await requireAdminUser()
+  const auth = await requireAdminUser({ minRole: 'viewer' })
   if (!auth.ok) return auth.response
-  const { supabase, userId } = auth
+  const { supabase, userId, role } = auth
 
   const pageId = parsedParams.data.id
-  const page = await getOwnedPage(supabase, pageId, userId)
+  const page = await getOwnedPage(supabase, pageId, userId, role)
   const error = !page
 
   if (error || !page) return forbidden('You do not have access to this page.')
@@ -57,12 +63,12 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     return NextResponse.json({ code: 'VALIDATION_ERROR', message: 'Please check page details and try again.' }, { status: 400 })
   }
 
-  const auth = await requireAdminUser()
+  const auth = await requireAdminUser({ minRole: 'editor' })
   if (!auth.ok) return auth.response
-  const { supabase, userId } = auth
+  const { supabase, userId, role } = auth
 
   const pageId = parsedParams.data.id
-  const ownsPage = await assertPageOwnership(supabase, pageId, userId)
+  const ownsPage = await assertPageOwnership(supabase, pageId, userId, role)
   if (!ownsPage) return forbidden('You do not have access to this page.')
 
   const body = parsedPayload.data
@@ -72,7 +78,15 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     full_name: body.fullName,
     dob: body.dob,
     dod: body.dod,
-    privacy: body.privacy,
+    access_mode: body.accessMode,
+    privacy:
+      body.accessMode === 'public'
+        ? 'public'
+        : body.accessMode === 'private' || body.accessMode === 'password'
+          ? 'private'
+          : undefined,
+    password_hash: body.password ? hashPagePassword(body.password) : undefined,
+    password_updated_at: body.password ? new Date().toISOString() : undefined,
     hero_image_url: body.heroImageUrl,
     updated_at: new Date().toISOString(),
   }
@@ -81,6 +95,14 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
   if (error) {
     return databaseError('Unable to update page.')
   }
+
+  await logAdminAudit(supabase, {
+    actorId: userId,
+    action: 'page.update',
+    entity: 'page',
+    entityId: pageId,
+    metadata: { fields: Object.keys(parsedPayload.data) },
+  })
 
   return NextResponse.json({ ok: true }, { status: 200 })
 }

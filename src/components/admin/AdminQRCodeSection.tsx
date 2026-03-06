@@ -10,6 +10,8 @@ interface PageRecord {
 interface RedirectRecord {
   id: string
   shortcode: string
+  is_active?: boolean
+  print_status?: 'unverified' | 'verified'
 }
 
 interface AdminQRCodeSectionProps {
@@ -22,14 +24,16 @@ export function AdminQRCodeSection({ page, redirects }: AdminQRCodeSectionProps)
 
   const options = useMemo(() => {
     const baseUrl = process.env.NEXT_PUBLIC_SHORT_DOMAIN || window.location.origin
-    const redirectOptions = (redirects || []).map((r) => ({
+    const redirectOptions = (redirects || [])
+      .filter((r) => r.is_active !== false)
+      .map((r) => ({
       key: r.id,
-      label: `Short: /r/${r.shortcode}`,
+      label: `Short: /r/${r.shortcode}${r.print_status === 'verified' ? ' (verified)' : ''}`,
       value: `${baseUrl}/r/${r.shortcode}`,
-    }))
+      }))
 
-    return [...redirectOptions, { key: 'direct', label: `Direct: /memorials/${page.slug}`, value: `${baseUrl}/memorials/${page.slug}` }]
-  }, [page.slug, redirects])
+    return redirectOptions
+  }, [redirects])
 
   const qrUrl = selectedUrl || options[0]?.value || ''
 
@@ -56,7 +60,18 @@ export function AdminQRCodeSection({ page, redirects }: AdminQRCodeSectionProps)
             </select>
           </div>
         )}
-        <QRCodeGenerator url={qrUrl} />
+        {options.length > 0 ? (
+          <>
+            <p className="w-full rounded-md border border-border bg-secondary/60 px-3 py-2 text-xs text-muted-foreground">
+              QR links are generated from your short-domain redirect codes only.
+            </p>
+            <QRCodeGenerator url={qrUrl} />
+          </>
+        ) : (
+          <p className="w-full rounded-md border border-dashed border-border px-3 py-4 text-center text-sm text-muted-foreground">
+            Create and activate a short link in Settings before generating a plaque QR for {page.slug}.
+          </p>
+        )}
       </div>
     </div>
   )
