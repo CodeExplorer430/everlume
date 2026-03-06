@@ -187,6 +187,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [lint, typecheck, unit_coverage, worker_tests, e2e_webpack, e2e_turbopack, a11y, launch_readiness, perf_a11y_gate]
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: test_anon_key
+      NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: test-cloud
+      NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET: test-preset
+      NEXT_PUBLIC_SHORT_DOMAIN: https://fam.test
+      NEXT_TELEMETRY_DISABLED: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

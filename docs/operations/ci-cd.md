@@ -16,6 +16,9 @@ Checks:
 - Lighthouse perf/a11y budget gate (`npm run test:perf`)
 - `npm run build`
 
+Build env note:
+- CI build uses non-secret placeholder public env values (`NEXT_PUBLIC_*`) so prerender paths that touch Supabase SSR wrappers do not fail during `next build`.
+
 Security/reliability note:
 - Admin/public write flows are validated server-side via `/api/*` endpoints and are covered by unit route tests in CI.
 - Admin media mutations (photo metadata create, caption update, and delete) are also API-only and route-tested.
