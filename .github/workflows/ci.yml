@@ -64,7 +64,7 @@ jobs:
       - run: npm ci
       - run: npm run test:worker
 
-  e2e:
+  e2e_webpack:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -86,7 +86,34 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-webpack
+          path: |
+            playwright-report
+            test-results
+
+  e2e_turbopack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: test_anon_key
+      NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: test-cloud
+      NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET: test-preset
+      NEXT_PUBLIC_SHORT_DOMAIN: https://fam.test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run test:e2e:install
+      - run: npm run test:e2e:turbopack
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-turbopack
           path: |
             playwright-report
             test-results
@@ -146,6 +173,7 @@ jobs:
           node-version: '20.x'
           cache: 'npm'
       - run: npm ci
+      - run: mkdir -p .lighthouseci
       - run: npm run test:perf
       - name: Upload Lighthouse reports
         if: always()
@@ -153,11 +181,12 @@ jobs:
         with:
           name: lighthouse-reports
           path: .lighthouseci
+          if-no-files-found: ignore
 
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: [lint, typecheck, unit_coverage, worker_tests, a11y, launch_readiness, perf_a11y_gate]
+    needs: [lint, typecheck, unit_coverage, worker_tests, e2e_webpack, e2e_turbopack, a11y, launch_readiness, perf_a11y_gate]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

@@ -59,19 +59,8 @@ test('admin manages short links and sees QR section on memorial edit', async ({ 
       return
     }
 
-    if (req.method() === 'GET' && /\/api\/admin\/pages\/.+\/redirects$/.test(url)) {
-      await fulfillJson(route, { redirects: [{ id: 'r-1', shortcode: 'grandma', print_status: 'verified', is_active: true }] })
-      return
-    }
-
     if (req.method() === 'GET' && /\/api\/admin\/pages\/[^/]+\/redirects$/.test(url)) {
-      await fulfillJson(route, {
-        redirects: [
-          { id: 'r-1', shortcode: 'grandma', print_status: 'verified', is_active: true },
-          { id: 'r-2', shortcode: 'legacy-code', print_status: 'unverified', is_active: false },
-          { id: 'r-3', shortcode: 'nanay', print_status: 'unverified', is_active: true },
-        ],
-      })
+      await fulfillJson(route, { redirects: [{ id: 'r-1', shortcode: 'grandma', print_status: 'verified', is_active: true }] })
       return
     }
 
@@ -122,7 +111,18 @@ test('qr selector excludes inactive short links', async ({ page }) => {
     const req = route.request()
     const url = req.url()
 
-    if (req.method() === 'GET' && /\/api\/admin\/pages\/.+$/.test(url)) {
+    if (req.method() === 'GET' && /\/api\/admin\/pages\/[^/]+\/redirects$/.test(url)) {
+      await fulfillJson(route, {
+        redirects: [
+          { id: 'r-1', shortcode: 'grandma', print_status: 'verified', is_active: true },
+          { id: 'r-2', shortcode: 'legacy-code', print_status: 'unverified', is_active: false },
+          { id: 'r-3', shortcode: 'nanay', print_status: 'unverified', is_active: true },
+        ],
+      })
+      return
+    }
+
+    if (req.method() === 'GET' && /\/api\/admin\/pages\/[^/]+$/.test(url)) {
       await fulfillJson(route, {
         page: {
           id: '550e8400-e29b-41d4-a716-446655440000',

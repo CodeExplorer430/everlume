@@ -90,7 +90,7 @@ npm run test:e2e:webpack
 Coverage gates are currently enforced at 10% global thresholds in CI.
 
 ## CI/CD
-- **GitHub Actions CI:** lint, typecheck, unit coverage, worker tests, e2e, a11y, launch-readiness, Lighthouse perf/a11y gate, and build on PRs/pushes (`.github/workflows/ci.yml`)
+- **GitHub Actions CI:** lint, typecheck, unit coverage, worker tests, e2e (webpack + turbopack required), a11y, launch-readiness, Lighthouse perf/a11y gate, and build on PRs/pushes (`.github/workflows/ci.yml`)
 - **Vercel deploys:** previews on PRs and production on merge to main branch
 - **Cloudflare Worker deploy:** `.github/workflows/deploy-worker.yml`
 - **Cloudinary prewarm (optional):** `.github/workflows/prewarm-media.yml`

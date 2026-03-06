@@ -24,6 +24,7 @@
 - `npm run test:coverage`: Run unit tests with coverage thresholds.
 - `npm run test:e2e:install`: Install Chromium for Playwright.
 - `npm run test:e2e`: Run Playwright end-to-end tests.
+- `npm run test:e2e:turbopack`: Run Playwright end-to-end tests against Turbopack dev server.
 - `npm run test:launch-readiness`: Run redirect-health and QR short-link launch smoke checks.
 - `npm run test:perf`: Run Lighthouse CI performance + accessibility budgets.
 - `npm run ops:media:prewarm`: Run optional Cloudinary transform prewarm and record run status.

@@ -10,7 +10,8 @@ Checks:
 - `npm run lint`
 - `npm run typecheck`
 - `npm run test:coverage`
-- `npm run test:e2e`
+- `npm run test:e2e` (webpack baseline)
+- `npm run test:e2e:turbopack` (required parity run)
 - launch-readiness smoke (`/r/[code]` unit + short-links e2e flow)
 - Lighthouse perf/a11y budget gate (`npm run test:perf`)
 - `npm run build`
@@ -21,7 +22,7 @@ Security/reliability note:
 - Admin client reads are also API-mediated (`/api/admin/*`) for a single trust boundary and explicit ownership checks.
 
 This workflow should be configured as a required status check before merge.
-Required statuses: `lint`, `typecheck`, `unit_coverage`, `worker_tests`, `e2e`, `a11y`, `launch_readiness`, `perf_a11y_gate`, `build`.
+Required statuses: `lint`, `typecheck`, `unit_coverage`, `worker_tests`, `e2e_webpack`, `e2e_turbopack`, `a11y`, `launch_readiness`, `perf_a11y_gate`, `build`.
 
 ### 2) Next.js Deployment (Vercel)
 Vercel Git integration handles deployments:
@@ -111,6 +112,6 @@ Required secrets/vars:
 ## Branch Protection
 Recommended for `main`:
 - Require PR reviews.
-- Require status checks: `lint`, `typecheck`, `unit_coverage`, `worker_tests`, `e2e`, `a11y`, `launch_readiness`, `build`.
+- Require status checks: `lint`, `typecheck`, `unit_coverage`, `worker_tests`, `e2e_webpack`, `e2e_turbopack`, `a11y`, `launch_readiness`, `build`.
 - Include `perf_a11y_gate` in required status checks for performance/accessibility enforcement.
 - Restrict direct pushes.
