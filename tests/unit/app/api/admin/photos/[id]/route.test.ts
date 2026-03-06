@@ -1,6 +1,9 @@
 import { DELETE, PATCH } from '@/app/api/admin/photos/[id]/route'
 
 const mockGetUser = vi.fn()
+const mockProfileSingle = vi.fn()
+const mockProfileEq = vi.fn(() => ({ single: mockProfileSingle }))
+const mockProfileSelect = vi.fn(() => ({ eq: mockProfileEq }))
 
 const mockPhotoSingle = vi.fn()
 const mockPhotoEq = vi.fn(() => ({ single: mockPhotoSingle }))
@@ -20,6 +23,7 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
     auth: { getUser: mockGetUser },
     from: (table: string) => {
+      if (table === 'profiles') return { select: mockProfileSelect }
       if (table === 'pages') return { select: mockPageSelect }
       if (table === 'photos') {
         return {
@@ -36,9 +40,11 @@ vi.mock('@/lib/supabase/server', () => ({
 describe('PATCH /api/admin/photos/[id]', () => {
   beforeEach(() => {
     mockGetUser.mockReset()
+    mockProfileSingle.mockReset()
     mockPhotoSingle.mockReset()
     mockPageSingle.mockReset()
     mockUpdateEq.mockReset()
+    mockProfileSingle.mockResolvedValue({ data: { role: 'editor', is_active: true }, error: null })
   })
 
   it('returns unauthorized without user', async () => {
@@ -75,9 +81,11 @@ describe('PATCH /api/admin/photos/[id]', () => {
 describe('DELETE /api/admin/photos/[id]', () => {
   beforeEach(() => {
     mockGetUser.mockReset()
+    mockProfileSingle.mockReset()
     mockPhotoSingle.mockReset()
     mockPageSingle.mockReset()
     mockDeleteEq.mockReset()
+    mockProfileSingle.mockResolvedValue({ data: { role: 'editor', is_active: true }, error: null })
   })
 
   it('deletes photo for authorized owner', async () => {

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { ExternalLink, PenSquare } from 'lucide-react'
 
 interface Page {
   id: string
@@ -30,11 +31,15 @@ export function TributeList({ pages }: TributeListProps) {
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" asChild>
                     <Link href={`/memorials/${page.slug}`} target="_blank">
+                      <ExternalLink className="h-3.5 w-3.5" />
                       View
                     </Link>
                   </Button>
                   <Button size="sm" asChild>
-                    <Link href={`/admin/memorials/${page.id}`}>Edit</Link>
+                    <Link href={`/admin/memorials/${page.id}`}>
+                      <PenSquare className="h-3.5 w-3.5" />
+                      Edit
+                    </Link>
                   </Button>
                 </div>
               </div>

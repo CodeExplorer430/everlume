@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { format } from 'date-fns'
-import { Check, Loader2, Trash2, X } from 'lucide-react'
+import { Check, Loader2, RefreshCw, Trash2, X } from 'lucide-react'
 
 type Entry = {
   id: string
@@ -21,6 +21,7 @@ export function GuestbookModerationScreen() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const fetchEntries = useCallback(async () => {
+    setLoading(true)
     const response = await fetch('/api/admin/guestbook', { cache: 'no-store' })
     if (!response.ok) {
       const payload = (await response.json().catch(() => null)) as { message?: string } | null
@@ -32,6 +33,7 @@ export function GuestbookModerationScreen() {
 
     const payload = (await response.json()) as { entries?: Entry[] }
     setEntries(payload.entries ?? [])
+    setErrorMessage(null)
     setLoading(false)
   }, [])
 
@@ -99,11 +101,20 @@ export function GuestbookModerationScreen() {
 
   return (
     <div className="space-y-5">
-      <div className="space-y-1">
-        <h2 className="text-2xl font-semibold">Guestbook Moderation</h2>
-        <p className="text-sm text-muted-foreground">Approve or remove messages before they appear publicly.</p>
-      </div>
-      {errorMessage && <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{errorMessage}</p>}
+      <section className="surface-card space-y-1 p-6">
+        <h2 className="text-3xl font-semibold tracking-tight">Guestbook Moderation</h2>
+        <p className="text-sm text-muted-foreground">Approve, unapprove, or remove messages before they appear publicly.</p>
+      </section>
+
+      {errorMessage && (
+        <div className="surface-card flex flex-col gap-3 border-destructive/30 p-4 text-sm text-destructive sm:flex-row sm:items-center sm:justify-between">
+          <p>{errorMessage}</p>
+          <Button variant="outline" size="sm" onClick={fetchEntries}>
+            <RefreshCw className="h-4 w-4" />
+            Retry
+          </Button>
+        </div>
+      )}
 
       <div className="surface-card overflow-hidden">
         <div className="overflow-x-auto">
@@ -130,7 +141,7 @@ export function GuestbookModerationScreen() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="font-medium">{entry.name}</div>
-                      <div className="text-xs text-muted-foreground">{entry.pages?.title}</div>
+                      <div className="text-xs text-muted-foreground">{entry.pages?.title || 'Untitled page'}</div>
                     </td>
                     <td className="px-4 py-3">
                       <p className="line-clamp-3 leading-relaxed text-foreground/95" title={entry.message}>
@@ -141,7 +152,13 @@ export function GuestbookModerationScreen() {
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-2">
                         {!entry.is_approved ? (
-                          <Button variant="ghost" size="sm" onClick={() => approveEntry(entry.id)} disabled={pendingAction?.id === entry.id}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => approveEntry(entry.id)}
+                            disabled={pendingAction?.id === entry.id}
+                            aria-label={`Approve guestbook entry from ${entry.name}`}
+                          >
                             {pendingAction?.id === entry.id && pendingAction.kind === 'approve' ? (
                               <Loader2 className="h-4 w-4 animate-spin text-emerald-700" />
                             ) : (
@@ -149,7 +166,13 @@ export function GuestbookModerationScreen() {
                             )}
                           </Button>
                         ) : (
-                          <Button variant="ghost" size="sm" onClick={() => unapproveEntry(entry.id)} disabled={pendingAction?.id === entry.id}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => unapproveEntry(entry.id)}
+                            disabled={pendingAction?.id === entry.id}
+                            aria-label={`Unapprove guestbook entry from ${entry.name}`}
+                          >
                             {pendingAction?.id === entry.id && pendingAction.kind === 'unapprove' ? (
                               <Loader2 className="h-4 w-4 animate-spin text-amber-700" />
                             ) : (
@@ -157,7 +180,13 @@ export function GuestbookModerationScreen() {
                             )}
                           </Button>
                         )}
-                        <Button variant="ghost" size="sm" onClick={() => deleteEntry(entry.id)} disabled={pendingAction?.id === entry.id}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteEntry(entry.id)}
+                          disabled={pendingAction?.id === entry.id}
+                          aria-label={`Delete guestbook entry from ${entry.name}`}
+                        >
                           {pendingAction?.id === entry.id && pendingAction.kind === 'delete' ? (
                             <Loader2 className="h-4 w-4 animate-spin text-destructive" />
                           ) : (
@@ -171,7 +200,7 @@ export function GuestbookModerationScreen() {
               ) : (
                 <tr>
                   <td colSpan={5} className="px-4 py-10 text-center text-sm italic text-muted-foreground">
-                    No guestbook entries found.
+                    No guestbook entries found yet.
                   </td>
                 </tr>
               )}

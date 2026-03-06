@@ -53,7 +53,10 @@ export function GuestbookForm({ pageId }: GuestbookFormProps) {
 
   if (submitted) {
     return (
-      <div className="surface-card space-y-2 border-[color:var(--success)]/35 bg-[color:var(--success)]/10 p-6 text-center">
+      <div
+        className="surface-card space-y-2 border-[color:var(--success)]/35 bg-[color:var(--success)]/10 p-6 text-center"
+        aria-live="polite"
+      >
         <h4 className="text-lg font-semibold text-[color:var(--success)]">Thank you for sharing</h4>
         <p className="text-sm text-[color:var(--stone-ink)]">Your message has been submitted and will appear after moderation.</p>
         <Button
@@ -111,7 +114,11 @@ export function GuestbookForm({ pageId }: GuestbookFormProps) {
         />
       </div>
 
-      {error && <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+      {error && (
+        <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {error}
+        </p>
+      )}
 
       <Button type="submit" className="w-full" disabled={loading}>
         {loading ? 'Submitting...' : 'Post to Guestbook'}

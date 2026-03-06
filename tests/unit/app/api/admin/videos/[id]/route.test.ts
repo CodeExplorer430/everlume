@@ -1,6 +1,9 @@
 import { DELETE } from '@/app/api/admin/videos/[id]/route'
 
 const mockGetUser = vi.fn()
+const mockProfileSingle = vi.fn()
+const mockProfileEq = vi.fn(() => ({ single: mockProfileSingle }))
+const mockProfileSelect = vi.fn(() => ({ eq: mockProfileEq }))
 const mockVideoSingle = vi.fn()
 const mockVideoEq = vi.fn(() => ({ single: mockVideoSingle }))
 const mockVideoSelect = vi.fn(() => ({ eq: mockVideoEq }))
@@ -17,6 +20,7 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
     auth: { getUser: mockGetUser },
     from: (table: string) => {
+      if (table === 'profiles') return { select: mockProfileSelect }
       if (table === 'videos') {
         return { select: mockVideoSelect, delete: mockDelete }
       }
@@ -28,9 +32,11 @@ vi.mock('@/lib/supabase/server', () => ({
 describe('DELETE /api/admin/videos/[id]', () => {
   beforeEach(() => {
     mockGetUser.mockReset()
+    mockProfileSingle.mockReset()
     mockVideoSingle.mockReset()
     mockPageSingle.mockReset()
     mockDeleteEq.mockReset()
+    mockProfileSingle.mockResolvedValue({ data: { role: 'editor', is_active: true }, error: null })
   })
 
   it('returns forbidden for non-owner', async () => {

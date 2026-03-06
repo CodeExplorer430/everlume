@@ -1,0 +1,5 @@
+{
+  "http://127.0.0.1:4173/": "https://storage.googleapis.com/lighthouse-infrastructure.appspot.com/reports/1772764441496-18119.report.html",
+  "http://127.0.0.1:4173/login": "https://storage.googleapis.com/lighthouse-infrastructure.appspot.com/reports/1772764442995-45.report.html",
+  "http://127.0.0.1:4173/r/not-found?reason=missing": "https://storage.googleapis.com/lighthouse-infrastructure.appspot.com/reports/1772764444396-68286.report.html"
+}

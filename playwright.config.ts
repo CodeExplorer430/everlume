@@ -4,9 +4,9 @@ const webServerCommand = process.env.PLAYWRIGHT_WEB_SERVER_COMMAND || 'npm run d
 
 export default defineConfig({
   testDir: './tests/e2e',
-  fullyParallel: true,
+  fullyParallel: false,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: 1,
   reporter: [['html', { outputFolder: 'playwright-report' }], ['list']],
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:4173',
@@ -17,6 +17,10 @@ export default defineConfig({
   webServer: {
     command: webServerCommand,
     cwd: __dirname,
+    env: {
+      ...process.env,
+      E2E_BYPASS_ADMIN_AUTH: process.env.E2E_BYPASS_ADMIN_AUTH || '1',
+    },
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: false,
     stdout: 'pipe',

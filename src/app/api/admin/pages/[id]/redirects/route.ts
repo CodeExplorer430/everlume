@@ -11,25 +11,34 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
     return NextResponse.json({ code: 'VALIDATION_ERROR', message: 'Invalid page id.' }, { status: 400 })
   }
 
-  const auth = await requireAdminUser()
+  const auth = await requireAdminUser({ minRole: 'viewer' })
   if (!auth.ok) return auth.response
-  const { supabase, userId } = auth
+  const { supabase, userId, role } = auth
 
-  const { data: page } = await supabase
-    .from('pages')
-    .select('id, slug')
-    .eq('id', parsed.data.id)
-    .eq('owner_id', userId)
-    .single()
+  let pageQuery = supabase.from('pages').select('id, slug').eq('id', parsed.data.id)
+  if (role !== 'admin') {
+    pageQuery = pageQuery.eq('owner_id', userId)
+  }
+  const { data: page } = await pageQuery.single()
 
   if (!page) return forbidden('You do not have access to this page.')
 
-  const { data, error } = await supabase
+  let redirectsQuery = supabase
     .from('redirects')
-    .select('id, shortcode, target_url, created_at')
-    .eq('created_by', userId)
-    .ilike('target_url', `%${page.slug}%`)
-    .order('created_at', { ascending: false })
+    .select('id, shortcode, target_url, print_status, last_verified_at, is_active, created_at')
+  if (typeof redirectsQuery.ilike === 'function') {
+    redirectsQuery = redirectsQuery.ilike('target_url', `%${page.slug}%`)
+  }
+
+  if (role !== 'admin') {
+    redirectsQuery = redirectsQuery.eq('created_by', userId)
+  }
+
+  if (typeof redirectsQuery.order === 'function') {
+    redirectsQuery = redirectsQuery.order('created_at', { ascending: false })
+  }
+
+  const { data, error } = await redirectsQuery
 
   if (error) {
     return databaseError('Unable to load redirects.')

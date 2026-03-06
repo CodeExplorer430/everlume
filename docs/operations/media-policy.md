@@ -21,3 +21,8 @@
 
 ## Backup Policy
 - Keep original masters in shared Google Drive for family handover and disaster recovery.
+
+## Optional Optimization Prewarm
+- Use `npm run ops:media:prewarm` (or the scheduled workflow) to warm common Cloudinary transforms.
+- Enable this only when needed with `MEDIA_PREWARM_ENABLED=1`.
+- Review `media_optimization_runs` status entries after each run.

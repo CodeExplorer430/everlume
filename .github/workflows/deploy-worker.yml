@@ -19,6 +19,28 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      - run: npm ci
+
+      - name: Production prereq/security gate
+        run: npm run ops:check-prereqs:production
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: ${{ secrets.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME }}
+          NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET: ${{ secrets.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET }}
+          NEXT_PUBLIC_SHORT_DOMAIN: ${{ vars.NEXT_PUBLIC_SHORT_DOMAIN || secrets.NEXT_PUBLIC_SHORT_DOMAIN }}
+          RATE_LIMIT_BACKEND: upstash
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          CAPTCHA_ENABLED: '1'
+          CAPTCHA_SECRET: ${{ secrets.CAPTCHA_SECRET }}
+
+      - name: Run worker unit tests
+        run: npm run test:worker
 
       - name: Deploy redirect worker
         uses: cloudflare/wrangler-action@v3

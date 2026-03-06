@@ -1,4 +1,5 @@
 import { assertOwnedRowByPageId, databaseError, forbidden, requireAdminUser } from '@/lib/server/admin-auth'
+import { logAdminAudit } from '@/lib/server/admin-audit'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -13,17 +14,24 @@ export async function POST(_request: NextRequest, context: { params: Promise<{ i
     return NextResponse.json({ code: 'VALIDATION_ERROR', message: 'Invalid guestbook entry id.' }, { status: 400 })
   }
 
-  const auth = await requireAdminUser()
+  const auth = await requireAdminUser({ minRole: 'editor' })
   if (!auth.ok) return auth.response
-  const { supabase, userId } = auth
+  const { supabase, userId, role } = auth
 
-  const ownsRow = await assertOwnedRowByPageId(supabase, 'guestbook', parsed.data.id, userId)
+  const ownsRow = await assertOwnedRowByPageId(supabase, 'guestbook', parsed.data.id, userId, role)
   if (!ownsRow) return forbidden('You do not have access to this entry.')
 
   const { error } = await supabase.from('guestbook').update({ is_approved: true }).eq('id', parsed.data.id)
   if (error) {
     return databaseError('Unable to approve entry.')
   }
+
+  await logAdminAudit(supabase, {
+    actorId: userId,
+    action: 'guestbook.approve',
+    entity: 'guestbook',
+    entityId: parsed.data.id,
+  })
 
   return NextResponse.json({ ok: true }, { status: 200 })
 }

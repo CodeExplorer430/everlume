@@ -52,14 +52,14 @@ export function NewMemorialForm() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-5">
-      <div className="space-y-1">
-        <h2 className="text-2xl font-semibold">Create New Memorial</h2>
-        <p className="text-sm text-muted-foreground">Add the core details now. You can enrich the page later.</p>
-      </div>
+    <div className="mx-auto max-w-3xl space-y-6">
+      <section className="surface-card space-y-1 p-6">
+        <h2 className="text-3xl font-semibold tracking-tight">Create New Memorial</h2>
+        <p className="text-sm text-muted-foreground">Start with core information now. You can enrich photos, timeline, and videos next.</p>
+      </section>
 
       <form onSubmit={handleSubmit} className="surface-card space-y-5 p-6">
-        <div className="space-y-4">
+        <div className="grid gap-4">
           <div>
             <label className="mb-1.5 block text-sm font-medium">Page Title</label>
             <Input required value={title} onChange={handleTitleChange} placeholder="In Loving Memory of Jane Doe" />

@@ -52,7 +52,7 @@ export function MemorialPageView({ page, photos, videos, timeline, guestbook }: 
     <div className="min-h-screen pb-14">
       <TributeHero page={page} />
 
-      <main className="page-container space-y-12 py-10 md:space-y-16 md:py-14">
+      <main id="main-content" className="page-container space-y-12 py-10 md:space-y-16 md:py-14">
         <section className="mx-auto max-w-3xl text-center">
           <h2 className="section-title">Our Memories</h2>
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground md:text-base">

@@ -52,6 +52,18 @@ jobs:
           name: unit-coverage
           path: coverage/unit
 
+  worker_tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run test:worker
+
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -79,10 +91,73 @@ jobs:
             playwright-report
             test-results
 
+
+  a11y:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: test_anon_key
+      NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: test-cloud
+      NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET: test-preset
+      NEXT_PUBLIC_SHORT_DOMAIN: https://fam.test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run test:e2e:install
+      - run: npm run test:a11y
+
+  launch_readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: test_anon_key
+      NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: test-cloud
+      NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET: test-preset
+      NEXT_PUBLIC_SHORT_DOMAIN: https://fam.test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run test:e2e:install
+      - run: npm run test:launch-readiness
+
+  perf_a11y_gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: test_anon_key
+      NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: test-cloud
+      NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET: test-preset
+      NEXT_PUBLIC_SHORT_DOMAIN: https://fam.test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run test:perf
+      - name: Upload Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-reports
+          path: .lighthouseci
+
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: [lint, typecheck, unit_coverage]
+    needs: [lint, typecheck, unit_coverage, worker_tests, a11y, launch_readiness, perf_a11y_gate]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

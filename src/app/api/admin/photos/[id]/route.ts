@@ -1,4 +1,5 @@
 import { assertOwnedRowByPageId, databaseError, forbidden, requireAdminUser } from '@/lib/server/admin-auth'
+import { logAdminAudit } from '@/lib/server/admin-audit'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -29,11 +30,11 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     return NextResponse.json({ code: 'VALIDATION_ERROR', message: 'Caption is required.' }, { status: 400 })
   }
 
-  const auth = await requireAdminUser()
+  const auth = await requireAdminUser({ minRole: 'editor' })
   if (!auth.ok) return auth.response
-  const { supabase, userId } = auth
+  const { supabase, userId, role } = auth
 
-  const allowed = await assertOwnedRowByPageId(supabase, 'photos', parsedParams.data.id, userId)
+  const allowed = await assertOwnedRowByPageId(supabase, 'photos', parsedParams.data.id, userId, role)
   if (!allowed) return forbidden('You do not have access to this photo.')
 
   const { error } = await supabase
@@ -45,6 +46,13 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     return databaseError('Unable to update photo.')
   }
 
+  await logAdminAudit(supabase, {
+    actorId: userId,
+    action: 'photo.update',
+    entity: 'photo',
+    entityId: parsedParams.data.id,
+  })
+
   return NextResponse.json({ ok: true }, { status: 200 })
 }
 
@@ -55,17 +63,24 @@ export async function DELETE(_request: NextRequest, context: { params: Promise<{
     return NextResponse.json({ code: 'VALIDATION_ERROR', message: 'Invalid photo id.' }, { status: 400 })
   }
 
-  const auth = await requireAdminUser()
+  const auth = await requireAdminUser({ minRole: 'editor' })
   if (!auth.ok) return auth.response
-  const { supabase, userId } = auth
+  const { supabase, userId, role } = auth
 
-  const allowed = await assertOwnedRowByPageId(supabase, 'photos', parsedParams.data.id, userId)
+  const allowed = await assertOwnedRowByPageId(supabase, 'photos', parsedParams.data.id, userId, role)
   if (!allowed) return forbidden('You do not have access to this photo.')
 
   const { error } = await supabase.from('photos').delete().eq('id', parsedParams.data.id)
   if (error) {
     return databaseError('Unable to delete photo.')
   }
+
+  await logAdminAudit(supabase, {
+    actorId: userId,
+    action: 'photo.delete',
+    entity: 'photo',
+    entityId: parsedParams.data.id,
+  })
 
   return NextResponse.json({ ok: true }, { status: 200 })
 }

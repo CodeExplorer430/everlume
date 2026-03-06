@@ -1,4 +1,5 @@
 import { assertPageOwnership, databaseError, forbidden, requireAdminUser } from '@/lib/server/admin-auth'
+import { logAdminAudit } from '@/lib/server/admin-audit'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -27,12 +28,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ code: 'VALIDATION_ERROR', message: 'Invalid photo metadata.' }, { status: 400 })
   }
 
-  const auth = await requireAdminUser()
+  const auth = await requireAdminUser({ minRole: 'editor' })
   if (!auth.ok) return auth.response
-  const { supabase, userId } = auth
+  const { supabase, userId, role } = auth
 
   const { pageId, caption, cloudinaryPublicId, imageUrl, thumbUrl, bytes, format, width, height } = parsed.data
-  const ownsPage = await assertPageOwnership(supabase, pageId, userId)
+  const ownsPage = await assertPageOwnership(supabase, pageId, userId, role)
   if (!ownsPage) return forbidden('You do not have access to this page.')
 
   const { data, error } = await supabase
@@ -54,6 +55,14 @@ export async function POST(request: NextRequest) {
   if (error) {
     return databaseError('Unable to save photo metadata.')
   }
+
+  await logAdminAudit(supabase, {
+    actorId: userId,
+    action: 'photo.create',
+    entity: 'photo',
+    entityId: data.id,
+    metadata: { pageId, cloudinaryPublicId },
+  })
 
   return NextResponse.json({ photo: data }, { status: 201 })
 }

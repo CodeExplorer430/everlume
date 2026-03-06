@@ -1,51 +1,49 @@
 @import "tailwindcss";
 
 :root {
-  --deep-charcoal: #2f2f2f;
-  --sage-green: #a7beae;
-  --soft-sand: #e7e8d1;
-  --warm-cream: #f9f8f0;
-  --stone-ink: #4a514d;
-  --mist: #f2f3e9;
-  --success: #2f7d57;
-  --warning: #9b6d2b;
+  --ink-950: #1f241f;
+  --ink-700: #39413a;
+  --moss-500: #5f7966;
+  --moss-300: #aac0ad;
+  --stone-100: #f5f3eb;
+  --stone-150: #efede4;
+  --sage-050: #f7faf6;
 
-  --background: var(--soft-sand);
-  --foreground: var(--deep-charcoal);
+  --background: var(--stone-150);
+  --foreground: var(--ink-950);
 
-  --card: var(--warm-cream);
-  --card-foreground: var(--deep-charcoal);
+  --card: #fffef9;
+  --card-foreground: var(--ink-950);
 
-  --popover: var(--warm-cream);
-  --popover-foreground: var(--deep-charcoal);
+  --popover: #fffef9;
+  --popover-foreground: var(--ink-950);
 
-  --primary: var(--sage-green);
-  --primary-foreground: var(--deep-charcoal);
+  --primary: var(--moss-500);
+  --primary-foreground: #f6f8f4;
 
-  --secondary: var(--mist);
-  --secondary-foreground: var(--deep-charcoal);
+  --secondary: #edf2eb;
+  --secondary-foreground: var(--ink-700);
 
-  --muted: rgba(47, 47, 47, 0.06);
-  --muted-foreground: rgba(47, 47, 47, 0.68);
+  --muted: rgba(42, 52, 43, 0.07);
+  --muted-foreground: rgba(33, 40, 34, 0.68);
 
-  --accent: #c8d8cb;
-  --accent-foreground: var(--deep-charcoal);
+  --accent: #d8e4d8;
+  --accent-foreground: var(--ink-950);
 
   --destructive: #c34040;
   --destructive-foreground: #fff8f8;
 
-  --border: rgba(47, 47, 47, 0.13);
-  --input: rgba(47, 47, 47, 0.15);
-  --ring: rgba(77, 98, 83, 0.42);
+  --border: rgba(34, 43, 36, 0.16);
+  --input: rgba(34, 43, 36, 0.2);
+  --ring: rgba(95, 121, 102, 0.4);
 
-  --surface-1: rgba(249, 248, 240, 0.7);
-  --surface-2: rgba(249, 248, 240, 0.88);
-  --surface-3: rgba(167, 190, 174, 0.16);
+  --surface-1: rgba(255, 255, 250, 0.76);
+  --surface-2: rgba(255, 255, 251, 0.9);
 
-  --shadow-soft: 0 10px 30px rgba(35, 35, 35, 0.08);
-  --shadow-card: 0 2px 14px rgba(35, 35, 35, 0.06);
+  --shadow-soft: 0 14px 34px rgba(24, 33, 26, 0.1);
+  --shadow-card: 0 8px 22px rgba(24, 33, 26, 0.08);
 
-  --radius: 0.75rem;
+  --radius: 0.82rem;
 }
 
 @theme inline {
@@ -90,9 +88,9 @@ body {
 body {
   background-color: var(--background);
   background-image:
-    radial-gradient(circle at 12% 8%, rgba(167, 190, 174, 0.24), transparent 42%),
-    radial-gradient(circle at 88% 18%, rgba(249, 248, 240, 0.72), transparent 38%),
-    linear-gradient(180deg, rgba(231, 232, 209, 0.72), rgba(231, 232, 209, 1));
+    radial-gradient(circle at 12% 8%, rgba(170, 192, 173, 0.28), transparent 42%),
+    radial-gradient(circle at 84% 16%, rgba(255, 255, 250, 0.72), transparent 40%),
+    linear-gradient(180deg, #f2f0e6 0%, #eceadf 100%);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
   line-height: 1.5;
@@ -107,7 +105,7 @@ h4 {
 
 .page-container {
   margin-inline: auto;
-  width: min(1120px, calc(100% - 2rem));
+  width: min(1160px, calc(100% - 2rem));
 }
 
 .surface-card {
@@ -118,9 +116,31 @@ h4 {
 }
 
 .section-title {
-  font-size: clamp(1.5rem, 1.1rem + 1.8vw, 2.3rem);
+  font-size: clamp(1.6rem, 1.12rem + 1.85vw, 2.4rem);
   line-height: 1.2;
-  font-weight: 650;
+  font-weight: 670;
+}
+
+.skip-link {
+  position: fixed;
+  left: 0.75rem;
+  top: 0.75rem;
+  z-index: 100;
+  transform: translateY(-180%);
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--foreground);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: var(--shadow-card);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ring), var(--shadow-card);
 }
 
 @media (prefers-reduced-motion: reduce) {

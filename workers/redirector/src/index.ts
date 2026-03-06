@@ -6,6 +6,7 @@ interface Env {
 
 type RedirectRow = {
   target_url: string
+  is_active?: boolean
 }
 
 function notFoundResponse(): Response {
@@ -19,7 +20,8 @@ function sanitizeCode(pathname: string): string {
 async function fetchTargetUrl(code: string, env: Env): Promise<string | null> {
   const endpoint = new URL(`${env.SUPABASE_URL}/rest/v1/redirects`)
   endpoint.searchParams.set('shortcode', `eq.${code}`)
-  endpoint.searchParams.set('select', 'target_url')
+  endpoint.searchParams.set('is_active', 'eq.true')
+  endpoint.searchParams.set('select', 'target_url,is_active')
   endpoint.searchParams.set('limit', '1')
 
   const res = await fetch(endpoint.toString(), {
@@ -39,7 +41,11 @@ async function fetchTargetUrl(code: string, env: Env): Promise<string | null> {
   }
 
   const data = (await res.json()) as RedirectRow[]
-  return data[0]?.target_url ?? null
+  const row = data[0]
+  if (!row || row.is_active === false) {
+    return null
+  }
+  return row.target_url
 }
 
 const worker = {

@@ -2,6 +2,9 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
 import { MemorialPageView } from '@/components/pages/public/MemorialPageView'
+import { canAccessMemorialPage } from '@/lib/server/page-access'
+import { createSignedMediaToken } from '@/lib/server/private-media'
+import { PageUnlockForm } from '@/components/public/PageUnlockForm'
 
 interface PageProps {
   params: Promise<{ slug: string }>
@@ -14,6 +17,23 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { data: page } = await supabase.from('pages').select('*').eq('slug', slug).single()
 
   if (!page) return {}
+
+  if (page.access_mode === 'private' || page.access_mode === 'password' || page.privacy === 'private') {
+    const access = await canAccessMemorialPage(page)
+    if (!access.allowed && !access.requiresPassword) {
+      return {
+        title: 'Private Memorial | Everlume',
+        robots: { index: false, follow: false },
+      }
+    }
+
+    if (!access.allowed && access.requiresPassword) {
+      return {
+        title: 'Password Protected Memorial | Everlume',
+        robots: { index: false, follow: false },
+      }
+    }
+  }
 
   return {
     title: `${page.title} | Everlume`,
@@ -37,6 +57,17 @@ export default async function PublicTributePage({ params }: PageProps) {
     notFound()
   }
 
+  if (page.access_mode === 'private' || page.access_mode === 'password' || page.privacy === 'private') {
+    const access = await canAccessMemorialPage(page)
+    if (!access.allowed && !access.requiresPassword) {
+      notFound()
+    }
+
+    if (!access.allowed && access.requiresPassword) {
+      return <PageUnlockForm slug={slug} />
+    }
+  }
+
   const { data: photos } = await supabase.from('photos').select('*').eq('page_id', page.id).order('sort_index', { ascending: true })
 
   const { data: guestbook } = await supabase
@@ -50,5 +81,18 @@ export default async function PublicTributePage({ params }: PageProps) {
 
   const { data: videos } = await supabase.from('videos').select('*').eq('page_id', page.id).order('created_at', { ascending: true })
 
-  return <MemorialPageView page={page} photos={photos || []} videos={videos || []} timeline={timeline || []} guestbook={guestbook || []} />
+  const resolvedPhotos =
+    page.privacy === 'private' || page.access_mode === 'private' || page.access_mode === 'password'
+      ? (photos || []).map((photo) => {
+          const imageToken = createSignedMediaToken(photo.id, 'image')
+          const thumbToken = createSignedMediaToken(photo.id, 'thumb')
+          return {
+            ...photo,
+            image_url: `/api/public/media/${photo.id}?variant=image&token=${encodeURIComponent(imageToken)}`,
+            thumb_url: `/api/public/media/${photo.id}?variant=thumb&token=${encodeURIComponent(thumbToken)}`,
+          }
+        })
+      : photos || []
+
+  return <MemorialPageView page={page} photos={resolvedPhotos} videos={videos || []} timeline={timeline || []} guestbook={guestbook || []} />
 }
