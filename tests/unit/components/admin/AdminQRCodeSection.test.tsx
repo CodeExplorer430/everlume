@@ -40,4 +40,23 @@ describe('AdminQRCodeSection', () => {
 
     expect(screen.getByText(/create and activate a short link/i)).toBeInTheDocument()
   })
+
+  it('excludes inactive redirects from qr selector options', () => {
+    render(
+      <AdminQRCodeSection
+        page={{ slug: 'jane' }}
+        redirects={[
+          { id: 'r1', shortcode: 'grandma', is_active: true },
+          { id: 'r2', shortcode: 'legacy', is_active: false },
+          { id: 'r3', shortcode: 'nanay', is_active: true },
+        ]}
+      />
+    )
+
+    const options = screen.getAllByRole('option')
+    const labels = options.map((option) => option.textContent ?? '')
+    expect(labels.some((label) => label.includes('/r/grandma'))).toBe(true)
+    expect(labels.some((label) => label.includes('/r/nanay'))).toBe(true)
+    expect(labels.some((label) => label.includes('/r/legacy'))).toBe(false)
+  })
 })
