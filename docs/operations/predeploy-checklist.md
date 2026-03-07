@@ -41,11 +41,35 @@ Also verify app-side fallback:
 - `https://app.yourdomain.com/r/unknown` -> `/r/not-found?reason=missing`.
 - `https://app.yourdomain.com/r/test` -> `302` to target URL.
 
-## 4) Local Validation
+## 4) Video Transcode Service (Cloud Run)
+Deploy the in-repo service before enabling direct video upload in production.
+
+1. Build/deploy service:
+```bash
+./scripts/ops/deploy-video-transcode-cloud-run.sh everlume-video-transcode us-central1 <gcp-project-id>
+```
+2. Set Cloud Run env vars:
+   - `VIDEO_TRANSCODE_API_TOKEN`
+   - `VIDEO_TRANSCODE_CALLBACK_TOKEN`
+   - `CLOUDINARY_CLOUD_NAME`
+   - `CLOUDINARY_API_KEY`
+   - `CLOUDINARY_API_SECRET`
+3. Set app env vars:
+   - `VIDEO_TRANSCODE_API_BASE=<cloud-run-url>`
+   - `VIDEO_TRANSCODE_API_TOKEN=<same-as-service-token>`
+   - `VIDEO_TRANSCODE_CALLBACK_TOKEN=<same-as-service-callback-token>`
+4. Run contract check:
+```bash
+npm run ops:check-video-transcode
+```
+
+## 5) Local Validation
 Run before deploy:
 ```bash
 npm run ops:check-prereqs
 npm run ops:check-prereqs:production
+npm run ops:check-db-schema
+npm run ops:check-video-transcode
 npm run lint
 npm run typecheck
 npm run test:coverage
@@ -58,7 +82,7 @@ Production gate note:
   - `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`
   - `CAPTCHA_ENABLED=1` + `CAPTCHA_SECRET`
 
-## 5) QR Print Validation
+## 6) QR Print Validation
 - Generate QR assets from admin memorial editor.
 - Print test one small and one large sample.
 - Scan on iOS and Android.

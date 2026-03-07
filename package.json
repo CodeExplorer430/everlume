@@ -27,6 +27,7 @@
     "ops:check-prereqs": "node scripts/ops/check-deploy-prereqs.mjs",
     "ops:check-prereqs:production": "CHECK_PROD_SECURITY=1 node scripts/ops/check-deploy-prereqs.mjs",
     "ops:check-db-schema": "node scripts/ops/check-db-schema.mjs",
+    "ops:check-video-transcode": "node scripts/ops/check-video-transcode-contract.mjs",
     "ops:supabase:migrate:hosted": "bash scripts/ops/supabase-apply-migrations.sh",
     "ops:supabase:bootstrap-admin": "node scripts/ops/supabase-bootstrap-admin.mjs",
     "ops:backup:prune": "node scripts/ops/prune-backups.mjs",

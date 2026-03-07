@@ -128,6 +128,7 @@ Coverage gates are currently enforced at 10% global thresholds in CI.
 - **Vercel deploys:** previews on PRs and production on merge to main branch
 - **Cloudflare Worker deploy:** `.github/workflows/deploy-worker.yml`
 - **Cloudinary prewarm (optional):** `.github/workflows/prewarm-media.yml`
+- **Video transcode service:** deploy `services/video-transcode` to Cloud Run (see `services/video-transcode/README.md`).
 
 Operational docs:
 - `docs/operations/ci-cd.md`
@@ -152,6 +153,11 @@ For large files, admins can now use the **Upload and Compress** flow:
 - On success, compressed Cloudinary video can be attached to the page.
 
 Fallback policy: if compression cannot get under 100MB with acceptable settings, use YouTube Unlisted and paste the URL in the YouTube form.
+
+Cloud Run contract readiness check:
+```bash
+npm run ops:check-video-transcode
+```
 
 ## Security Notes
 - Admin APIs enforce role-based access (`viewer`, `editor`, `admin`).
