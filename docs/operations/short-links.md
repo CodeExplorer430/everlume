@@ -39,6 +39,24 @@
 - Set `FALLBACK_URL` to a temporary public page so root `/` is not dead while frontend is still pending.
 - Set `NEXT_PUBLIC_SHORT_DOMAIN` in app env to the same short domain.
 
+## Production Setup Commands
+From the repo root:
+
+```bash
+npm run test:worker
+cd workers/redirector
+npx wrangler secret put SUPABASE_URL
+npx wrangler secret put SUPABASE_SECRET_KEY
+npx wrangler secret put FALLBACK_URL
+npx wrangler deploy
+```
+
+Then in app environment (Vercel):
+- Set `NEXT_PUBLIC_SHORT_DOMAIN=https://go.yourdomain.com`.
+
+Then in Cloudflare DNS/Workers:
+- Attach route `go.yourdomain.com/*` to worker `everlume-redirector`.
+
 ## Quick Validation
 ```bash
 curl -I https://go.yourdomain.com/test

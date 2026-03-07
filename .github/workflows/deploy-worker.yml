@@ -39,6 +39,7 @@ jobs:
           UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
           CAPTCHA_ENABLED: '1'
           CAPTCHA_SECRET: ${{ secrets.CAPTCHA_SECRET }}
+          NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.NEXT_PUBLIC_TURNSTILE_SITE_KEY || secrets.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
 
       - name: Run worker unit tests
         run: npm run test:worker
