@@ -39,6 +39,13 @@ function serializePageKey(page: AdminPage) {
 }
 
 function AdminPageInfoForm({ page, onUpdate }: AdminPageInfoProps) {
+  const accessModeId = 'page-access-mode'
+  const passwordId = 'page-password'
+  const titleId = 'page-title'
+  const slugId = 'page-slug'
+  const fullNameId = 'page-full-name'
+  const dobId = 'page-dob'
+  const dodId = 'page-dod'
   const [formData, setFormData] = useState({
     ...page,
     access_mode: page.access_mode || (page.privacy === 'private' ? 'private' : 'public'),
@@ -93,7 +100,11 @@ function AdminPageInfoForm({ page, onUpdate }: AdminPageInfoProps) {
           )}
           <span className="capitalize">{formData.access_mode} Mode</span>
         </div>
+        <label htmlFor={accessModeId} className="sr-only">
+          Access mode
+        </label>
         <select
+          id={accessModeId}
           value={formData.access_mode}
           onChange={(e) =>
             setFormData({
@@ -103,7 +114,6 @@ function AdminPageInfoForm({ page, onUpdate }: AdminPageInfoProps) {
             })
           }
           className="h-9 rounded-md border border-input bg-[var(--surface-1)] px-2 text-sm"
-          aria-label="Access mode"
         >
           <option value="public">Public</option>
           <option value="private">Private</option>
@@ -113,8 +123,11 @@ function AdminPageInfoForm({ page, onUpdate }: AdminPageInfoProps) {
 
       {formData.access_mode === 'password' && (
         <div>
-          <label className="mb-1.5 block text-sm font-medium">Set or Rotate Password</label>
+          <label htmlFor={passwordId} className="mb-1.5 block text-sm font-medium">
+            Set or Rotate Password
+          </label>
           <Input
+            id={passwordId}
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -126,25 +139,35 @@ function AdminPageInfoForm({ page, onUpdate }: AdminPageInfoProps) {
       )}
 
       <div>
-        <label className="mb-1.5 block text-sm font-medium">Page Title</label>
-        <Input value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
+        <label htmlFor={titleId} className="mb-1.5 block text-sm font-medium">
+          Page Title
+        </label>
+        <Input id={titleId} value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
       </div>
       <div>
-        <label className="mb-1.5 block text-sm font-medium">Slug</label>
-        <Input value={formData.slug} onChange={(e) => setFormData({ ...formData, slug: e.target.value })} />
+        <label htmlFor={slugId} className="mb-1.5 block text-sm font-medium">
+          Slug
+        </label>
+        <Input id={slugId} value={formData.slug} onChange={(e) => setFormData({ ...formData, slug: e.target.value })} />
       </div>
       <div>
-        <label className="mb-1.5 block text-sm font-medium">Full Name</label>
-        <Input value={formData.full_name || ''} onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} />
+        <label htmlFor={fullNameId} className="mb-1.5 block text-sm font-medium">
+          Full Name
+        </label>
+        <Input id={fullNameId} value={formData.full_name || ''} onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} />
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <label className="mb-1.5 block text-sm font-medium">DOB</label>
-          <Input type="date" value={formData.dob || ''} onChange={(e) => setFormData({ ...formData, dob: e.target.value })} />
+          <label htmlFor={dobId} className="mb-1.5 block text-sm font-medium">
+            DOB
+          </label>
+          <Input id={dobId} type="date" value={formData.dob || ''} onChange={(e) => setFormData({ ...formData, dob: e.target.value })} />
         </div>
         <div>
-          <label className="mb-1.5 block text-sm font-medium">DOD</label>
-          <Input type="date" value={formData.dod || ''} onChange={(e) => setFormData({ ...formData, dod: e.target.value })} />
+          <label htmlFor={dodId} className="mb-1.5 block text-sm font-medium">
+            DOD
+          </label>
+          <Input id={dodId} type="date" value={formData.dod || ''} onChange={(e) => setFormData({ ...formData, dod: e.target.value })} />
         </div>
       </div>
       {errorMessage && <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{errorMessage}</p>}

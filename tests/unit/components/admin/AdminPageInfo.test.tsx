@@ -26,7 +26,7 @@ describe('AdminPageInfo', () => {
     )
 
     const user = userEvent.setup()
-    const titleInput = screen.getByDisplayValue('First Title')
+    const titleInput = screen.getByLabelText('Page Title')
     await user.clear(titleInput)
     await user.type(titleInput, 'Edited Locally')
     expect(titleInput).toHaveValue('Edited Locally')
@@ -47,6 +47,6 @@ describe('AdminPageInfo', () => {
       />
     )
 
-    expect(screen.getByDisplayValue('Server Updated Title')).toBeInTheDocument()
+    expect(screen.getByLabelText('Page Title')).toHaveValue('Server Updated Title')
   })
 })
