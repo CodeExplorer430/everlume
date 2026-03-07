@@ -120,6 +120,12 @@ jobs:
             playwright-report
             test-results
 
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [e2e_webpack, e2e_turbopack]
+    steps:
+      - run: echo "e2e alias passed: webpack and turbopack e2e checks succeeded."
 
   a11y:
     runs-on: ubuntu-latest
@@ -191,7 +197,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: [lint, typecheck, unit_coverage, worker_tests, e2e_webpack, e2e_turbopack, a11y, launch_readiness, perf_a11y_gate]
+    needs: [lint, typecheck, unit_coverage, worker_tests, e2e, a11y, launch_readiness, perf_a11y_gate]
     env:
       NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: test_publishable_key
