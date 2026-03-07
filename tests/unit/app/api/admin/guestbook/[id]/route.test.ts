@@ -1,0 +1,56 @@
+import { DELETE } from '@/app/api/admin/guestbook/[id]/route'
+
+const mockRequireAdminUser = vi.fn()
+const mockAssertOwnedRowByPageId = vi.fn()
+const mockLogAdminAudit = vi.fn()
+const mockDeleteEq = vi.fn()
+const mockDelete = vi.fn(() => ({ eq: mockDeleteEq }))
+
+vi.mock('@/lib/server/admin-auth', () => ({
+  requireAdminUser: (...args: unknown[]) => mockRequireAdminUser(...args),
+  assertOwnedRowByPageId: (...args: unknown[]) => mockAssertOwnedRowByPageId(...args),
+  forbidden: (message: string) => new Response(JSON.stringify({ code: 'FORBIDDEN', message }), { status: 403 }),
+  databaseError: (message: string) => new Response(JSON.stringify({ code: 'DATABASE_ERROR', message }), { status: 500 }),
+}))
+
+vi.mock('@/lib/server/admin-audit', () => ({
+  logAdminAudit: (...args: unknown[]) => mockLogAdminAudit(...args),
+}))
+
+describe('DELETE /api/admin/guestbook/[id]', () => {
+  beforeEach(() => {
+    mockRequireAdminUser.mockReset()
+    mockAssertOwnedRowByPageId.mockReset()
+    mockLogAdminAudit.mockReset()
+    mockDeleteEq.mockReset()
+  })
+
+  it('returns validation error for invalid id', async () => {
+    const req = new Request('http://localhost/api/admin/guestbook/not-a-uuid', { method: 'DELETE' })
+    const res = await DELETE(req as never, { params: Promise.resolve({ id: 'not-a-uuid' }) })
+
+    expect(res.status).toBe(400)
+  })
+
+  it('deletes guestbook entry for authorized owner', async () => {
+    mockRequireAdminUser.mockResolvedValue({
+      ok: true,
+      userId: 'user-1',
+      role: 'editor',
+      supabase: {
+        from: () => ({
+          delete: mockDelete,
+        }),
+      },
+    })
+    mockAssertOwnedRowByPageId.mockResolvedValue(true)
+    mockDeleteEq.mockResolvedValue({ error: null })
+
+    const req = new Request('http://localhost/api/admin/guestbook/550e8400-e29b-41d4-a716-446655440000', { method: 'DELETE' })
+    const res = await DELETE(req as never, { params: Promise.resolve({ id: '550e8400-e29b-41d4-a716-446655440000' }) })
+
+    expect(res.status).toBe(200)
+    expect(mockDelete).toHaveBeenCalled()
+    expect(mockLogAdminAudit).toHaveBeenCalled()
+  })
+})
