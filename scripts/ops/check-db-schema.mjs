@@ -41,4 +41,18 @@ if (missing.length > 0) {
   process.exit(1)
 }
 
-console.log('Schema check passed: profiles includes role, is_active, full_name.')
+const videoChecks = [
+  { label: 'videos.provider', table: 'videos', select: 'id, provider' },
+  { label: 'video_upload_jobs table', table: 'video_upload_jobs', select: 'id, page_id, created_by, status, source_filename, source_mime, source_bytes' },
+]
+
+for (const check of videoChecks) {
+  const { error } = await supabase.from(check.table).select(check.select).limit(1)
+  if (error) {
+    console.error(`Failed schema check for ${check.label}: ${error.message}`)
+    console.error('Run hosted migrations: npm run ops:supabase:migrate:hosted -- <project-ref>')
+    process.exit(1)
+  }
+}
+
+console.log('Schema check passed: profiles, videos.provider, and video_upload_jobs schema are available.')

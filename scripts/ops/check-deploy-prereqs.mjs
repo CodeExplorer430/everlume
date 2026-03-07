@@ -46,6 +46,15 @@ if (strictProdCheck) {
   if (!process.env.CAPTCHA_SECRET || `${process.env.CAPTCHA_SECRET}`.trim() === '') {
     securityIssues.push('CAPTCHA_SECRET is required for production.')
   }
+  if (!process.env.VIDEO_TRANSCODE_API_BASE || `${process.env.VIDEO_TRANSCODE_API_BASE}`.trim() === '') {
+    securityIssues.push('VIDEO_TRANSCODE_API_BASE is required for production.')
+  }
+  if (!process.env.VIDEO_TRANSCODE_API_TOKEN || `${process.env.VIDEO_TRANSCODE_API_TOKEN}`.trim() === '') {
+    securityIssues.push('VIDEO_TRANSCODE_API_TOKEN is required for production.')
+  }
+  if (!process.env.VIDEO_TRANSCODE_CALLBACK_TOKEN || `${process.env.VIDEO_TRANSCODE_CALLBACK_TOKEN}`.trim() === '') {
+    securityIssues.push('VIDEO_TRANSCODE_CALLBACK_TOKEN is required for production.')
+  }
 }
 
 console.log('Everlume pre-deploy prerequisites check')
