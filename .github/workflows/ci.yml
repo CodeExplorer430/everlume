@@ -125,7 +125,7 @@ jobs:
     timeout-minutes: 5
     needs: [e2e_webpack, e2e_turbopack]
     steps:
-      - run: echo "e2e alias passed: webpack and turbopack e2e checks succeeded."
+      - run: 'echo "e2e alias passed: webpack and turbopack e2e checks succeeded."'
 
   a11y:
     runs-on: ubuntu-latest
