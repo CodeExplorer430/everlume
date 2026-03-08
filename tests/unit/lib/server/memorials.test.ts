@@ -24,12 +24,14 @@ describe('memorial helpers', () => {
       toMemorialRecord({
         id: 'memorial-1',
         title: 'In Memory',
+        dedication_text: 'Beloved by three generations.',
         access_mode: 'public',
         privacy: 'private',
       })
     ).toEqual({
       id: 'memorial-1',
       title: 'In Memory',
+      dedicationText: 'Beloved by three generations.',
       accessMode: 'public',
     })
   })

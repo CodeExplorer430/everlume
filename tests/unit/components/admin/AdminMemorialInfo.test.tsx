@@ -10,6 +10,7 @@ function makePage(overrides: Partial<AdminPageProps> = {}): AdminPageProps {
     title: 'Sample',
     slug: 'sample',
     full_name: 'Jane Doe',
+    dedicationText: 'Beloved by family and parish.',
     dob: null,
     dod: null,
     accessMode: 'public' as const,
@@ -82,6 +83,7 @@ describe('AdminMemorialInfo', () => {
       password: 'secret123',
       title: 'Sample',
       slug: 'sample',
+      dedicationText: 'Beloved by family and parish.',
       memorialTheme: 'classic',
       memorialVideoLayout: 'grid',
       qrTemplate: 'classic',
@@ -116,6 +118,24 @@ describe('AdminMemorialInfo', () => {
     await user.selectOptions(screen.getByLabelText('Access mode'), 'password')
     expect(screen.getByText('Protected by a family-managed password and excluded from the homepage directory.')).toBeInTheDocument()
     expect(screen.getByText(/Protected memorials keep media behind signed access and require a current password to enter\./)).toBeInTheDocument()
+  })
+
+  it('submits edited dedication text', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }))
+    const user = userEvent.setup()
+
+    render(<AdminMemorialInfo onUpdate={vi.fn()} memorial={makePage({ id: 'page-12', dedicationText: null })} />)
+
+    await user.type(screen.getByLabelText('Dedication Text'), 'A life of quiet service and steadfast love.')
+    await user.click(screen.getByRole('button', { name: 'Save Changes' }))
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalled()
+    })
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(JSON.parse(String(init.body))).toMatchObject({
+      dedicationText: 'A life of quiet service and steadfast love.',
+    })
   })
 
   it('falls back to default error message when failure body is not json', async () => {

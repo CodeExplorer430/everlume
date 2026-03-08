@@ -17,6 +17,7 @@ interface MemorialRecord {
   title: string
   slug: string
   full_name: string | null
+  dedicationText: string | null
   dob: string | null
   dod: string | null
   accessMode: 'public' | 'private' | 'password'

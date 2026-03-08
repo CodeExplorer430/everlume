@@ -9,11 +9,13 @@ export function NewMemorialForm() {
   const titleId = 'new-memorial-title'
   const slugId = 'new-memorial-slug'
   const fullNameId = 'new-memorial-full-name'
+  const dedicationId = 'new-memorial-dedication'
   const dobId = 'new-memorial-dob'
   const dodId = 'new-memorial-dod'
   const [title, setTitle] = useState('')
   const [slug, setSlug] = useState('')
   const [fullName, setFullName] = useState('')
+  const [dedicationText, setDedicationText] = useState('')
   const [dob, setDob] = useState('')
   const [dod, setDod] = useState('')
   const [loading, setLoading] = useState(false)
@@ -32,6 +34,7 @@ export function NewMemorialForm() {
         title,
         slug,
         fullName,
+        dedicationText,
         dob: dob || null,
         dod: dod || null,
       }),
@@ -98,6 +101,22 @@ export function NewMemorialForm() {
               Full Name
             </label>
             <Input id={fullNameId} value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Jane Elizabeth Doe" />
+          </div>
+
+          <div>
+            <label htmlFor={dedicationId} className="mb-1.5 block text-sm font-medium">
+              Dedication Text
+            </label>
+            <textarea
+              id={dedicationId}
+              value={dedicationText}
+              onChange={(e) => setDedicationText(e.target.value)}
+              maxLength={600}
+              rows={4}
+              className="flex min-h-[112px] w-full rounded-xl border border-input bg-[var(--surface-1)] px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              placeholder="A short family dedication, prayer, or remembrance to welcome visitors."
+            />
+            <p className="mt-1 text-xs text-muted-foreground">Optional. This message appears near the top of the public memorial.</p>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

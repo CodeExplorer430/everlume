@@ -14,6 +14,7 @@ const memorialUpdateSchema = z
     title: z.string().trim().min(2).max(120).optional(),
     slug: z.string().trim().toLowerCase().regex(/^[a-z0-9-]{3,80}$/).optional(),
     fullName: z.string().trim().max(120).nullable().optional(),
+    dedicationText: z.string().trim().max(600).nullable().optional(),
     dob: z.string().nullable().optional(),
     dod: z.string().nullable().optional(),
     accessMode: z.enum(['public', 'private', 'password']).optional(),
@@ -39,7 +40,7 @@ const memorialUpdateSchema = z
   .refine((value) => Object.keys(value).length > 0, { message: 'No fields to update.' })
 
 const memorialSelect =
-  'id, title, slug, full_name, dob, dod, privacy, access_mode, hero_image_url, memorial_theme, memorial_slideshow_enabled, memorial_slideshow_interval_ms, memorial_video_layout, memorial_photo_fit, memorial_caption_style, qr_template, qr_caption, qr_foreground_color, qr_background_color, qr_frame_style, qr_caption_font, qr_show_logo'
+  'id, title, slug, full_name, dedication_text, dob, dod, privacy, access_mode, hero_image_url, memorial_theme, memorial_slideshow_enabled, memorial_slideshow_interval_ms, memorial_video_layout, memorial_photo_fit, memorial_caption_style, qr_template, qr_caption, qr_foreground_color, qr_background_color, qr_frame_style, qr_caption_font, qr_show_logo'
 
 export async function GET(_request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const params = await context.params
@@ -91,6 +92,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     title: body.title,
     slug: body.slug,
     full_name: body.fullName,
+    dedication_text: body.dedicationText,
     dob: body.dob,
     dod: body.dod,
     access_mode: body.accessMode,

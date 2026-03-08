@@ -10,6 +10,7 @@ type AdminMemorial = {
   title: string
   slug: string
   full_name: string | null
+  dedicationText: string | null
   dob: string | null
   dod: string | null
   accessMode: 'public' | 'private' | 'password'
@@ -43,6 +44,7 @@ function serializeMemorialKey(memorial: AdminMemorial) {
     memorial.title,
     memorial.slug,
     memorial.full_name ?? '',
+    memorial.dedicationText ?? '',
     memorial.dob ?? '',
     memorial.dod ?? '',
     memorial.accessMode,
@@ -83,6 +85,7 @@ function AdminMemorialInfoForm({ memorial, onUpdate }: AdminMemorialInfoProps) {
   const titleId = 'page-title'
   const slugId = 'page-slug'
   const fullNameId = 'page-full-name'
+  const dedicationId = 'page-dedication'
   const dobId = 'page-dob'
   const dodId = 'page-dod'
   const [formData, setFormData] = useState({
@@ -117,6 +120,7 @@ function AdminMemorialInfoForm({ memorial, onUpdate }: AdminMemorialInfoProps) {
         title: formData.title,
         slug: formData.slug,
         fullName: formData.full_name,
+        dedicationText: formData.dedicationText,
         dob: formData.dob,
         dod: formData.dod,
         accessMode: formData.accessMode,
@@ -223,6 +227,21 @@ function AdminMemorialInfoForm({ memorial, onUpdate }: AdminMemorialInfoProps) {
           Full Name
         </label>
         <Input id={fullNameId} value={formData.full_name || ''} onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} />
+      </div>
+      <div>
+        <label htmlFor={dedicationId} className="mb-1.5 block text-sm font-medium">
+          Dedication Text
+        </label>
+        <textarea
+          id={dedicationId}
+          value={formData.dedicationText || ''}
+          onChange={(e) => setFormData({ ...formData, dedicationText: e.target.value })}
+          rows={4}
+          maxLength={600}
+          className="flex min-h-[112px] w-full rounded-xl border border-input bg-[var(--surface-1)] px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          placeholder="Add a short dedication, prayer, or welcome message for visitors."
+        />
+        <p className="mt-1 text-xs text-muted-foreground">Shown near the top of the memorial before the gallery and guestbook.</p>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>

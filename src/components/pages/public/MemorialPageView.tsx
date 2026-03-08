@@ -9,6 +9,7 @@ type MemorialPage = {
   id: string
   title: string
   full_name: string | null
+  dedicationText?: string | null
   hero_image_url: string | null
   dob: string | null
   dod: string | null
@@ -70,6 +71,10 @@ export function MemorialPageView({ memorial, photos, videos, timeline, guestbook
         ? 'bg-[linear-gradient(180deg,#f6f1e8_0%,#eee6d7_100%)]'
         : ''
 
+  const remembranceCopy =
+    memorial.dedicationText?.trim() ||
+    `Welcome to the memorial for ${memorial.full_name || 'our loved one'}. We invite you to explore the gallery and leave a message for the family.`
+
   return (
     <div className={`min-h-screen pb-14 ${themeShellClass}`} data-memorial-theme={themePreset} data-memorial-access={accessMode}>
       <TributeHero memorial={memorial} />
@@ -80,9 +85,7 @@ export function MemorialPageView({ memorial, photos, videos, timeline, guestbook
         <section id="remembrance" className="surface-card print-avoid-break mx-auto max-w-4xl px-6 py-8 text-center md:px-10">
           <p className="section-kicker">Remembrance</p>
           <h2 className="section-title mt-2">Our Memories</h2>
-          <p className="mt-3 text-sm leading-relaxed text-muted-foreground md:text-base">
-            Welcome to the memorial for {memorial.full_name || 'our loved one'}. We invite you to explore the gallery and leave a message for the family.
-          </p>
+          <p className="mt-3 text-sm leading-relaxed text-muted-foreground md:text-base">{remembranceCopy}</p>
         </section>
 
         <section id="photos" className="space-y-6 print-avoid-break">

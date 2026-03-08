@@ -54,14 +54,14 @@ describe('PATCH /api/admin/memorials/[id]', () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
     mockPageSingle.mockResolvedValue({ data: { id: 'page-1' } })
     mockUpdateSingle.mockResolvedValue({
-      data: { id: 'page-1', title: 'Updated', slug: 'my-page', access_mode: 'private', privacy: 'private' },
+      data: { id: 'page-1', title: 'Updated', slug: 'my-page', dedication_text: 'Forever remembered.', access_mode: 'private', privacy: 'private' },
       error: null,
     })
 
     const req = new Request('http://localhost/api/admin/memorials/550e8400-e29b-41d4-a716-446655440000', {
       method: 'PATCH',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ title: 'Updated', accessMode: 'private' }),
+      body: JSON.stringify({ title: 'Updated', dedicationText: 'Forever remembered.', accessMode: 'private' }),
     })
 
     const res = await PATCH(req as never, { params: Promise.resolve({ id: '550e8400-e29b-41d4-a716-446655440000' }) })
@@ -69,6 +69,7 @@ describe('PATCH /api/admin/memorials/[id]', () => {
     expect(mockUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
         title: 'Updated',
+        dedication_text: 'Forever remembered.',
         access_mode: 'private',
         privacy: 'private',
       })
@@ -77,6 +78,7 @@ describe('PATCH /api/admin/memorials/[id]', () => {
     expect(payload.memorial).toMatchObject({
       id: 'page-1',
       title: 'Updated',
+      dedicationText: 'Forever remembered.',
       accessMode: 'private',
     })
   })
@@ -132,6 +134,7 @@ describe('GET /api/admin/memorials/[id]', () => {
         id: 'page-1',
         title: 'My Page',
         slug: 'my-page',
+        dedication_text: 'A life well lived.',
         privacy: 'public',
         access_mode: 'public',
       },
@@ -145,6 +148,7 @@ describe('GET /api/admin/memorials/[id]', () => {
     expect(payload.memorial).toMatchObject({
       id: 'page-1',
       title: 'My Page',
+      dedicationText: 'A life well lived.',
       accessMode: 'public',
     })
   })

@@ -23,6 +23,7 @@ test('public memorial renders visitor-facing content', async ({ page }) => {
 
   await expect(page.getByRole('heading', { name: /in loving memory of amelia stone/i })).toBeVisible({ timeout: 15_000 })
   await expect(page.getByRole('heading', { name: /our memories/i })).toBeVisible()
+  await expect(page.getByText(/Amelia taught our family to sing, to serve, and to carry gentleness into every room\./i)).toBeVisible()
   await expect(page.getByRole('heading', { name: /video memories/i })).toBeVisible()
   await expect(page.getByRole('heading', { name: /life timeline/i })).toBeVisible()
   await expect(page.getByRole('heading', { name: /guestbook/i })).toBeVisible()
@@ -58,6 +59,7 @@ test('password memorial unlocks and guestbook submission succeeds', async ({ pag
   await page.getByRole('button', { name: /unlock memorial/i }).click()
 
   await expect(page.getByRole('heading', { name: /in loving memory of mateo rivera/i })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByText(/This memorial is shared quietly with those who knew Mateo best\./i)).toBeVisible()
   await expect(page.getByText(/Thank you for protecting this space for the family/i)).toBeVisible()
   await page.waitForLoadState('networkidle')
   await page.waitForTimeout(500)

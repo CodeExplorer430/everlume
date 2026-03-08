@@ -46,6 +46,7 @@ describe('NewMemorialForm', () => {
     await user.type(screen.getByLabelText('Memorial Title'), 'Jane Doe')
     await user.type(screen.getByLabelText('URL Slug'), 'jane-doe')
     await user.type(screen.getByLabelText('Full Name'), 'Jane Doe')
+    await user.type(screen.getByLabelText('Dedication Text'), 'Beloved by her family and church community.')
     await user.click(screen.getByRole('button', { name: 'Create Memorial' }))
 
     expect(fetchMock).toHaveBeenCalledWith(
@@ -54,6 +55,10 @@ describe('NewMemorialForm', () => {
         method: 'POST',
       })
     )
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(JSON.parse(String(init.body))).toMatchObject({
+      dedicationText: 'Beloved by her family and church community.',
+    })
     expect(mockPush).toHaveBeenCalledWith('/admin')
     expect(mockRefresh).toHaveBeenCalled()
   })

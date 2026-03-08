@@ -8,6 +8,7 @@ const createMemorialSchema = z.object({
   title: z.string().trim().min(2).max(120),
   slug: z.string().trim().toLowerCase().regex(/^[a-z0-9-]{3,80}$/),
   fullName: z.string().trim().max(120).optional().default(''),
+  dedicationText: z.string().trim().max(600).optional().default(''),
   dob: z.string().trim().nullable().optional(),
   dod: z.string().trim().nullable().optional(),
 })
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return auth.response
   const { supabase, userId } = auth
 
-  const { title, slug, fullName, dob, dod } = parsed.data
+  const { title, slug, fullName, dedicationText, dob, dod } = parsed.data
   const { data: siteSettings } = await supabase
     .from('site_settings')
     .select('memorial_slideshow_enabled, memorial_slideshow_interval_ms, memorial_video_layout')
@@ -42,6 +43,7 @@ export async function POST(request: NextRequest) {
       title,
       slug,
       full_name: fullName || null,
+      dedication_text: dedicationText || null,
       dob: dob || null,
       dod: dod || null,
       owner_id: userId,
@@ -49,7 +51,7 @@ export async function POST(request: NextRequest) {
       memorial_slideshow_interval_ms: Number(siteSettings?.memorial_slideshow_interval_ms) || 4500,
       memorial_video_layout: siteSettings?.memorial_video_layout === 'featured' ? 'featured' : 'grid',
     })
-    .select('id, slug')
+    .select('id, slug, dedication_text')
     .single()
 
   if (error) {

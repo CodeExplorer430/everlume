@@ -68,6 +68,7 @@ describe('MemorialPageView', () => {
           id: 'page-1',
           title: 'In Loving Memory',
           full_name: 'Jane Doe',
+          dedicationText: 'She loved deeply and served quietly.',
           hero_image_url: null,
           dob: null,
           dod: null,
@@ -86,6 +87,7 @@ describe('MemorialPageView', () => {
     expect(screen.getByTestId('tribute-hero')).toBeInTheDocument()
     expect(screen.getByTestId('memorial-action-bar')).toBeInTheDocument()
     expect(screen.getByText('Photos will be added here')).toBeInTheDocument()
+    expect(screen.getByText('She loved deeply and served quietly.')).toBeInTheDocument()
     expect(mockMemorialActionBar).toHaveBeenCalledWith({ memorialTitle: 'In Loving Memory', guestbookHref: '#guestbook' })
     expect(mockPublicGallery).not.toHaveBeenCalled()
     expect(mockTributeVideos).toHaveBeenCalledWith({ videos: [], layout: 'grid' })
@@ -100,6 +102,7 @@ describe('MemorialPageView', () => {
           id: 'page-1',
           title: 'In Loving Memory',
           full_name: null,
+          dedicationText: null,
           hero_image_url: null,
           dob: null,
           dod: null,
@@ -126,5 +129,6 @@ describe('MemorialPageView', () => {
       fit: 'cover',
       captionStyle: 'classic',
     })
+    expect(screen.getByText(/Welcome to the memorial for our loved one\./)).toBeInTheDocument()
   })
 })

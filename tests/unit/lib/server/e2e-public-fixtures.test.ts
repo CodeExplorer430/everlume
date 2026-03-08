@@ -29,6 +29,7 @@ describe('e2e public fixtures', () => {
     const photo = getE2EPhotoFixtureById('22222222-2222-2222-2222-222222222221')
 
     expect(memorial?.memorial.access_mode).toBe('public')
+    expect(memorial?.memorial.dedication_text).toContain('Amelia taught our family to sing')
     expect(memorial?.photos).toHaveLength(2)
     expect(privateMemorial?.memorial.access_mode).toBe('private')
     expect(redirect).toMatchObject({ shortcode: 'tribute-demo', is_active: true })

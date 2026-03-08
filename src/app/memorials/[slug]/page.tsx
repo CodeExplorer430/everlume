@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
 import { MemorialPageView } from '@/components/pages/public/MemorialPageView'
 import { canAccessMemorial, memorialRequiresProtectedMedia } from '@/lib/server/page-access'
+import { toMemorialRecord } from '@/lib/server/memorials'
 import { createSignedMediaToken } from '@/lib/server/private-media'
 import { MemorialUnlockForm } from '@/components/public/MemorialUnlockForm'
 import { getE2EMemorialFixtureBySlug } from '@/lib/server/e2e-public-fixtures'
@@ -155,7 +156,7 @@ export default async function PublicTributePage({ params }: PageProps) {
       : photos
 
   const resolvedMemorial = {
-    ...memorial,
+    ...toMemorialRecord(memorial),
     memorial_slideshow_enabled:
       memorial.memorial_slideshow_enabled ?? (siteSettings?.memorial_slideshow_enabled !== false),
     memorial_slideshow_interval_ms: memorial.memorial_slideshow_interval_ms ?? (Number(siteSettings?.memorial_slideshow_interval_ms) || 4500),

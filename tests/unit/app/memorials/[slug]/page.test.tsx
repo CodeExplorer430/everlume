@@ -80,6 +80,7 @@ const publicPage = {
   slug: 'jane',
   title: 'In Loving Memory',
   full_name: 'Jane Doe',
+  dedication_text: 'Beloved in every season.',
   hero_image_url: 'https://cdn.example.com/hero.jpg',
   privacy: 'public',
   access_mode: 'public',
@@ -124,7 +125,14 @@ describe('/memorials/[slug] page', () => {
     expect(screen.getByTestId('memorial-page-view')).toBeInTheDocument()
     expect(mockMemorialPageView).toHaveBeenCalledWith(
       expect.objectContaining({
-        memorial: expect.objectContaining(publicPage),
+        memorial: expect.objectContaining({
+          id: 'page-1',
+          slug: 'jane',
+          title: 'In Loving Memory',
+          full_name: 'Jane Doe',
+          dedicationText: 'Beloved in every season.',
+          accessMode: 'public',
+        }),
         photos: expect.arrayContaining([expect.objectContaining({ id: 'photo-1' })]),
       })
     )
