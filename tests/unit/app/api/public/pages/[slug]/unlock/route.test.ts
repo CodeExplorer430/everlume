@@ -1,5 +1,5 @@
 import { POST } from '@/app/api/public/pages/[slug]/unlock/route'
-import { hashPagePassword } from '@/lib/server/page-password'
+import { hashMemorialPassword } from '@/lib/server/page-password'
 
 const mockSingle = vi.fn()
 const mockEq = vi.fn(() => ({ single: mockSingle }))
@@ -28,7 +28,7 @@ describe('POST /api/public/pages/[slug]/unlock', () => {
         id: 'page-1',
         slug: 'jane',
         access_mode: 'password',
-        password_hash: hashPagePassword('correct-password'),
+        password_hash: hashMemorialPassword('correct-password'),
         password_updated_at: '2026-03-06T00:00:00.000Z',
       },
     })
@@ -49,7 +49,7 @@ describe('POST /api/public/pages/[slug]/unlock', () => {
         id: 'page-1',
         slug: 'jane',
         access_mode: 'password',
-        password_hash: hashPagePassword('correct-password'),
+        password_hash: hashMemorialPassword('correct-password'),
         password_updated_at: '2026-03-06T00:00:00.000Z',
       },
     })

@@ -49,9 +49,9 @@ vi.mock('@/components/pages/admin/UserManagementScreen', () => ({
 }))
 
 vi.mock('@/components/pages/admin/EditMemorialScreen', () => ({
-  EditMemorialScreen: ({ pageId }: { pageId: string }) => {
-    mockEditMemorialScreen(pageId)
-    return <div data-testid="edit-memorial-screen">{pageId}</div>
+  EditMemorialScreen: ({ memorialId }: { memorialId: string }) => {
+    mockEditMemorialScreen(memorialId)
+    return <div data-testid="edit-memorial-screen">{memorialId}</div>
   },
 }))
 

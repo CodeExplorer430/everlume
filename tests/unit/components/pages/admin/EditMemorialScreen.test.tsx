@@ -18,8 +18,8 @@ vi.mock('@/components/admin/DataExport', () => ({
   DataExport: () => <div>Data Export Mock</div>,
 }))
 
-vi.mock('@/components/admin/AdminPageInfo', () => ({
-  AdminPageInfo: () => <div>Admin Page Info Mock</div>,
+vi.mock('@/components/admin/AdminMemorialInfo', () => ({
+  AdminMemorialInfo: () => <div>Admin Memorial Info Mock</div>,
 }))
 
 vi.mock('@/components/admin/AdminQRCodeSection', () => ({

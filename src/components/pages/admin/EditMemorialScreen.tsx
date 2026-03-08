@@ -6,7 +6,7 @@ import { MediaUpload } from '@/components/admin/MediaUpload'
 import { TimelineEditor } from '@/components/admin/TimelineEditor'
 import { VideoManager } from '@/components/admin/VideoManager'
 import { DataExport } from '@/components/admin/DataExport'
-import { AdminPageInfo } from '@/components/admin/AdminPageInfo'
+import { AdminMemorialInfo } from '@/components/admin/AdminMemorialInfo'
 import { AdminPhotoGallery } from '@/components/admin/AdminPhotoGallery'
 import { AdminQRCodeSection } from '@/components/admin/AdminQRCodeSection'
 import { ExternalLink } from 'lucide-react'
@@ -53,23 +53,21 @@ interface RedirectRecord {
 }
 
 interface EditMemorialScreenProps {
-  memorialId?: string
-  pageId?: string
+  memorialId: string
 }
 
-export function EditMemorialScreen({ memorialId, pageId }: EditMemorialScreenProps) {
-  const resolvedMemorialId = memorialId || pageId || ''
+export function EditMemorialScreen({ memorialId }: EditMemorialScreenProps) {
   const [memorial, setMemorial] = useState<MemorialRecord | null>(null)
   const [photos, setPhotos] = useState<PhotoRecord[]>([])
   const [redirects, setRedirects] = useState<RedirectRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const fetchPage = useCallback(async () => {
+  const fetchMemorial = useCallback(async () => {
     setErrorMessage(null)
-    const pageResponse = await fetch(`/api/admin/memorials/${resolvedMemorialId}`, { cache: 'no-store' })
-    if (!pageResponse.ok) {
-      const payload = (await pageResponse.json().catch(() => null)) as { message?: string } | null
+    const memorialResponse = await fetch(`/api/admin/memorials/${memorialId}`, { cache: 'no-store' })
+    if (!memorialResponse.ok) {
+      const payload = (await memorialResponse.json().catch(() => null)) as { message?: string } | null
       setErrorMessage(payload?.message || 'Unable to load memorial.')
       setMemorial(null)
       setRedirects([])
@@ -77,12 +75,12 @@ export function EditMemorialScreen({ memorialId, pageId }: EditMemorialScreenPro
       setLoading(false)
       return
     }
-    const memorialPayload = (await pageResponse.json()) as { memorial?: MemorialRecord; page?: MemorialRecord }
-    setMemorial(memorialPayload.memorial ?? memorialPayload.page ?? null)
+    const memorialPayload = (await memorialResponse.json()) as { memorial?: MemorialRecord }
+    setMemorial(memorialPayload.memorial ?? null)
 
     const [redirectsResponse, photosResponse] = await Promise.all([
-      fetch(`/api/admin/memorials/${resolvedMemorialId}/redirects`, { cache: 'no-store' }),
-      fetch(`/api/admin/memorials/${resolvedMemorialId}/photos`, { cache: 'no-store' }),
+      fetch(`/api/admin/memorials/${memorialId}/redirects`, { cache: 'no-store' }),
+      fetch(`/api/admin/memorials/${memorialId}/photos`, { cache: 'no-store' }),
     ])
 
     if (redirectsResponse.ok) {
@@ -100,19 +98,19 @@ export function EditMemorialScreen({ memorialId, pageId }: EditMemorialScreenPro
     }
 
     setLoading(false)
-  }, [resolvedMemorialId])
+  }, [memorialId])
 
   useEffect(() => {
     const kickoff = setTimeout(() => {
-      void fetchPage()
+      void fetchMemorial()
     }, 0)
 
     return () => clearTimeout(kickoff)
-  }, [fetchPage])
+  }, [fetchMemorial])
 
   const handleSetHero = async (photoUrl: string) => {
     setErrorMessage(null)
-    const response = await fetch(`/api/admin/memorials/${resolvedMemorialId}`, {
+    const response = await fetch(`/api/admin/memorials/${memorialId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ heroImageUrl: photoUrl }),
@@ -150,19 +148,19 @@ export function EditMemorialScreen({ memorialId, pageId }: EditMemorialScreenPro
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
         <div className="space-y-6">
-          <AdminPageInfo page={memorial} onUpdate={fetchPage} />
+          <AdminMemorialInfo memorial={memorial} onUpdate={fetchMemorial} />
 
           <section className="surface-card space-y-4 p-6">
             <h3 className="border-b border-border pb-2 text-base font-semibold">Video Links (YouTube)</h3>
-            <VideoManager memorialId={resolvedMemorialId} />
+            <VideoManager memorialId={memorialId} />
           </section>
 
           <section className="surface-card space-y-4 p-6">
             <h3 className="border-b border-border pb-2 text-base font-semibold">Timeline Events</h3>
-            <TimelineEditor memorialId={resolvedMemorialId} />
+            <TimelineEditor memorialId={memorialId} />
           </section>
 
-          <AdminQRCodeSection page={memorial} redirects={redirects} />
+          <AdminQRCodeSection memorial={memorial} redirects={redirects} />
 
           <section className="surface-card space-y-4 p-6">
             <div className="space-y-1 border-b border-border pb-3">
@@ -171,17 +169,17 @@ export function EditMemorialScreen({ memorialId, pageId }: EditMemorialScreenPro
                 Download memorial records for handoff, review, or family archive requests.
               </p>
             </div>
-            <DataExport memorialId={resolvedMemorialId} pageTitle={memorial.title} />
+            <DataExport memorialId={memorialId} memorialTitle={memorial.title} />
           </section>
 
           <section className="space-y-4">
             <h3 className="px-1 text-base font-semibold">Upload Photos</h3>
-            <MediaUpload memorialId={resolvedMemorialId} onUploadComplete={fetchPage} />
+            <MediaUpload memorialId={memorialId} onUploadComplete={fetchMemorial} />
           </section>
         </div>
 
         <div className="space-y-6">
-          <AdminPhotoGallery photos={photos} heroImageUrl={memorial.hero_image_url} onRefresh={fetchPage} onSetHero={handleSetHero} />
+          <AdminPhotoGallery photos={photos} heroImageUrl={memorial.hero_image_url} onRefresh={fetchMemorial} onSetHero={handleSetHero} />
         </div>
       </div>
     </div>

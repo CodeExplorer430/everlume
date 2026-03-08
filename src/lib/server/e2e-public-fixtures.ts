@@ -1,8 +1,8 @@
-import { hashPagePassword, verifyPagePassword } from '@/lib/server/page-password'
+import { hashMemorialPassword, verifyMemorialPassword } from '@/lib/server/page-password'
 
 type FixtureAccessMode = 'public' | 'password' | 'private'
 
-type FixturePage = {
+type FixtureMemorial = {
   id: string
   slug: string
   owner_id: string
@@ -64,7 +64,7 @@ type FixtureSiteSettings = {
 }
 
 export type E2EMemorialFixture = {
-  page: FixturePage
+  memorial: FixtureMemorial
   photos: FixturePhoto[]
   videos: FixtureVideo[]
   timeline: FixtureTimelineEvent[]
@@ -81,11 +81,11 @@ type E2ERedirectFixture = {
 
 const PASSWORD_MEMORIAL_PASSWORD = 'EverlumeMemory!'
 const PASSWORD_UPDATED_AT = '2026-03-08T00:00:00.000Z'
-const PASSWORD_HASH = hashPagePassword(PASSWORD_MEMORIAL_PASSWORD)
+const PASSWORD_HASH = hashMemorialPassword(PASSWORD_MEMORIAL_PASSWORD)
 
 const memorialFixtures: E2EMemorialFixture[] = [
   {
-    page: {
+    memorial: {
       id: '11111111-1111-1111-1111-111111111111',
       slug: 'e2e-public-memorial',
       owner_id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
@@ -164,7 +164,7 @@ const memorialFixtures: E2EMemorialFixture[] = [
     },
   },
   {
-    page: {
+    memorial: {
       id: '12222222-2222-2222-2222-222222222222',
       slug: 'e2e-password-memorial',
       owner_id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
@@ -229,7 +229,7 @@ const memorialFixtures: E2EMemorialFixture[] = [
     unlockPassword: PASSWORD_MEMORIAL_PASSWORD,
   },
   {
-    page: {
+    memorial: {
       id: '13333333-3333-3333-3333-333333333333',
       slug: 'e2e-private-memorial',
       owner_id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
@@ -280,7 +280,7 @@ export function isE2EPublicFixturesEnabled() {
 
 export function getE2EMemorialFixtureBySlug(slug: string) {
   if (!isE2EPublicFixturesEnabled()) return null
-  return memorialFixtures.find((fixture) => fixture.page.slug === slug) || null
+  return memorialFixtures.find((fixture) => fixture.memorial.slug === slug) || null
 }
 
 export function getE2ERedirectFixtureByCode(code: string) {
@@ -294,7 +294,7 @@ export function getE2EPhotoFixtureById(photoId: string) {
   for (const fixture of memorialFixtures) {
     const photo = fixture.photos.find((candidate) => candidate.id === photoId)
     if (photo) {
-      return { photo, page: fixture.page }
+      return { photo, memorial: fixture.memorial }
     }
   }
 
@@ -303,14 +303,14 @@ export function getE2EPhotoFixtureById(photoId: string) {
 
 export function verifyE2EMemorialPassword(slug: string, password: string) {
   const fixture = getE2EMemorialFixtureBySlug(slug)
-  if (!fixture || fixture.page.access_mode !== 'password') {
+  if (!fixture || fixture.memorial.access_mode !== 'password') {
     return null
   }
 
-  const valid = verifyPagePassword(password, fixture.page.password_hash)
+  const valid = verifyMemorialPassword(password, fixture.memorial.password_hash)
   if (!valid) {
-    return { ok: false as const, page: fixture.page }
+    return { ok: false as const, memorial: fixture.memorial }
   }
 
-  return { ok: true as const, page: fixture.page }
+  return { ok: true as const, memorial: fixture.memorial }
 }

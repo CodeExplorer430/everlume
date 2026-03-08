@@ -6,9 +6,8 @@ import JSZip from 'jszip'
 import { Button } from '@/components/ui/button'
 
 interface DataExportProps {
-  memorialId?: string
-  pageId?: string
-  pageTitle: string
+  memorialId: string
+  memorialTitle: string
 }
 
 type PhotoRow = {
@@ -85,8 +84,7 @@ function sanitizeFileStem(value: string) {
   return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'memorial'
 }
 
-export function DataExport({ memorialId, pageId, pageTitle }: DataExportProps) {
-  const resolvedMemorialId = memorialId || pageId || ''
+export function DataExport({ memorialId, memorialTitle }: DataExportProps) {
   const [loadingGuestbook, setLoadingGuestbook] = useState(false)
   const [loadingPhotos, setLoadingPhotos] = useState(false)
   const [loadingZip, setLoadingZip] = useState(false)
@@ -129,7 +127,7 @@ export function DataExport({ memorialId, pageId, pageTitle }: DataExportProps) {
 
     try {
       const payload = await readJsonOrThrow<{ entries?: GuestbookRow[] }>(
-        await fetch(`/api/admin/memorials/${resolvedMemorialId}/guestbook`, { cache: 'no-store' }),
+        await fetch(`/api/admin/memorials/${memorialId}/guestbook`, { cache: 'no-store' }),
         'Unable to load guestbook entries.'
       )
       const data = payload.entries ?? []
@@ -149,7 +147,7 @@ export function DataExport({ memorialId, pageId, pageTitle }: DataExportProps) {
       ])
 
       const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n')
-      downloadCSV(csvContent, `${sanitizeFileStem(pageTitle)}_guestbook.csv`)
+      downloadCSV(csvContent, `${sanitizeFileStem(memorialTitle)}_guestbook.csv`)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Export failed.'
       setErrorMessage(`Export failed: ${message}`)
@@ -165,7 +163,7 @@ export function DataExport({ memorialId, pageId, pageTitle }: DataExportProps) {
 
     try {
       const payload = await readJsonOrThrow<{ photos?: PhotoRow[] }>(
-        await fetch(`/api/admin/memorials/${resolvedMemorialId}/photos`, { cache: 'no-store' }),
+        await fetch(`/api/admin/memorials/${memorialId}/photos`, { cache: 'no-store' }),
         'Unable to load photos.'
       )
       const data = payload.photos ?? []
@@ -187,7 +185,7 @@ export function DataExport({ memorialId, pageId, pageTitle }: DataExportProps) {
       ])
 
       const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n')
-      downloadCSV(csvContent, `${sanitizeFileStem(pageTitle)}_photo_metadata.csv`)
+      downloadCSV(csvContent, `${sanitizeFileStem(memorialTitle)}_photo_metadata.csv`)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Export failed.'
       setErrorMessage(`Export failed: ${message}`)
@@ -202,10 +200,7 @@ export function DataExport({ memorialId, pageId, pageTitle }: DataExportProps) {
     setErrorMessage(null)
 
     try {
-      const payload = await readJsonOrThrow<{ photos?: PhotoRow[] }>(
-        await fetch(`/api/admin/memorials/${resolvedMemorialId}/photos`, { cache: 'no-store' }),
-        'Unable to load photos.'
-      )
+      const payload = await readJsonOrThrow<{ photos?: PhotoRow[] }>(await fetch(`/api/admin/memorials/${memorialId}/photos`, { cache: 'no-store' }), 'Unable to load photos.')
       const data = payload.photos ?? []
 
       if (data.length === 0) {
@@ -234,7 +229,7 @@ export function DataExport({ memorialId, pageId, pageTitle }: DataExportProps) {
       }
 
       const content = await zip.generateAsync({ type: 'blob' })
-      downloadBlob(content, `${sanitizeFileStem(pageTitle)}_photos.zip`)
+      downloadBlob(content, `${sanitizeFileStem(memorialTitle)}_photos.zip`)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'ZIP export failed.'
       setErrorMessage(`ZIP export failed: ${message}`)
@@ -250,18 +245,15 @@ export function DataExport({ memorialId, pageId, pageTitle }: DataExportProps) {
 
     try {
       const [memorialPayload, photosPayload, videosPayload, timelinePayload, guestbookPayload, redirectsPayload] = await Promise.all([
-        readJsonOrThrow<{ memorial?: MemorialRow; page?: MemorialRow }>(
-          await fetch(`/api/admin/memorials/${resolvedMemorialId}`, { cache: 'no-store' }),
-          'Unable to load memorial details.'
-        ),
-        readJsonOrThrow<{ photos?: PhotoRow[] }>(await fetch(`/api/admin/memorials/${resolvedMemorialId}/photos`, { cache: 'no-store' }), 'Unable to load photos.'),
-        readJsonOrThrow<{ videos?: VideoRow[] }>(await fetch(`/api/admin/memorials/${resolvedMemorialId}/videos`, { cache: 'no-store' }), 'Unable to load videos.'),
-        readJsonOrThrow<{ events?: TimelineRow[] }>(await fetch(`/api/admin/memorials/${resolvedMemorialId}/timeline`, { cache: 'no-store' }), 'Unable to load timeline events.'),
-        readJsonOrThrow<{ entries?: GuestbookRow[] }>(await fetch(`/api/admin/memorials/${resolvedMemorialId}/guestbook`, { cache: 'no-store' }), 'Unable to load guestbook entries.'),
-        readJsonOrThrow<{ redirects?: RedirectRow[] }>(await fetch(`/api/admin/memorials/${resolvedMemorialId}/redirects`, { cache: 'no-store' }), 'Unable to load redirects.'),
+        readJsonOrThrow<{ memorial?: MemorialRow }>(await fetch(`/api/admin/memorials/${memorialId}`, { cache: 'no-store' }), 'Unable to load memorial details.'),
+        readJsonOrThrow<{ photos?: PhotoRow[] }>(await fetch(`/api/admin/memorials/${memorialId}/photos`, { cache: 'no-store' }), 'Unable to load photos.'),
+        readJsonOrThrow<{ videos?: VideoRow[] }>(await fetch(`/api/admin/memorials/${memorialId}/videos`, { cache: 'no-store' }), 'Unable to load videos.'),
+        readJsonOrThrow<{ events?: TimelineRow[] }>(await fetch(`/api/admin/memorials/${memorialId}/timeline`, { cache: 'no-store' }), 'Unable to load timeline events.'),
+        readJsonOrThrow<{ entries?: GuestbookRow[] }>(await fetch(`/api/admin/memorials/${memorialId}/guestbook`, { cache: 'no-store' }), 'Unable to load guestbook entries.'),
+        readJsonOrThrow<{ redirects?: RedirectRow[] }>(await fetch(`/api/admin/memorials/${memorialId}/redirects`, { cache: 'no-store' }), 'Unable to load redirects.'),
       ])
 
-      const memorial = memorialPayload.memorial ?? memorialPayload.page
+      const memorial = memorialPayload.memorial
       if (!memorial) {
         throw new Error('Unable to load memorial details.')
       }
@@ -269,8 +261,8 @@ export function DataExport({ memorialId, pageId, pageTitle }: DataExportProps) {
       downloadJSON(
         {
           exported_at: new Date().toISOString(),
-          memorialId: resolvedMemorialId,
-          memorialTitle: memorial.title || pageTitle,
+          memorialId,
+          memorialTitle: memorial.title || memorialTitle,
           memorial,
           photos: photosPayload.photos ?? [],
           videos: videosPayload.videos ?? [],
@@ -278,7 +270,7 @@ export function DataExport({ memorialId, pageId, pageTitle }: DataExportProps) {
           guestbook: guestbookPayload.entries ?? [],
           redirects: redirectsPayload.redirects ?? [],
         },
-        `${sanitizeFileStem(pageTitle)}_memorial_package.json`
+        `${sanitizeFileStem(memorialTitle)}_memorial_package.json`
       )
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'JSON export failed.'

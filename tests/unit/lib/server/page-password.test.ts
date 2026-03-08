@@ -1,28 +1,28 @@
 import {
-  createPageAccessToken,
-  getPageAccessCookieName,
-  getPageAccessCookieMaxAge,
-  hashPagePassword,
-  verifyPageAccessToken,
-  verifyPagePassword,
+  createMemorialAccessToken,
+  getMemorialAccessCookieName,
+  getMemorialAccessCookieMaxAge,
+  hashMemorialPassword,
+  verifyMemorialAccessToken,
+  verifyMemorialPassword,
 } from '@/lib/server/page-password'
 
-describe('page-password helpers', () => {
+describe('memorial password helpers', () => {
   it('hashes and verifies passwords', () => {
-    const hash = hashPagePassword('secret-123')
+    const hash = hashMemorialPassword('secret-123')
     expect(hash.startsWith('pbkdf2$')).toBe(true)
-    expect(verifyPagePassword('secret-123', hash)).toBe(true)
-    expect(verifyPagePassword('wrong', hash)).toBe(false)
+    expect(verifyMemorialPassword('secret-123', hash)).toBe(true)
+    expect(verifyMemorialPassword('wrong', hash)).toBe(false)
   })
 
-  it('creates and verifies page access tokens', () => {
-    const token = createPageAccessToken('page-1', '2026-03-06T00:00:00.000Z')
-    expect(verifyPageAccessToken(token, 'page-1', '2026-03-06T00:00:00.000Z')).toBe(true)
-    expect(verifyPageAccessToken(token, 'page-2', '2026-03-06T00:00:00.000Z')).toBe(false)
+  it('creates and verifies memorial access tokens', () => {
+    const token = createMemorialAccessToken('page-1', '2026-03-06T00:00:00.000Z')
+    expect(verifyMemorialAccessToken(token, 'page-1', '2026-03-06T00:00:00.000Z')).toBe(true)
+    expect(verifyMemorialAccessToken(token, 'page-2', '2026-03-06T00:00:00.000Z')).toBe(false)
   })
 
   it('provides stable cookie metadata', () => {
-    expect(getPageAccessCookieName('abc')).toBe('everlume_memorial_access_abc')
-    expect(getPageAccessCookieMaxAge()).toBeGreaterThan(0)
+    expect(getMemorialAccessCookieName('abc')).toBe('everlume_memorial_access_abc')
+    expect(getMemorialAccessCookieMaxAge()).toBeGreaterThan(0)
   })
 })

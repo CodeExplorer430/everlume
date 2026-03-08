@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'Everlume',
     short_name: 'Everlume',
-    description: 'Digital memorial pages with short links, QR access, and family-led moderation.',
+    description: 'Digital memorials with short links, QR access, and family-led moderation.',
     start_url: '/',
     display: 'standalone',
     background_color: '#efede4',

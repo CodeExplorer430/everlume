@@ -19,7 +19,7 @@ describe('TributeHero', () => {
   it('renders hero image and formatted date range', () => {
     render(
       <TributeHero
-        page={{
+        memorial={{
           title: 'In Loving Memory',
           full_name: 'Jane Doe',
           dob: '1950-01-01',
@@ -39,7 +39,7 @@ describe('TributeHero', () => {
   it('renders gradient fallback and no date range when dates are missing', () => {
     render(
       <TributeHero
-        page={{
+        memorial={{
           title: 'Beloved Parent',
           full_name: null,
           dob: null,

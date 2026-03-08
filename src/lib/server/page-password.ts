@@ -74,10 +74,3 @@ export function getMemorialAccessCookieName(memorialId: string) {
 export function getMemorialAccessCookieMaxAge() {
   return COOKIE_MAX_AGE_SECONDS
 }
-
-export const hashPagePassword = hashMemorialPassword
-export const verifyPagePassword = verifyMemorialPassword
-export const createPageAccessToken = createMemorialAccessToken
-export const verifyPageAccessToken = verifyMemorialAccessToken
-export const getPageAccessCookieName = getMemorialAccessCookieName
-export const getPageAccessCookieMaxAge = getMemorialAccessCookieMaxAge

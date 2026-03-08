@@ -6,8 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Loader2, Trash2, Plus, Youtube, Upload, Film } from 'lucide-react'
 
 interface VideoManagerProps {
-  memorialId?: string
-  pageId?: string
+  memorialId: string
 }
 
 type VideoItem = {
@@ -27,8 +26,7 @@ type UploadJob = {
   error_message?: string | null
 }
 
-export function VideoManager({ memorialId, pageId }: VideoManagerProps) {
-  const resolvedMemorialId = memorialId || pageId || ''
+export function VideoManager({ memorialId }: VideoManagerProps) {
   const [videos, setVideos] = useState<VideoItem[]>([])
   const [url, setUrl] = useState('')
   const [title, setTitle] = useState('')
@@ -41,7 +39,7 @@ export function VideoManager({ memorialId, pageId }: VideoManagerProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const fetchVideos = useCallback(async () => {
-    const response = await fetch(`/api/admin/memorials/${resolvedMemorialId}/videos`, { cache: 'no-store' })
+    const response = await fetch(`/api/admin/memorials/${memorialId}/videos`, { cache: 'no-store' })
     if (!response.ok) {
       const payload = (await response.json().catch(() => null)) as { message?: string } | null
       setErrorMessage(payload?.message || 'Unable to load videos.')
@@ -53,7 +51,7 @@ export function VideoManager({ memorialId, pageId }: VideoManagerProps) {
     const payload = (await response.json()) as { videos?: VideoItem[] }
     setVideos(payload.videos ?? [])
     setLoading(false)
-  }, [resolvedMemorialId])
+  }, [memorialId])
 
   useEffect(() => {
     const kickoff = setTimeout(() => {
@@ -72,7 +70,7 @@ export function VideoManager({ memorialId, pageId }: VideoManagerProps) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        memorialId: resolvedMemorialId,
+        memorialId,
         url,
         title,
       }),
@@ -175,7 +173,7 @@ export function VideoManager({ memorialId, pageId }: VideoManagerProps) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        memorialId: resolvedMemorialId,
+        memorialId,
         fileName: selectedFile.name,
         fileSize: selectedFile.size,
         mimeType: selectedFile.type || 'video/mp4',

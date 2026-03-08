@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { createPageAccessToken, getPageAccessCookieMaxAge, getPageAccessCookieName, verifyPagePassword } from '@/lib/server/page-password'
+import { createMemorialAccessToken, getMemorialAccessCookieMaxAge, getMemorialAccessCookieName, verifyMemorialPassword } from '@/lib/server/page-password'
 import { verifyE2EMemorialPassword } from '@/lib/server/e2e-public-fixtures'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -11,7 +11,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ sl
   const params = await context.params
   const parsedParams = paramsSchema.safeParse(params)
   if (!parsedParams.success) {
-    return NextResponse.json({ code: 'VALIDATION_ERROR', message: 'Invalid page slug.' }, { status: 400 })
+    return NextResponse.json({ code: 'VALIDATION_ERROR', message: 'Invalid memorial slug.' }, { status: 400 })
   }
 
   let payload: unknown
@@ -32,15 +32,15 @@ export async function POST(request: NextRequest, context: { params: Promise<{ sl
       return NextResponse.json({ code: 'INVALID_PASSWORD', message: 'The password is incorrect.' }, { status: 401 })
     }
 
-    const token = createPageAccessToken(fixtureResult.page.id, fixtureResult.page.password_updated_at || null)
+    const token = createMemorialAccessToken(fixtureResult.memorial.id, fixtureResult.memorial.password_updated_at || null)
     const response = NextResponse.json({ ok: true }, { status: 200 })
 
-    response.cookies.set(getPageAccessCookieName(fixtureResult.page.id), token, {
+    response.cookies.set(getMemorialAccessCookieName(fixtureResult.memorial.id), token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: getPageAccessCookieMaxAge(),
+      maxAge: getMemorialAccessCookieMaxAge(),
     })
 
     return response
@@ -57,20 +57,20 @@ export async function POST(request: NextRequest, context: { params: Promise<{ sl
     return NextResponse.json({ code: 'NOT_FOUND', message: 'This memorial is not available for password unlock.' }, { status: 404 })
   }
 
-  const passwordValid = verifyPagePassword(parsedPayload.data.password, page.password_hash)
+  const passwordValid = verifyMemorialPassword(parsedPayload.data.password, page.password_hash)
   if (!passwordValid) {
     return NextResponse.json({ code: 'INVALID_PASSWORD', message: 'The password is incorrect.' }, { status: 401 })
   }
 
-  const token = createPageAccessToken(page.id, page.password_updated_at || null)
+  const token = createMemorialAccessToken(page.id, page.password_updated_at || null)
   const response = NextResponse.json({ ok: true }, { status: 200 })
 
-  response.cookies.set(getPageAccessCookieName(page.id), token, {
+  response.cookies.set(getMemorialAccessCookieName(page.id), token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
-    maxAge: getPageAccessCookieMaxAge(),
+    maxAge: getMemorialAccessCookieMaxAge(),
   })
 
   return response

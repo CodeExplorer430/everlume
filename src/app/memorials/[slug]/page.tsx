@@ -15,11 +15,11 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params
   const fixture = getE2EMemorialFixtureBySlug(slug)
-  const page = fixture?.page
+  const memorial = fixture?.memorial
 
-  if (page) {
-    if (resolveMemorialAccessMode(page) !== 'public') {
-      const access = await canAccessMemorial(page)
+  if (memorial) {
+    if (resolveMemorialAccessMode(memorial) !== 'public') {
+      const access = await canAccessMemorial(memorial)
       if (!access.allowed && !access.requiresPassword) {
         return {
           title: 'Private Memorial | Everlume',
@@ -36,12 +36,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     }
 
     return {
-      title: `${page.title} | Everlume`,
-      description: `A digital memorial for ${page.full_name || 'our loved one'}.`,
+      title: `${memorial.title} | Everlume`,
+      description: `A digital memorial for ${memorial.full_name || 'our loved one'}.`,
       openGraph: {
-        title: page.title,
-        description: `A digital memorial for ${page.full_name || 'our loved one'}.`,
-        images: page.hero_image_url ? [page.hero_image_url] : [],
+        title: memorial.title,
+        description: `A digital memorial for ${memorial.full_name || 'our loved one'}.`,
+        images: memorial.hero_image_url ? [memorial.hero_image_url] : [],
         type: 'website',
       },
     }
@@ -86,8 +86,8 @@ export default async function PublicTributePage({ params }: PageProps) {
   const fixture = getE2EMemorialFixtureBySlug(slug)
   const supabase = fixture ? null : await createClient()
 
-  const page =
-    fixture?.page ||
+  const memorial =
+    fixture?.memorial ||
     (await supabase!.from('pages').select('*').eq('slug', slug).single()).data
   const siteSettings =
     fixture?.siteSettings ||
@@ -99,12 +99,12 @@ export default async function PublicTributePage({ params }: PageProps) {
         .single()
     ).data
 
-  if (!page) {
+  if (!memorial) {
     notFound()
   }
 
-  if (resolveMemorialAccessMode(page) !== 'public') {
-    const access = await canAccessMemorial(page)
+  if (resolveMemorialAccessMode(memorial) !== 'public') {
+    const access = await canAccessMemorial(memorial)
     if (!access.allowed && !access.requiresPassword) {
       notFound()
     }
@@ -116,7 +116,7 @@ export default async function PublicTributePage({ params }: PageProps) {
 
   const photos =
     fixture?.photos ||
-    (await supabase!.from('photos').select('*').eq('page_id', page.id).order('sort_index', { ascending: true })).data ||
+    (await supabase!.from('photos').select('*').eq('page_id', memorial.id).order('sort_index', { ascending: true })).data ||
     []
 
   const guestbook =
@@ -125,7 +125,7 @@ export default async function PublicTributePage({ params }: PageProps) {
       await supabase!
         .from('guestbook')
         .select('*')
-        .eq('page_id', page.id)
+        .eq('page_id', memorial.id)
         .eq('is_approved', true)
         .order('created_at', { ascending: false })
     ).data ||
@@ -133,16 +133,16 @@ export default async function PublicTributePage({ params }: PageProps) {
 
   const timeline =
     fixture?.timeline ||
-    (await supabase!.from('timeline_events').select('*').eq('page_id', page.id).order('year', { ascending: true })).data ||
+    (await supabase!.from('timeline_events').select('*').eq('page_id', memorial.id).order('year', { ascending: true })).data ||
     []
 
   const videos =
     fixture?.videos ||
-    (await supabase!.from('videos').select('*').eq('page_id', page.id).order('created_at', { ascending: true })).data ||
+    (await supabase!.from('videos').select('*').eq('page_id', memorial.id).order('created_at', { ascending: true })).data ||
     []
 
   const resolvedPhotos =
-    memorialRequiresProtectedMedia(page)
+    memorialRequiresProtectedMedia(memorial)
       ? photos.map((photo) => {
           const imageToken = createSignedMediaToken(photo.id, 'image')
           const thumbToken = createSignedMediaToken(photo.id, 'thumb')
@@ -154,18 +154,18 @@ export default async function PublicTributePage({ params }: PageProps) {
         })
       : photos
 
-  const resolvedPage = {
-    ...page,
+  const resolvedMemorial = {
+    ...memorial,
     memorial_slideshow_enabled:
-      page.memorial_slideshow_enabled ?? (siteSettings?.memorial_slideshow_enabled !== false),
-    memorial_slideshow_interval_ms: page.memorial_slideshow_interval_ms ?? (Number(siteSettings?.memorial_slideshow_interval_ms) || 4500),
+      memorial.memorial_slideshow_enabled ?? (siteSettings?.memorial_slideshow_enabled !== false),
+    memorial_slideshow_interval_ms: memorial.memorial_slideshow_interval_ms ?? (Number(siteSettings?.memorial_slideshow_interval_ms) || 4500),
     memorial_video_layout:
-      page.memorial_video_layout ?? (siteSettings?.memorial_video_layout === 'featured' ? 'featured' : 'grid'),
+      memorial.memorial_video_layout ?? (siteSettings?.memorial_video_layout === 'featured' ? 'featured' : 'grid'),
   }
 
   return (
     <MemorialPageView
-      page={resolvedPage}
+      memorial={resolvedMemorial}
       photos={resolvedPhotos}
       videos={videos}
       timeline={timeline}

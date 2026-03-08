@@ -38,7 +38,7 @@ describe('NewMemorialForm', () => {
   })
 
   it('submits and navigates to admin on success', async () => {
-    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ page: { id: 'p1' } }), { status: 200 }))
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ memorial: { id: 'p1' } }), { status: 200 }))
 
     const user = userEvent.setup()
     render(<NewMemorialForm />)

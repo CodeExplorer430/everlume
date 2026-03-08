@@ -28,12 +28,12 @@ describe('e2e public fixtures', () => {
     const redirect = getE2ERedirectFixtureByCode('tribute-demo')
     const photo = getE2EPhotoFixtureById('22222222-2222-2222-2222-222222222221')
 
-    expect(memorial?.page.access_mode).toBe('public')
+    expect(memorial?.memorial.access_mode).toBe('public')
     expect(memorial?.photos).toHaveLength(2)
-    expect(privateMemorial?.page.access_mode).toBe('private')
+    expect(privateMemorial?.memorial.access_mode).toBe('private')
     expect(redirect).toMatchObject({ shortcode: 'tribute-demo', is_active: true })
     expect(photo).toMatchObject({
-      page: expect.objectContaining({ slug: 'e2e-password-memorial' }),
+      memorial: expect.objectContaining({ slug: 'e2e-password-memorial' }),
       photo: expect.objectContaining({ caption: 'Mateo with the family workshop in 1975' }),
     })
   })
@@ -43,11 +43,11 @@ describe('e2e public fixtures', () => {
 
     expect(verifyE2EMemorialPassword('e2e-password-memorial', 'EverlumeMemory!')).toMatchObject({
       ok: true,
-      page: expect.objectContaining({ slug: 'e2e-password-memorial' }),
+      memorial: expect.objectContaining({ slug: 'e2e-password-memorial' }),
     })
     expect(verifyE2EMemorialPassword('e2e-password-memorial', 'wrong-password')).toMatchObject({
       ok: false,
-      page: expect.objectContaining({ slug: 'e2e-password-memorial' }),
+      memorial: expect.objectContaining({ slug: 'e2e-password-memorial' }),
     })
     expect(verifyE2EMemorialPassword('e2e-public-memorial', 'EverlumeMemory!')).toBeNull()
     expect(verifyE2EMemorialPassword('missing-slug', 'EverlumeMemory!')).toBeNull()

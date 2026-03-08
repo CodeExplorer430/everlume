@@ -9,7 +9,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ sl
   const fixture = getE2EMemorialFixtureBySlug(slug)
 
   if (fixture) {
-    const access = await canAccessMemorial(fixture.page)
+    const access = await canAccessMemorial(fixture.memorial)
     if (!access.allowed) {
       if (access.requiresPassword) {
         return NextResponse.json({ code: 'FORBIDDEN', message: 'This memorial must be unlocked before media can be viewed.' }, { status: 403 })
@@ -19,7 +19,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ sl
     }
 
     const resolvedPhotos =
-      memorialRequiresProtectedMedia(fixture.page)
+      memorialRequiresProtectedMedia(fixture.memorial)
         ? fixture.photos.map((photo) => {
             const imageToken = createSignedMediaToken(photo.id, 'image')
             const thumbToken = createSignedMediaToken(photo.id, 'thumb')
@@ -48,7 +48,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ sl
     .eq('slug', slug)
     .single()
   if (!page) {
-    return NextResponse.json({ code: 'NOT_FOUND', message: 'Memorial page not found.' }, { status: 404 })
+    return NextResponse.json({ code: 'NOT_FOUND', message: 'Memorial not found.' }, { status: 404 })
   }
 
   const access = await canAccessMemorial(page)

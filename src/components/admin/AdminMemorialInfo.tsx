@@ -28,37 +28,37 @@ type AdminMemorial = {
   qr_show_logo?: boolean
 }
 
-interface AdminPageInfoProps {
-  page: AdminMemorial
+interface AdminMemorialInfoProps {
+  memorial: AdminMemorial
   onUpdate: () => void
 }
 
-export function AdminPageInfo({ page, onUpdate }: AdminPageInfoProps) {
-  return <AdminPageInfoForm key={serializePageKey(page)} page={page} onUpdate={onUpdate} />
+export function AdminMemorialInfo({ memorial, onUpdate }: AdminMemorialInfoProps) {
+  return <AdminMemorialInfoForm key={serializeMemorialKey(memorial)} memorial={memorial} onUpdate={onUpdate} />
 }
 
-function serializePageKey(page: AdminMemorial) {
+function serializeMemorialKey(memorial: AdminMemorial) {
   return [
-    page.id,
-    page.title,
-    page.slug,
-    page.full_name ?? '',
-    page.dob ?? '',
-    page.dod ?? '',
-    page.accessMode,
-    page.memorial_theme ?? 'classic',
-    String(page.memorial_slideshow_enabled ?? true),
-    String(page.memorial_slideshow_interval_ms ?? 4500),
-    page.memorial_video_layout ?? 'grid',
-    page.memorial_photo_fit ?? 'cover',
-    page.memorial_caption_style ?? 'classic',
-    page.qr_template ?? 'classic',
-    page.qr_caption ?? 'Scan me!',
-    page.qr_foreground_color ?? '#111827',
-    page.qr_background_color ?? '#ffffff',
-    page.qr_frame_style ?? 'line',
-    page.qr_caption_font ?? 'serif',
-    String(page.qr_show_logo ?? false),
+    memorial.id,
+    memorial.title,
+    memorial.slug,
+    memorial.full_name ?? '',
+    memorial.dob ?? '',
+    memorial.dod ?? '',
+    memorial.accessMode,
+    memorial.memorial_theme ?? 'classic',
+    String(memorial.memorial_slideshow_enabled ?? true),
+    String(memorial.memorial_slideshow_interval_ms ?? 4500),
+    memorial.memorial_video_layout ?? 'grid',
+    memorial.memorial_photo_fit ?? 'cover',
+    memorial.memorial_caption_style ?? 'classic',
+    memorial.qr_template ?? 'classic',
+    memorial.qr_caption ?? 'Scan me!',
+    memorial.qr_foreground_color ?? '#111827',
+    memorial.qr_background_color ?? '#ffffff',
+    memorial.qr_frame_style ?? 'line',
+    memorial.qr_caption_font ?? 'serif',
+    String(memorial.qr_show_logo ?? false),
   ].join('|')
 }
 
@@ -69,7 +69,7 @@ const accessModeDescriptions: Record<'public' | 'private' | 'password', { title:
   },
   private: {
     title: 'Hidden from public visitors and excluded from the homepage directory.',
-    body: 'Use this for memorials that should remain internal to the family or admin team. Visitors without admin access will not be able to open the page.',
+    body: 'Use this for memorials that should remain internal to the family or admin team. Visitors without admin access will not be able to open the memorial.',
   },
   password: {
     title: 'Protected by a family-managed password and excluded from the homepage directory.',
@@ -77,7 +77,7 @@ const accessModeDescriptions: Record<'public' | 'private' | 'password', { title:
   },
 }
 
-function AdminPageInfoForm({ page, onUpdate }: AdminPageInfoProps) {
+function AdminMemorialInfoForm({ memorial, onUpdate }: AdminMemorialInfoProps) {
   const accessModeId = 'page-access-mode'
   const passwordId = 'page-password'
   const titleId = 'page-title'
@@ -86,20 +86,20 @@ function AdminPageInfoForm({ page, onUpdate }: AdminPageInfoProps) {
   const dobId = 'page-dob'
   const dodId = 'page-dod'
   const [formData, setFormData] = useState({
-    ...page,
-    memorial_theme: page.memorial_theme || 'classic',
-    memorial_slideshow_enabled: page.memorial_slideshow_enabled !== false,
-    memorial_slideshow_interval_ms: page.memorial_slideshow_interval_ms || 4500,
-    memorial_video_layout: page.memorial_video_layout || 'grid',
-    memorial_photo_fit: page.memorial_photo_fit || 'cover',
-    memorial_caption_style: page.memorial_caption_style || 'classic',
-    qr_template: page.qr_template || 'classic',
-    qr_caption: page.qr_caption || 'Scan me!',
-    qr_foreground_color: page.qr_foreground_color || '#111827',
-    qr_background_color: page.qr_background_color || '#ffffff',
-    qr_frame_style: page.qr_frame_style || 'line',
-    qr_caption_font: page.qr_caption_font || 'serif',
-    qr_show_logo: page.qr_show_logo === true,
+    ...memorial,
+    memorial_theme: memorial.memorial_theme || 'classic',
+    memorial_slideshow_enabled: memorial.memorial_slideshow_enabled !== false,
+    memorial_slideshow_interval_ms: memorial.memorial_slideshow_interval_ms || 4500,
+    memorial_video_layout: memorial.memorial_video_layout || 'grid',
+    memorial_photo_fit: memorial.memorial_photo_fit || 'cover',
+    memorial_caption_style: memorial.memorial_caption_style || 'classic',
+    qr_template: memorial.qr_template || 'classic',
+    qr_caption: memorial.qr_caption || 'Scan me!',
+    qr_foreground_color: memorial.qr_foreground_color || '#111827',
+    qr_background_color: memorial.qr_background_color || '#ffffff',
+    qr_frame_style: memorial.qr_frame_style || 'line',
+    qr_caption_font: memorial.qr_caption_font || 'serif',
+    qr_show_logo: memorial.qr_show_logo === true,
   })
   const [password, setPassword] = useState('')
   const [updating, setUpdating] = useState(false)
@@ -110,7 +110,7 @@ function AdminPageInfoForm({ page, onUpdate }: AdminPageInfoProps) {
     setUpdating(true)
     setErrorMessage(null)
 
-    const response = await fetch(`/api/admin/memorials/${page.id}`, {
+    const response = await fetch(`/api/admin/memorials/${memorial.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

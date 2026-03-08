@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { QRCodeGenerator } from '@/components/admin/QRCodeGenerator'
 
-interface PageRecord {
+interface MemorialRecord {
   slug: string
   qr_template?: 'classic' | 'minimal' | 'warm'
   qr_caption?: string
@@ -22,11 +22,11 @@ interface RedirectRecord {
 }
 
 interface AdminQRCodeSectionProps {
-  page: PageRecord
+  memorial: MemorialRecord
   redirects: RedirectRecord[]
 }
 
-export function AdminQRCodeSection({ page, redirects }: AdminQRCodeSectionProps) {
+export function AdminQRCodeSection({ memorial, redirects }: AdminQRCodeSectionProps) {
   const [selectedUrl, setSelectedUrl] = useState<string>('')
 
   const options = useMemo(() => {
@@ -74,18 +74,18 @@ export function AdminQRCodeSection({ page, redirects }: AdminQRCodeSectionProps)
             </p>
             <QRCodeGenerator
               url={qrUrl}
-              template={page.qr_template === 'minimal' || page.qr_template === 'warm' ? page.qr_template : 'classic'}
-              caption={(page.qr_caption || 'Scan me!').trim()}
-              foregroundColor={page.qr_foreground_color}
-              backgroundColor={page.qr_background_color}
-              frameStyle={page.qr_frame_style}
-              captionFont={page.qr_caption_font}
-              showLogo={page.qr_show_logo === true}
+              template={memorial.qr_template === 'minimal' || memorial.qr_template === 'warm' ? memorial.qr_template : 'classic'}
+              caption={(memorial.qr_caption || 'Scan me!').trim()}
+              foregroundColor={memorial.qr_foreground_color}
+              backgroundColor={memorial.qr_background_color}
+              frameStyle={memorial.qr_frame_style}
+              captionFont={memorial.qr_caption_font}
+              showLogo={memorial.qr_show_logo === true}
             />
           </>
         ) : (
           <p className="w-full rounded-md border border-dashed border-border px-3 py-4 text-center text-sm text-muted-foreground">
-            Create and activate a short link in Settings before generating a plaque QR for {page.slug}.
+            Create and activate a short link in Settings before generating a plaque QR for {memorial.slug}.
           </p>
         )}
       </div>

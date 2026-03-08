@@ -7,8 +7,7 @@ import { Loader2, Upload } from 'lucide-react'
 import { buildCloudinaryUrl, normalizeCloudinaryPublicId } from '@/lib/cloudinary'
 
 interface MediaUploadProps {
-  memorialId?: string
-  pageId?: string
+  memorialId: string
   onUploadComplete: () => void
 }
 
@@ -36,8 +35,7 @@ declare global {
   }
 }
 
-export function MediaUpload({ memorialId, pageId, onUploadComplete }: MediaUploadProps) {
-  const resolvedMemorialId = memorialId || pageId || ''
+export function MediaUpload({ memorialId, onUploadComplete }: MediaUploadProps) {
   const [widgetReady, setWidgetReady] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [uploadedCount, setUploadedCount] = useState(0)
@@ -61,7 +59,7 @@ export function MediaUpload({ memorialId, pageId, onUploadComplete }: MediaUploa
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          memorialId: resolvedMemorialId,
+          memorialId,
           caption: info.original_filename || '',
           cloudinaryPublicId: publicId,
           imageUrl,
@@ -78,7 +76,7 @@ export function MediaUpload({ memorialId, pageId, onUploadComplete }: MediaUploa
         throw new Error(payload?.message || 'Failed to save uploaded image metadata.')
       }
     },
-    [resolvedMemorialId]
+    [memorialId]
   )
 
   const openWidget = useCallback(() => {
@@ -94,7 +92,7 @@ export function MediaUpload({ memorialId, pageId, onUploadComplete }: MediaUploa
       {
         cloudName,
         uploadPreset,
-        folder: `everlume/${resolvedMemorialId}`,
+        folder: `everlume/${memorialId}`,
         resourceType: 'image',
         sources: ['local', 'camera'],
         multiple: true,
@@ -128,7 +126,7 @@ export function MediaUpload({ memorialId, pageId, onUploadComplete }: MediaUploa
     )
 
     widget.open()
-  }, [cloudName, onUploadComplete, resolvedMemorialId, registerPhoto, uploadPreset])
+  }, [cloudName, memorialId, onUploadComplete, registerPhoto, uploadPreset])
 
   return (
     <div className="surface-card space-y-4 border-2 border-dashed p-6">

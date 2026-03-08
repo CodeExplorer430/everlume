@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
-import { getPageAccessCookieName, verifyPageAccessToken } from '@/lib/server/page-password'
+import { getMemorialAccessCookieName, verifyMemorialAccessToken } from '@/lib/server/page-password'
 import { resolveMemorialAccessMode, type MemorialAccessMode } from '@/lib/server/memorials'
 
 export async function canAccessPrivateMemorial(memorialOwnerId: string) {
@@ -41,17 +41,17 @@ type AccessPageRecord = {
   password_updated_at?: string | null
 }
 
-export function memorialRequiresProtectedMedia(page: Pick<AccessPageRecord, 'access_mode' | 'privacy'>) {
-  return resolveMemorialAccessMode(page) !== 'public'
+export function memorialRequiresProtectedMedia(memorial: Pick<AccessPageRecord, 'access_mode' | 'privacy'>) {
+  return resolveMemorialAccessMode(memorial) !== 'public'
 }
 
-export async function canAccessMemorial(page: AccessPageRecord) {
-  const accessMode = resolveMemorialAccessMode(page)
+export async function canAccessMemorial(memorial: AccessPageRecord) {
+  const accessMode = resolveMemorialAccessMode(memorial)
   if (accessMode === 'public') {
     return { allowed: true as const, requiresPassword: false as const }
   }
 
-  const ownerAccess = await canAccessPrivateMemorial(page.owner_id)
+  const ownerAccess = await canAccessPrivateMemorial(memorial.owner_id)
   if (ownerAccess.allowed) {
     return { allowed: true as const, requiresPassword: accessMode === 'password' as const }
   }
@@ -61,12 +61,11 @@ export async function canAccessMemorial(page: AccessPageRecord) {
   }
 
   const cookieStore = await cookies()
-  const token = cookieStore.get(getPageAccessCookieName(page.id))?.value
-  const valid = verifyPageAccessToken(token, page.id, page.password_updated_at || null)
+  const token = cookieStore.get(getMemorialAccessCookieName(memorial.id))?.value
+  const valid = verifyMemorialAccessToken(token, memorial.id, memorial.password_updated_at || null)
 
   return { allowed: valid as boolean, requiresPassword: true as const }
 }
 
 export const canAccessPrivatePage = canAccessPrivateMemorial
-export const canAccessMemorialPage = canAccessMemorial
-export const resolvePageAccessMode = resolveMemorialAccessMode
+export { resolveMemorialAccessMode }

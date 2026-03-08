@@ -1,8 +1,8 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AdminPageInfo } from '@/components/admin/AdminPageInfo'
+import { AdminMemorialInfo } from '@/components/admin/AdminMemorialInfo'
 
-type AdminPageProps = React.ComponentProps<typeof AdminPageInfo>['page']
+type AdminPageProps = React.ComponentProps<typeof AdminMemorialInfo>['memorial']
 
 function makePage(overrides: Partial<AdminPageProps> = {}): AdminPageProps {
   return {
@@ -23,17 +23,17 @@ function makePage(overrides: Partial<AdminPageProps> = {}): AdminPageProps {
   }
 }
 
-describe('AdminPageInfo', () => {
+describe('AdminMemorialInfo', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
   })
 
-  it('resets form values when page prop changes', async () => {
+  it('resets form values when memorial prop changes', async () => {
     const onUpdate = vi.fn()
     const { rerender } = render(
-      <AdminPageInfo
+      <AdminMemorialInfo
         onUpdate={onUpdate}
-        page={makePage({ title: 'First Title', slug: 'first-title' })}
+        memorial={makePage({ title: 'First Title', slug: 'first-title' })}
       />
     )
 
@@ -44,9 +44,9 @@ describe('AdminPageInfo', () => {
     expect(titleInput).toHaveValue('Edited Locally')
 
     rerender(
-      <AdminPageInfo
+      <AdminMemorialInfo
         onUpdate={onUpdate}
-        page={makePage({ title: 'Server Updated Title', slug: 'first-title' })}
+        memorial={makePage({ title: 'Server Updated Title', slug: 'first-title' })}
       />
     )
 
@@ -59,9 +59,9 @@ describe('AdminPageInfo', () => {
     const user = userEvent.setup()
 
     render(
-      <AdminPageInfo
+      <AdminMemorialInfo
         onUpdate={onUpdate}
-        page={makePage({ id: 'page-9', full_name: null })}
+        memorial={makePage({ id: 'page-9', full_name: null })}
       />
     )
 
@@ -98,9 +98,9 @@ describe('AdminPageInfo', () => {
     const user = userEvent.setup()
 
     render(
-      <AdminPageInfo
+      <AdminMemorialInfo
         onUpdate={vi.fn()}
-        page={makePage({ id: 'page-7', full_name: 'Jane', accessMode: 'private' })}
+        memorial={makePage({ id: 'page-7', full_name: 'Jane', accessMode: 'private' })}
       />
     )
 
@@ -110,7 +110,7 @@ describe('AdminPageInfo', () => {
 
   it('updates access guidance when access mode changes', async () => {
     const user = userEvent.setup()
-    render(<AdminPageInfo onUpdate={vi.fn()} page={makePage({ accessMode: 'public' })} />)
+    render(<AdminMemorialInfo onUpdate={vi.fn()} memorial={makePage({ accessMode: 'public' })} />)
 
     expect(screen.getByText('Visible by direct link and eligible for the homepage directory.')).toBeInTheDocument()
     await user.selectOptions(screen.getByLabelText('Access mode'), 'password')
@@ -123,9 +123,9 @@ describe('AdminPageInfo', () => {
     const user = userEvent.setup()
 
     render(
-      <AdminPageInfo
+      <AdminMemorialInfo
         onUpdate={vi.fn()}
-        page={makePage({ id: 'page-8', full_name: 'Jane' })}
+        memorial={makePage({ id: 'page-8', full_name: 'Jane' })}
       />
     )
 
@@ -144,9 +144,9 @@ describe('AdminPageInfo', () => {
 
     const user = userEvent.setup()
     render(
-      <AdminPageInfo
+      <AdminMemorialInfo
         onUpdate={vi.fn()}
-        page={makePage({ id: 'page-10', full_name: null })}
+        memorial={makePage({ id: 'page-10', full_name: null })}
       />
     )
 
@@ -163,7 +163,7 @@ describe('AdminPageInfo', () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }))
     const user = userEvent.setup()
 
-    render(<AdminPageInfo onUpdate={vi.fn()} page={makePage({ id: 'page-11' })} />)
+    render(<AdminMemorialInfo onUpdate={vi.fn()} memorial={makePage({ id: 'page-11' })} />)
 
     await user.selectOptions(screen.getByLabelText('Theme Preset'), 'editorial')
     await user.selectOptions(screen.getByLabelText('Video Layout'), 'featured')

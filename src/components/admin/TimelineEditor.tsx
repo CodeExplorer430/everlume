@@ -6,12 +6,10 @@ import { Input } from '@/components/ui/input'
 import { Loader2, Trash2, Plus } from 'lucide-react'
 
 interface TimelineEditorProps {
-  memorialId?: string
-  pageId?: string
+  memorialId: string
 }
 
-export function TimelineEditor({ memorialId, pageId }: TimelineEditorProps) {
-  const resolvedMemorialId = memorialId || pageId || ''
+export function TimelineEditor({ memorialId }: TimelineEditorProps) {
   type TimelineEvent = {
     id: string
     year: number
@@ -26,7 +24,7 @@ export function TimelineEditor({ memorialId, pageId }: TimelineEditorProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const fetchEvents = useCallback(async () => {
-    const response = await fetch(`/api/admin/memorials/${resolvedMemorialId}/timeline`, { cache: 'no-store' })
+    const response = await fetch(`/api/admin/memorials/${memorialId}/timeline`, { cache: 'no-store' })
     if (!response.ok) {
       const payload = (await response.json().catch(() => null)) as { message?: string } | null
       setErrorMessage(payload?.message || 'Unable to load timeline events.')
@@ -38,7 +36,7 @@ export function TimelineEditor({ memorialId, pageId }: TimelineEditorProps) {
     const payload = (await response.json()) as { events?: TimelineEvent[] }
     setEvents(payload.events ?? [])
     setLoading(false)
-  }, [resolvedMemorialId])
+  }, [memorialId])
 
   useEffect(() => {
     const kickoff = setTimeout(() => {
@@ -58,7 +56,7 @@ export function TimelineEditor({ memorialId, pageId }: TimelineEditorProps) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        memorialId: resolvedMemorialId,
+        memorialId,
         year,
         text: newText,
       }),

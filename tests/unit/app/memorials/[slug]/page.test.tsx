@@ -52,8 +52,7 @@ vi.mock('@/components/public/PageUnlockForm', () => ({
 
 vi.mock('@/lib/server/page-access', () => ({
   canAccessMemorial: (...args: unknown[]) => mockCanAccessMemorial(...args),
-  canAccessMemorialPage: (...args: unknown[]) => mockCanAccessMemorial(...args),
-  resolvePageAccessMode: (page: { access_mode?: 'public' | 'private' | 'password' | null; privacy?: 'public' | 'private' | null }) =>
+  resolveMemorialAccessMode: (page: { access_mode?: 'public' | 'private' | 'password' | null; privacy?: 'public' | 'private' | null }) =>
     page.access_mode || (page.privacy === 'private' ? 'private' : 'public'),
   memorialRequiresProtectedMedia: (page: { access_mode?: 'public' | 'private' | 'password' | null; privacy?: 'public' | 'private' | null }) =>
     (page.access_mode || (page.privacy === 'private' ? 'private' : 'public')) !== 'public',
@@ -125,7 +124,7 @@ describe('/memorials/[slug] page', () => {
     expect(screen.getByTestId('memorial-page-view')).toBeInTheDocument()
     expect(mockMemorialPageView).toHaveBeenCalledWith(
       expect.objectContaining({
-        page: expect.objectContaining(publicPage),
+        memorial: expect.objectContaining(publicPage),
         photos: expect.arrayContaining([expect.objectContaining({ id: 'photo-1' })]),
       })
     )

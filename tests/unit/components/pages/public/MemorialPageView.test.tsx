@@ -55,7 +55,7 @@ describe('MemorialPageView', () => {
   it('renders empty gallery state when no photos are available', () => {
     render(
       <MemorialPageView
-        page={{
+        memorial={{
           id: 'page-1',
           title: 'In Loving Memory',
           full_name: 'Jane Doe',
@@ -85,7 +85,7 @@ describe('MemorialPageView', () => {
   it('passes normalized photo captions to PublicGallery', () => {
     render(
       <MemorialPageView
-        page={{
+        memorial={{
           id: 'page-1',
           title: 'In Loving Memory',
           full_name: null,

@@ -9,14 +9,12 @@ interface GuestbookEntry {
 }
 
 interface TributeGuestbookProps {
-  memorialId?: string
-  pageId?: string
+  memorialId: string
   fullName: string | null
   entries: GuestbookEntry[]
 }
 
-export function TributeGuestbook({ memorialId, pageId, fullName, entries }: TributeGuestbookProps) {
-  const resolvedMemorialId = memorialId || pageId || ''
+export function TributeGuestbook({ memorialId, fullName, entries }: TributeGuestbookProps) {
   return (
     <section className="space-y-8 border-t border-border/80 pt-12">
       <div className="space-y-2 text-center">
@@ -25,7 +23,7 @@ export function TributeGuestbook({ memorialId, pageId, fullName, entries }: Trib
       </div>
 
       <div className="mx-auto max-w-xl">
-        <GuestbookForm memorialId={resolvedMemorialId} />
+        <GuestbookForm memorialId={memorialId} />
       </div>
 
       <div className="space-y-4 md:space-y-5">

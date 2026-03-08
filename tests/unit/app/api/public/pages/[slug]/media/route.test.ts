@@ -11,7 +11,6 @@ const mockPhotosSelect = vi.fn(() => ({ eq: mockPhotosEq }))
 
 vi.mock('@/lib/server/page-access', () => ({
   canAccessMemorial: (...args: unknown[]) => mockCanAccessMemorial(...args),
-  canAccessMemorialPage: (...args: unknown[]) => mockCanAccessMemorial(...args),
   memorialRequiresProtectedMedia: (page: { access_mode?: 'public' | 'private' | 'password' | null; privacy?: 'public' | 'private' | null }) =>
     (page.access_mode || (page.privacy === 'private' ? 'private' : 'public')) !== 'public',
 }))

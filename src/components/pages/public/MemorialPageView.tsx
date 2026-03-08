@@ -47,20 +47,20 @@ type MemorialGuestbook = {
 }
 
 interface MemorialPageViewProps {
-  page: MemorialPage
+  memorial: MemorialPage
   photos: MemorialPhoto[]
   videos: MemorialVideo[]
   timeline: MemorialTimeline[]
   guestbook: MemorialGuestbook[]
 }
 
-export function MemorialPageView({ page, photos, videos, timeline, guestbook }: MemorialPageViewProps) {
-  const slideshowEnabled = page.memorial_slideshow_enabled !== false
-  const slideshowIntervalMs = Number(page.memorial_slideshow_interval_ms) || 4500
-  const memorialVideoLayout = page.memorial_video_layout === 'featured' ? 'featured' : 'grid'
-  const memorialPhotoFit = page.memorial_photo_fit === 'contain' ? 'contain' : 'cover'
-  const memorialCaptionStyle = page.memorial_caption_style === 'minimal' ? 'minimal' : 'classic'
-  const themePreset = page.memorial_theme === 'serene' || page.memorial_theme === 'editorial' ? page.memorial_theme : 'classic'
+export function MemorialPageView({ memorial, photos, videos, timeline, guestbook }: MemorialPageViewProps) {
+  const slideshowEnabled = memorial.memorial_slideshow_enabled !== false
+  const slideshowIntervalMs = Number(memorial.memorial_slideshow_interval_ms) || 4500
+  const memorialVideoLayout = memorial.memorial_video_layout === 'featured' ? 'featured' : 'grid'
+  const memorialPhotoFit = memorial.memorial_photo_fit === 'contain' ? 'contain' : 'cover'
+  const memorialCaptionStyle = memorial.memorial_caption_style === 'minimal' ? 'minimal' : 'classic'
+  const themePreset = memorial.memorial_theme === 'serene' || memorial.memorial_theme === 'editorial' ? memorial.memorial_theme : 'classic'
   const themeShellClass =
     themePreset === 'serene'
       ? 'bg-[radial-gradient(circle_at_12%_8%,rgba(164,194,173,0.24),transparent_44%),linear-gradient(180deg,#f3f7f3_0%,#edf3ee_100%)]'
@@ -70,14 +70,14 @@ export function MemorialPageView({ page, photos, videos, timeline, guestbook }: 
 
   return (
     <div className={`min-h-screen pb-14 ${themeShellClass}`} data-memorial-theme={themePreset}>
-      <TributeHero page={page} />
+      <TributeHero memorial={memorial} />
 
       <main id="main-content" className="page-container space-y-12 py-10 md:space-y-16 md:py-14">
         <section className="surface-card mx-auto max-w-4xl px-6 py-8 text-center md:px-10">
           <p className="section-kicker">Remembrance</p>
           <h2 className="section-title mt-2">Our Memories</h2>
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground md:text-base">
-            Welcome to the memorial page for {page.full_name || 'our loved one'}. We invite you to explore the gallery and leave a message for the family.
+            Welcome to the memorial for {memorial.full_name || 'our loved one'}. We invite you to explore the gallery and leave a message for the family.
           </p>
         </section>
 
@@ -99,7 +99,7 @@ export function MemorialPageView({ page, photos, videos, timeline, guestbook }: 
 
         <TributeTimeline timeline={timeline} />
 
-        <TributeGuestbook memorialId={page.id} fullName={page.full_name} entries={guestbook} />
+        <TributeGuestbook memorialId={memorial.id} fullName={memorial.full_name} entries={guestbook} />
       </main>
 
       <footer className="border-t border-border/80 py-10 text-center text-xs text-muted-foreground md:text-sm">

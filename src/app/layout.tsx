@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: getAppBaseUrl(),
   title: 'Everlume',
-  description: 'Create and share memorial pages with photos, timelines, videos, and moderated guestbook messages.',
+  description: 'Create and share memorials with photos, timelines, videos, and moderated guestbook messages.',
   icons: {
     icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
     shortcut: '/favicon.svg',

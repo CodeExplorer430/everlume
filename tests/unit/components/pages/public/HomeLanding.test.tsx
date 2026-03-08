@@ -30,9 +30,9 @@ describe('LandingContent', () => {
     )
 
     expect(screen.getByText('Memorial Directory')).toBeInTheDocument()
-    expect(screen.getByText(/Private and password-protected pages remain outside this directory\./)).toBeInTheDocument()
+    expect(screen.getByText(/Private and password-protected memorials remain outside this directory\./)).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 4, name: 'Maria Santos' })).toBeInTheDocument()
-    expect(screen.getByText('Memorial page')).toBeInTheDocument()
+    expect(screen.getByText('Memorial')).toBeInTheDocument()
     expect(screen.getAllByRole('link', { name: 'View memorial' })[0]).toHaveAttribute('href', '/memorials/maria-santos')
   })
 

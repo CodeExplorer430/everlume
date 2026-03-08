@@ -35,7 +35,7 @@ describe('misc app pages', () => {
   it('renders memorial not found page', async () => {
     const mod = await import('@/app/memorials/[slug]/not-found')
     render(mod.default())
-    expect(screen.getByText(/memorial page not found/i)).toBeInTheDocument()
+    expect(screen.getByText(/^memorial not found$/i)).toBeInTheDocument()
   })
 
   it('renders short-link fallback page', async () => {
@@ -65,6 +65,6 @@ describe('misc app pages', () => {
   it('renders the canonical memorial not-found UI for legacy pages routes', async () => {
     const legacyNotFound = await import('@/app/pages/[slug]/not-found')
     render(legacyNotFound.default())
-    expect(screen.getByText(/memorial page not found/i)).toBeInTheDocument()
+    expect(screen.getByText(/^memorial not found$/i)).toBeInTheDocument()
   })
 })

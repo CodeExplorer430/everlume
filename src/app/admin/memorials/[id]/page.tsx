@@ -6,5 +6,5 @@ interface PageProps {
 
 export default async function EditTributePage({ params }: PageProps) {
   const { id } = await params
-  return <EditMemorialScreen pageId={id} />
+  return <EditMemorialScreen memorialId={id} />
 }

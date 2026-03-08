@@ -2,7 +2,7 @@ import { format } from 'date-fns'
 import Image from 'next/image'
 
 interface TributeHeroProps {
-  page: {
+  memorial: {
     title: string
     full_name: string | null
     dob: string | null
@@ -11,14 +11,14 @@ interface TributeHeroProps {
   }
 }
 
-export function TributeHero({ page }: TributeHeroProps) {
+export function TributeHero({ memorial }: TributeHeroProps) {
   return (
     <section className="relative isolate overflow-hidden">
       <div className="relative h-[66vh] min-h-[420px] w-full bg-foreground">
-        {page.hero_image_url ? (
+        {memorial.hero_image_url ? (
           <Image
-            src={page.hero_image_url}
-            alt={page.full_name || page.title}
+            src={memorial.hero_image_url}
+            alt={memorial.full_name || memorial.title}
             fill
             sizes="100vw"
             className="object-cover opacity-76"
@@ -34,11 +34,11 @@ export function TributeHero({ page }: TributeHeroProps) {
         <p className="mb-3 inline-flex rounded-full border border-white/35 bg-black/20 px-3 py-1 text-xs tracking-wide text-white/85">
           In Loving Memory
         </p>
-        <h1 className="max-w-3xl font-display text-5xl font-semibold leading-none md:text-7xl">{page.title}</h1>
-        <p className="mt-4 text-base italic text-white/88 md:text-xl">{page.full_name}</p>
-        {(page.dob || page.dod) && (
+        <h1 className="max-w-3xl font-display text-5xl font-semibold leading-none md:text-7xl">{memorial.title}</h1>
+        <p className="mt-4 text-base italic text-white/88 md:text-xl">{memorial.full_name}</p>
+        {(memorial.dob || memorial.dod) && (
           <p className="mt-6 text-sm uppercase tracking-[0.24em] text-white/80 md:text-base">
-            {page.dob ? format(new Date(page.dob), 'MMMM d, yyyy') : '...'} - {page.dod ? format(new Date(page.dod), 'MMMM d, yyyy') : 'Present'}
+            {memorial.dob ? format(new Date(memorial.dob), 'MMMM d, yyyy') : '...'} - {memorial.dod ? format(new Date(memorial.dod), 'MMMM d, yyyy') : 'Present'}
           </p>
         )}
         </div>

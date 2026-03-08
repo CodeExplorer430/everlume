@@ -108,7 +108,7 @@ export function GuestbookModerationScreen() {
         <p className="section-kicker">Guestbook Review</p>
         <h2 className="text-3xl font-semibold tracking-[-0.03em]">Guestbook Moderation</h2>
         <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-          Review messages with care before they appear on the public memorial page. Pending messages stay private until approved.
+          Review messages with care before they appear on the public memorial. Pending messages stay private until approved.
         </p>
       </section>
 

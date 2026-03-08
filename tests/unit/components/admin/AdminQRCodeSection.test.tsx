@@ -10,7 +10,7 @@ describe('AdminQRCodeSection', () => {
   it('uses first redirect by default', () => {
     render(
       <AdminQRCodeSection
-        page={{ slug: 'jane', qr_template: 'classic', qr_caption: 'Scan me!' }}
+        memorial={{ slug: 'jane', qr_template: 'classic', qr_caption: 'Scan me!' }}
         redirects={[{ id: 'r1', shortcode: 'grandma' }]}
       />
     )
@@ -23,7 +23,7 @@ describe('AdminQRCodeSection', () => {
 
     render(
       <AdminQRCodeSection
-        page={{ slug: 'jane', qr_template: 'classic', qr_caption: 'Scan me!' }}
+        memorial={{ slug: 'jane', qr_template: 'classic', qr_caption: 'Scan me!' }}
         redirects={[
           { id: 'r1', shortcode: 'grandma', is_active: true },
           { id: 'r2', shortcode: 'lola', is_active: true },
@@ -36,7 +36,7 @@ describe('AdminQRCodeSection', () => {
   })
 
   it('shows setup guidance when no active redirects exist', () => {
-    render(<AdminQRCodeSection page={{ slug: 'jane', qr_template: 'classic', qr_caption: 'Scan me!' }} redirects={[]} />)
+    render(<AdminQRCodeSection memorial={{ slug: 'jane', qr_template: 'classic', qr_caption: 'Scan me!' }} redirects={[]} />)
 
     expect(screen.getByText(/create and activate a short link/i)).toBeInTheDocument()
   })
@@ -44,7 +44,7 @@ describe('AdminQRCodeSection', () => {
   it('excludes inactive redirects from qr selector options', () => {
     render(
       <AdminQRCodeSection
-        page={{ slug: 'jane', qr_template: 'classic', qr_caption: 'Scan me!' }}
+        memorial={{ slug: 'jane', qr_template: 'classic', qr_caption: 'Scan me!' }}
         redirects={[
           { id: 'r1', shortcode: 'grandma', is_active: true },
           { id: 'r2', shortcode: 'legacy', is_active: false },

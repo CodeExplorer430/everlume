@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button'
 
 const highlights = [
   {
-    title: 'Build the tribute page',
-    text: 'Shape a memorial with stories, milestones, photos, and film into a page that still feels dignified years from now.',
+    title: 'Build the memorial',
+    text: 'Shape a memorial with stories, milestones, photos, and film into a tribute that still feels dignified years from now.',
     icon: Heart,
   },
   {
@@ -68,7 +68,7 @@ export function LandingContent({ directoryEnabled, memorials }: LandingContentPr
               A memorial platform that feels respectful in public and dependable behind the scenes.
             </h2>
             <p className="max-w-2xl text-base leading-relaxed text-muted-foreground md:text-lg">
-              Everlume helps families publish a tribute page with calm presentation, secure admin accounts, and QR-friendly sharing that can endure beyond one event or one device.
+              Everlume helps families publish a memorial with calm presentation, secure admin accounts, and QR-friendly sharing that can endure beyond one event or one device.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -140,14 +140,14 @@ export function LandingContent({ directoryEnabled, memorials }: LandingContentPr
             <p className="section-kicker">Public Directory</p>
             <h3 className="text-2xl font-semibold">Memorial Directory</h3>
             <p className="text-sm text-muted-foreground">
-              Browse memorials that families have chosen to publish publicly. Private and password-protected pages remain outside this directory.
+              Browse memorials that families have chosen to publish publicly. Private and password-protected memorials remain outside this directory.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {memorials.map((memorial) => (
               <article key={memorial.id} className="surface-card p-5">
                 <h4 className="font-semibold text-foreground">{memorial.title}</h4>
-                <p className="mt-1 text-sm text-muted-foreground">{memorial.full_name || 'Memorial page'}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{memorial.full_name || 'Memorial'}</p>
                 <Link href={`/memorials/${memorial.slug}`} className="mt-4 inline-flex text-sm font-medium text-foreground underline-offset-4 hover:underline">
                   View memorial
                 </Link>

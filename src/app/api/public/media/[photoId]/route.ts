@@ -22,11 +22,11 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pho
 
   const fixture = getE2EPhotoFixtureById(photoId)
   if (fixture) {
-    if (!memorialRequiresProtectedMedia(fixture.page)) {
+    if (!memorialRequiresProtectedMedia(fixture.memorial)) {
       return NextResponse.json({ code: 'FORBIDDEN', message: 'This endpoint only serves non-public memorial media.' }, { status: 403 })
     }
 
-    const access = await canAccessMemorial(fixture.page)
+    const access = await canAccessMemorial(fixture.memorial)
     if (!access.allowed) {
       return NextResponse.json({ code: 'FORBIDDEN', message: 'You do not have access to this media.' }, { status: 403 })
     }

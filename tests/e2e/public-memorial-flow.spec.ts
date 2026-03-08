@@ -67,7 +67,7 @@ test('guestbook submission failures surface inline feedback', async ({ page }) =
 test('private memorials stay undiscoverable to public visitors', async ({ page }) => {
   await page.goto('/memorials/e2e-private-memorial')
 
-  await expect(page.getByRole('heading', { name: /memorial page not found/i })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /^memorial not found$/i })).toBeVisible()
   await expect(page.getByText(/private, password protected, unpublished/i)).toBeVisible()
   await expect(page.getByRole('heading', { name: /in loving memory of clara reyes/i })).not.toBeVisible()
   await expect(page.getByRole('heading', { name: /memorial access required/i })).not.toBeVisible()

@@ -51,7 +51,7 @@ describe('DataExport', () => {
     })
 
     const user = userEvent.setup()
-    render(<DataExport memorialId="page-1" pageTitle="Jane Doe" />)
+    render(<DataExport memorialId="page-1" memorialTitle="Jane Doe" />)
 
     await user.click(screen.getByRole('button', { name: /Export Guestbook/i }))
     await waitFor(() => {
@@ -105,7 +105,7 @@ describe('DataExport', () => {
     })
 
     const user = userEvent.setup()
-    render(<DataExport memorialId="page-1" pageTitle="Jane Doe" />)
+    render(<DataExport memorialId="page-1" memorialTitle="Jane Doe" />)
 
     await user.click(screen.getByRole('button', { name: /Export Memorial Package/i }))
 
@@ -133,7 +133,7 @@ describe('DataExport', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ entries: [] }), { status: 200 }))
 
     const user = userEvent.setup()
-    render(<DataExport memorialId="page-1" pageTitle="Jane Doe" />)
+    render(<DataExport memorialId="page-1" memorialTitle="Jane Doe" />)
 
     await user.click(screen.getByRole('button', { name: /Export Guestbook/i }))
     expect(await screen.findByText('No guestbook entries to export.')).toBeInTheDocument()
@@ -170,7 +170,7 @@ describe('DataExport', () => {
     })
 
     const user = userEvent.setup()
-    render(<DataExport memorialId="page-1" pageTitle="Jane Doe" />)
+    render(<DataExport memorialId="page-1" memorialTitle="Jane Doe" />)
 
     await user.click(screen.getByRole('button', { name: /Download All Photos/i }))
     await waitFor(() => {
@@ -210,7 +210,7 @@ describe('DataExport', () => {
     })
 
     const user = userEvent.setup()
-    render(<DataExport memorialId="page-1" pageTitle="Jane Doe" />)
+    render(<DataExport memorialId="page-1" memorialTitle="Jane Doe" />)
 
     await user.click(screen.getByRole('button', { name: /Export Memorial Package/i }))
     expect(await screen.findByText('JSON export failed: Unable to load videos.')).toBeInTheDocument()
