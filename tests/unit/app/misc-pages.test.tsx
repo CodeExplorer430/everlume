@@ -30,6 +30,7 @@ describe('misc app pages', () => {
     const mod = await import('@/app/offline/page')
     render(mod.default())
     expect(screen.getByText(/you are currently offline/i)).toBeInTheDocument()
+    expect(screen.getByText(/recently viewed memorials/i)).toBeInTheDocument()
   })
 
   it('renders memorial not found page', async () => {

@@ -94,7 +94,7 @@ describe('MemorialPageView', () => {
   })
 
   it('passes normalized photo captions to PublicGallery', () => {
-    render(
+    const { container } = render(
       <MemorialPageView
         memorial={{
           id: 'page-1',
@@ -112,11 +112,13 @@ describe('MemorialPageView', () => {
         videos={[{ id: 'v1', provider: 'youtube', provider_id: 'abcdefghijk', title: null }]}
         timeline={[{ id: 't1', year: 2001, text: 'Milestone' }]}
         guestbook={[{ id: 'g1', name: 'Ana', message: 'Forever', created_at: '2026-01-01T00:00:00.000Z' }]}
+        accessMode="public"
       />
     )
 
     expect(screen.getByTestId('public-gallery')).toBeInTheDocument()
     expect(screen.getByTestId('memorial-action-bar')).toBeInTheDocument()
+    expect(container.firstChild).toHaveAttribute('data-memorial-access', 'public')
     expect(mockPublicGallery).toHaveBeenCalledWith({
       photos: [{ id: 'photo-1', image_url: '/image.jpg', thumb_url: '/thumb.jpg', caption: undefined }],
       slideshowEnabled: true,

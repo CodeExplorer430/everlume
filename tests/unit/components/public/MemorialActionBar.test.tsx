@@ -34,18 +34,20 @@ describe('MemorialActionBar', () => {
       text: 'Visit this memorial for In Loving Memory of Jane Doe.',
       url: 'http://localhost:3000/memorials/jane-doe',
     })
-    expect(screen.getByText('Share sheet opened.')).toBeInTheDocument()
+    expect(screen.getByText('Share options opened on this device.')).toBeInTheDocument()
   })
 
   it('copies the memorial link when clipboard access is available', async () => {
     Object.defineProperty(navigator, 'share', { configurable: true, value: undefined })
 
     const user = userEvent.setup()
+    const writeTextMock = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined)
     render(<MemorialActionBar memorialTitle="In Loving Memory of Jane Doe" guestbookHref="#guestbook" />)
 
     await user.click(screen.getByRole('button', { name: /copy link/i }))
 
-    expect(screen.getByText('Memorial link copied.')).toBeInTheDocument()
+    expect(writeTextMock).toHaveBeenCalledWith('http://localhost:3000/memorials/jane-doe')
+    expect(screen.getByText('Memorial link copied. You can paste it anywhere.')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /leave a message/i })).toHaveAttribute('href', '#guestbook')
   })
 
@@ -58,5 +60,57 @@ describe('MemorialActionBar', () => {
     await user.click(screen.getByRole('button', { name: /print memorial/i }))
 
     expect(window.print).toHaveBeenCalled()
+    expect(screen.getByText(/Print dialog opened/i)).toBeInTheDocument()
+  })
+
+  it('treats native share cancel as a non-error state', async () => {
+    const abortError = new Error('Canceled')
+    abortError.name = 'AbortError'
+    const shareMock = vi.fn().mockRejectedValue(abortError)
+    Object.defineProperty(navigator, 'share', { configurable: true, value: shareMock })
+
+    const user = userEvent.setup()
+    render(<MemorialActionBar memorialTitle="In Loving Memory of Jane Doe" />)
+
+    await user.click(screen.getByRole('button', { name: /^share$/i }))
+
+    expect(screen.getByText('Sharing was canceled before anything was sent.')).toBeInTheDocument()
+  })
+
+  it('surfaces clipboard failure with fallback guidance', async () => {
+    Object.defineProperty(navigator, 'share', { configurable: true, value: undefined })
+
+    const user = userEvent.setup()
+    vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('denied'))
+    render(<MemorialActionBar memorialTitle="In Loving Memory of Jane Doe" />)
+
+    await user.click(screen.getByRole('button', { name: /copy link/i }))
+
+    expect(screen.getByText('Copy link failed. Please copy the address from your browser instead.')).toBeInTheDocument()
+  })
+
+  it('falls back to clipboard when native share fails for another reason', async () => {
+    const shareMock = vi.fn().mockRejectedValue(new Error('unavailable'))
+    Object.defineProperty(navigator, 'share', { configurable: true, value: shareMock })
+    const user = userEvent.setup()
+    const writeTextMock = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined)
+
+    render(<MemorialActionBar memorialTitle="In Loving Memory of Jane Doe" />)
+
+    await user.click(screen.getByRole('button', { name: /^share$/i }))
+
+    expect(writeTextMock).toHaveBeenCalledWith('http://localhost:3000/memorials/jane-doe')
+    expect(screen.getByText('Memorial link copied. You can paste it anywhere.')).toBeInTheDocument()
+  })
+
+  it('surfaces fallback guidance when share and clipboard both fail', async () => {
+    Object.defineProperty(navigator, 'share', { configurable: true, value: vi.fn().mockRejectedValue(new Error('no share')) })
+    const user = userEvent.setup()
+    vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('denied'))
+    render(<MemorialActionBar memorialTitle="In Loving Memory of Jane Doe" />)
+
+    await user.click(screen.getByRole('button', { name: /^share$/i }))
+
+    expect(screen.getByText('Sharing is unavailable right now. Please copy the address from your browser.')).toBeInTheDocument()
   })
 })

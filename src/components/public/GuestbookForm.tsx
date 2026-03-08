@@ -10,6 +10,36 @@ interface GuestbookFormProps {
 }
 
 type TurnstileWidgetId = string | number
+type GuestbookResponseCode =
+  | 'CONFIGURATION_ERROR'
+  | 'INVALID_JSON'
+  | 'VALIDATION_ERROR'
+  | 'TOO_FAST'
+  | 'CAPTCHA_FAILED'
+  | 'RATE_LIMITED'
+  | 'MEMORIAL_NOT_FOUND'
+  | 'DATABASE_ERROR'
+
+function mapGuestbookError(code?: GuestbookResponseCode, message?: string) {
+  switch (code) {
+    case 'CAPTCHA_FAILED':
+      return 'Please complete the spam-protection check before posting.'
+    case 'RATE_LIMITED':
+      return 'Too many messages were sent recently. Please wait a minute and try again.'
+    case 'TOO_FAST':
+      return 'Please take a moment before sending your message.'
+    case 'CONFIGURATION_ERROR':
+      return 'The guestbook is temporarily unavailable while protection settings are being finalized.'
+    case 'MEMORIAL_NOT_FOUND':
+      return 'This memorial is no longer available for new guestbook messages.'
+    case 'DATABASE_ERROR':
+      return 'The guestbook is temporarily unavailable. Please try again shortly.'
+    case 'VALIDATION_ERROR':
+      return 'Please review your name and message, then try again.'
+    default:
+      return message || 'Unable to submit your message right now.'
+  }
+}
 
 declare global {
   interface Window {
@@ -39,6 +69,7 @@ export function GuestbookForm({ memorialId }: GuestbookFormProps) {
   const [honeypot, setHoneypot] = useState('')
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
   const [turnstileReady, setTurnstileReady] = useState(false)
+  const [turnstileLoadFailed, setTurnstileLoadFailed] = useState(false)
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -51,11 +82,18 @@ export function GuestbookForm({ memorialId }: GuestbookFormProps) {
 
     turnstileWidgetIdRef.current = window.turnstile.render(container, {
       sitekey: turnstileSiteKey,
-      callback: (token) => setCaptchaToken(token),
-      'expired-callback': () => setCaptchaToken(null),
+      callback: (token) => {
+        setCaptchaToken(token)
+        setError(null)
+      },
+      'expired-callback': () => {
+        setCaptchaToken(null)
+        setError('The spam-protection check expired. Please complete it again before posting.')
+      },
       'error-callback': () => {
         setCaptchaToken(null)
-        setError('Captcha failed to load. Please refresh and try again.')
+        setTurnstileLoadFailed(true)
+        setError('Spam protection failed to load. Refresh the page and try again.')
       },
     })
 
@@ -75,40 +113,58 @@ export function GuestbookForm({ memorialId }: GuestbookFormProps) {
       return
     }
 
+    if (shouldUseCaptcha && turnstileLoadFailed) {
+      setError('Spam protection failed to load. Refresh the page and try again.')
+      return
+    }
+
+    if (shouldUseCaptcha && !turnstileReady) {
+      setError('Spam protection is still loading. Please wait a moment and try again.')
+      return
+    }
+
     if (shouldUseCaptcha && !captchaToken) {
-      setError('Please complete the captcha check before posting.')
+      setError('Please complete the spam-protection check before posting.')
       return
     }
 
     setLoading(true)
     setError(null)
 
-    const response = await fetch('/api/guestbook', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        memorialId,
-        name,
-        message,
-        honeypot,
-        submittedAt: startedAt,
-        captchaToken: captchaToken || undefined,
-      }),
-    })
+    try {
+      const response = await fetch('/api/guestbook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          memorialId,
+          name,
+          message,
+          honeypot,
+          submittedAt: startedAt,
+          captchaToken: captchaToken || undefined,
+        }),
+      })
 
-    if (!response.ok && response.status !== 202) {
-      const payload = (await response.json().catch(() => null)) as { message?: string } | null
-      setError(payload?.message || 'Unable to submit your message right now.')
+      if (!response.ok && response.status !== 202) {
+        const payload = (await response.json().catch(() => null)) as { message?: string; code?: GuestbookResponseCode } | null
+        setError(mapGuestbookError(payload?.code, payload?.message))
+        if (shouldUseCaptcha && turnstileWidgetIdRef.current && window.turnstile) {
+          window.turnstile.reset(turnstileWidgetIdRef.current)
+        }
+        setCaptchaToken(null)
+        return
+      }
+
+      setSubmitted(true)
+    } catch {
+      setError('The guestbook could not be reached. Please check your connection and try again.')
       if (shouldUseCaptcha && turnstileWidgetIdRef.current && window.turnstile) {
         window.turnstile.reset(turnstileWidgetIdRef.current)
       }
       setCaptchaToken(null)
+    } finally {
       setLoading(false)
-      return
     }
-
-    setSubmitted(true)
-    setLoading(false)
   }
 
   if (submitted) {
@@ -140,6 +196,11 @@ export function GuestbookForm({ memorialId }: GuestbookFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="surface-card space-y-4 p-5 md:p-6">
+      <div className="rounded-2xl border border-border/70 bg-secondary/45 px-4 py-3 text-sm text-muted-foreground">
+        Messages are reviewed by the family before they appear publicly.
+        {shouldUseCaptcha ? ' Spam protection is enabled before your note is sent.' : ' Your note will be held for moderation after submission.'}
+      </div>
+
       <div className="hidden" aria-hidden="true">
         <input
           type="text"
@@ -188,8 +249,18 @@ export function GuestbookForm({ memorialId }: GuestbookFormProps) {
         <>
           <Script
             src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
-            onLoad={() => setTurnstileReady(true)}
+            onLoad={() => {
+              setTurnstileReady(true)
+              setTurnstileLoadFailed(false)
+            }}
+            onError={() => {
+              setTurnstileLoadFailed(true)
+              setError('Spam protection failed to load. Refresh the page and try again.')
+            }}
           />
+          <p className="text-xs text-muted-foreground">
+            Complete the spam-protection check so the family guestbook stays safe from automated posts.
+          </p>
           <div ref={turnstileContainerRef} data-testid="turnstile-widget" />
         </>
       )}

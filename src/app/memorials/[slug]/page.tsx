@@ -170,6 +170,7 @@ export default async function PublicTributePage({ params }: PageProps) {
       videos={videos}
       timeline={timeline}
       guestbook={guestbook}
+      accessMode={resolveMemorialAccessMode(memorial)}
     />
   )
 }

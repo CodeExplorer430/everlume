@@ -54,5 +54,5 @@ test('admin can approve, unapprove, and delete guestbook entries', async ({ page
 
   page.on('dialog', (dialog) => dialog.accept())
   await page.getByRole('button', { name: /delete guestbook entry from maria/i }).click()
-  await expect(page.getByText('No guestbook entries found yet.')).toBeVisible()
+  await expect(page.getByText(/No guestbook entries need review right now/i)).toBeVisible()
 })

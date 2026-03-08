@@ -53,9 +53,10 @@ interface MemorialPageViewProps {
   videos: MemorialVideo[]
   timeline: MemorialTimeline[]
   guestbook: MemorialGuestbook[]
+  accessMode?: 'public' | 'password' | 'private'
 }
 
-export function MemorialPageView({ memorial, photos, videos, timeline, guestbook }: MemorialPageViewProps) {
+export function MemorialPageView({ memorial, photos, videos, timeline, guestbook, accessMode = 'public' }: MemorialPageViewProps) {
   const slideshowEnabled = memorial.memorial_slideshow_enabled !== false
   const slideshowIntervalMs = Number(memorial.memorial_slideshow_interval_ms) || 4500
   const memorialVideoLayout = memorial.memorial_video_layout === 'featured' ? 'featured' : 'grid'
@@ -70,13 +71,13 @@ export function MemorialPageView({ memorial, photos, videos, timeline, guestbook
         : ''
 
   return (
-    <div className={`min-h-screen pb-14 ${themeShellClass}`} data-memorial-theme={themePreset}>
+    <div className={`min-h-screen pb-14 ${themeShellClass}`} data-memorial-theme={themePreset} data-memorial-access={accessMode}>
       <TributeHero memorial={memorial} />
 
-      <main id="main-content" className="page-container space-y-12 py-10 md:space-y-16 md:py-14">
+      <main id="main-content" className="page-container memorial-print-layout space-y-12 py-10 md:space-y-16 md:py-14">
         <MemorialActionBar memorialTitle={memorial.title} guestbookHref="#guestbook" />
 
-        <section className="surface-card mx-auto max-w-4xl px-6 py-8 text-center md:px-10">
+        <section id="remembrance" className="surface-card print-avoid-break mx-auto max-w-4xl px-6 py-8 text-center md:px-10">
           <p className="section-kicker">Remembrance</p>
           <h2 className="section-title mt-2">Our Memories</h2>
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground md:text-base">
@@ -84,7 +85,7 @@ export function MemorialPageView({ memorial, photos, videos, timeline, guestbook
           </p>
         </section>
 
-        <section id="photos" className="space-y-6">
+        <section id="photos" className="space-y-6 print-avoid-break">
           {photos.length > 0 ? (
             <PublicGallery
               photos={photos.map((photo) => ({ ...photo, caption: photo.caption ?? undefined }))}
@@ -111,7 +112,7 @@ export function MemorialPageView({ memorial, photos, videos, timeline, guestbook
         <TributeGuestbook memorialId={memorial.id} fullName={memorial.full_name} entries={guestbook} />
       </main>
 
-      <footer className="border-t border-border/80 py-10 text-center text-xs text-muted-foreground md:text-sm">
+      <footer className="border-t border-border/80 py-10 text-center text-xs text-muted-foreground md:text-sm" data-print-hide="true">
         <p>© {new Date().getFullYear()} Everlume</p>
       </footer>
     </div>

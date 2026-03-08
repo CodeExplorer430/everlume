@@ -180,6 +180,7 @@ describe('POST /api/guestbook', () => {
     const payload = await res.json()
     expect(res.status).toBe(400)
     expect(payload.code).toBe('CAPTCHA_FAILED')
+    expect(payload.message).toBe('Spam protection is temporarily unavailable. Please try again shortly.')
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 

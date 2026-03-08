@@ -4,6 +4,21 @@ import { fulfillJson, mockPublicRoute } from './helpers/public-api-mocks'
 test.describe.configure({ timeout: 60_000 })
 
 test('public memorial renders visitor-facing content', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: async () => undefined,
+      },
+    })
+    Object.defineProperty(window, 'print', {
+      configurable: true,
+      value: () => {
+        document.documentElement.dataset.printTriggered = 'true'
+      },
+    })
+  })
+
   await page.goto('/memorials/e2e-public-memorial')
 
   await expect(page.getByRole('heading', { name: /in loving memory of amelia stone/i })).toBeVisible({ timeout: 15_000 })
@@ -21,7 +36,14 @@ test('public memorial renders visitor-facing content', async ({ page }) => {
 
   await page.getByRole('button', { name: /open photo 1/i }).click()
   await expect(page.getByRole('dialog', { name: /photo lightbox/i })).toBeVisible()
-  await expect(page.getByRole('button', { name: /close photo lightbox/i })).toBeVisible()
+  await page.getByRole('button', { name: /close photo lightbox/i }).click()
+  await expect(page.getByRole('dialog', { name: /photo lightbox/i })).not.toBeVisible()
+
+  await page.getByRole('button', { name: /copy link/i }).click()
+  await expect(page.getByText(/Memorial link copied/i)).toBeVisible()
+
+  await page.getByRole('button', { name: /print memorial/i }).click()
+  await expect(page.locator('html')).toHaveAttribute('data-print-triggered', 'true')
 })
 
 test('password memorial unlocks and guestbook submission succeeds', async ({ page }) => {
@@ -65,7 +87,7 @@ test('guestbook submission failures surface inline feedback', async ({ page }) =
   await page.getByRole('button', { name: /post to guestbook/i }).click()
   await guestbookResponse
 
-  await expect(page.getByText('Unable to submit your message right now.')).toBeVisible()
+  await expect(page.getByText('The guestbook is temporarily unavailable. Please try again shortly.')).toBeVisible()
 })
 
 test('private memorials stay undiscoverable to public visitors', async ({ page }) => {

@@ -128,7 +128,9 @@ export async function POST(request: NextRequest) {
     const failureMessage =
       captcha.code === 'MISSING_INPUT'
         ? 'Please complete the captcha check before posting.'
-        : 'Captcha verification failed. Please try again.'
+        : captcha.code === 'UPSTREAM_ERROR' || captcha.code === 'INVALID_RESPONSE'
+          ? 'Spam protection is temporarily unavailable. Please try again shortly.'
+          : 'Captcha verification failed. Please try again.'
 
     return NextResponse.json(
       { code: 'CAPTCHA_FAILED', message: failureMessage },

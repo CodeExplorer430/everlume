@@ -37,7 +37,9 @@ describe('GuestbookModerationScreen', () => {
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith('/api/admin/guestbook/entry-1/approve', expect.objectContaining({ method: 'POST' }))
     })
-    expect(screen.getByText('Approved')).toBeInTheDocument()
+    expect(screen.getAllByText('Approved').length).toBeGreaterThan(0)
+    expect(screen.getByText('Approved Ana for public display.')).toBeInTheDocument()
+    expect(screen.getByText('Already visible on the public memorial guestbook.')).toBeInTheDocument()
   })
 
   it('shows load error and retries successfully', async () => {
@@ -75,7 +77,7 @@ describe('GuestbookModerationScreen', () => {
     await user.click(screen.getByRole('button', { name: 'Approve guestbook entry from Ana' }))
 
     expect(await screen.findByText('Approval failed')).toBeInTheDocument()
-    expect(screen.getByText('Pending')).toBeInTheDocument()
+    expect(screen.getAllByText('Pending').length).toBeGreaterThan(0)
   })
 
   it('respects delete confirmation before calling API', async () => {
@@ -121,12 +123,12 @@ describe('GuestbookModerationScreen', () => {
 
     const user = userEvent.setup()
     render(<GuestbookModerationScreen />)
-    await screen.findByText('Approved')
+    await screen.findByRole('button', { name: 'Unapprove guestbook entry from Ana' })
 
     await user.click(screen.getByRole('button', { name: 'Unapprove guestbook entry from Ana' }))
 
     expect(await screen.findByText('Unapprove failed')).toBeInTheDocument()
-    expect(screen.getByText('Approved')).toBeInTheDocument()
+    expect(screen.getAllByText('Approved').length).toBeGreaterThan(0)
   })
 
   it('renders the empty state when there are no guestbook entries', async () => {
@@ -134,6 +136,6 @@ describe('GuestbookModerationScreen', () => {
 
     render(<GuestbookModerationScreen />)
 
-    expect(await screen.findByText('No guestbook entries found yet.')).toBeInTheDocument()
+    expect(await screen.findByText(/No guestbook entries need review right now/i)).toBeInTheDocument()
   })
 })

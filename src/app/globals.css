@@ -241,3 +241,61 @@ textarea {
     scroll-behavior: auto !important;
   }
 }
+
+@media print {
+  :root {
+    --background: #ffffff;
+    --foreground: #111111;
+    --muted-foreground: rgba(17, 17, 17, 0.72);
+    --border: rgba(17, 17, 17, 0.14);
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #111111;
+  }
+
+  .page-container {
+    width: auto;
+    margin: 0;
+  }
+
+  .surface-card {
+    border-color: rgba(17, 17, 17, 0.14);
+    background: #ffffff !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+
+  .surface-card::before {
+    display: none;
+  }
+
+  [data-print-hide='true'],
+  .memorial-action-bar,
+  #videos,
+  #guestbook form,
+  video,
+  iframe {
+    display: none !important;
+  }
+
+  .memorial-print-layout {
+    gap: 2rem !important;
+    padding-top: 1.25rem !important;
+    padding-bottom: 0 !important;
+  }
+
+  .print-avoid-break,
+  #photos,
+  #timeline article,
+  #guestbook article {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+}
