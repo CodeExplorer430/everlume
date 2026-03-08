@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import { X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react'
 
 interface Photo {
   id: string
@@ -13,16 +13,20 @@ interface Photo {
 
 interface PublicGalleryProps {
   photos: Photo[]
+  slideshowEnabled?: boolean
+  slideshowIntervalMs?: number
 }
 
-export function PublicGallery({ photos }: PublicGalleryProps) {
+export function PublicGallery({ photos, slideshowEnabled = false, slideshowIntervalMs = 4500 }: PublicGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
+  const [slideshowPaused, setSlideshowPaused] = useState(false)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
   const lastFocusedRef = useRef<HTMLElement | null>(null)
 
   const openLightbox = (index: number) => {
     lastFocusedRef.current = document.activeElement as HTMLElement | null
     setSelectedIndex(index)
+    setSlideshowPaused(false)
   }
 
   const closeLightbox = useCallback(() => {
@@ -59,6 +63,18 @@ export function PublicGallery({ photos }: PublicGalleryProps) {
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [closeLightbox, nextImage, prevImage, selectedIndex])
+
+  useEffect(() => {
+    if (selectedIndex === null) return
+    if (!slideshowEnabled || slideshowPaused || photos.length < 2) return
+
+    const intervalMs = Math.min(12000, Math.max(2000, slideshowIntervalMs || 4500))
+    const timer = window.setInterval(() => {
+      nextImage()
+    }, intervalMs)
+
+    return () => window.clearInterval(timer)
+  }, [selectedIndex, slideshowEnabled, slideshowPaused, slideshowIntervalMs, photos.length, nextImage])
 
   return (
     <>
@@ -103,6 +119,17 @@ export function PublicGallery({ photos }: PublicGalleryProps) {
           >
             <X className="h-8 w-8" />
           </button>
+
+          {slideshowEnabled && photos.length > 1 && (
+            <button
+              onClick={() => setSlideshowPaused((current) => !current)}
+              className="absolute left-5 top-5 inline-flex items-center gap-2 rounded-md border border-white/25 bg-black/35 px-3 py-1.5 text-sm text-white/90 transition-colors hover:bg-black/55"
+              aria-label={slideshowPaused ? 'Resume slideshow' : 'Pause slideshow'}
+            >
+              {slideshowPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+              {slideshowPaused ? 'Resume' : 'Pause'}
+            </button>
+          )}
 
           <button
             onClick={prevImage}

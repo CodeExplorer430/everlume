@@ -37,4 +37,12 @@ describe('PublicGallery', () => {
     const dialog = screen.getByRole('dialog', { name: /photo lightbox/i })
     expect(within(dialog).getByAltText('Second memory')).toBeInTheDocument()
   })
+
+  it('shows slideshow controls when slideshow is enabled', async () => {
+    const user = userEvent.setup()
+    render(<PublicGallery photos={photos} slideshowEnabled slideshowIntervalMs={3000} />)
+
+    await user.click(screen.getByRole('button', { name: /open photo 1/i }))
+    expect(screen.getByRole('button', { name: /pause slideshow/i })).toBeInTheDocument()
+  })
 })

@@ -71,10 +71,10 @@ describe('/api/admin/site-settings', () => {
       expect.objectContaining({
         action: 'site_settings.update',
         entity: 'site_settings',
-        metadata: {
-          before: { homeDirectoryEnabled: false },
-          after: { homeDirectoryEnabled: true },
-        },
+        metadata: expect.objectContaining({
+          before: expect.objectContaining({ homeDirectoryEnabled: false }),
+          after: expect.objectContaining({ homeDirectoryEnabled: true }),
+        }),
       })
     )
   })

@@ -35,7 +35,7 @@ describe('AdminSettingsScreen', () => {
 
     expect(await screen.findByText('Short URL Management')).toBeInTheDocument()
     expect(await screen.findByText('/r/sample')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Enabled' })).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Enabled' }).length).toBeGreaterThanOrEqual(1)
   })
 
   it('shows error when creating redirect fails', async () => {
@@ -159,5 +159,45 @@ describe('AdminSettingsScreen', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/admin/redirects/r1', expect.objectContaining({ method: 'DELETE' }))
     expect(await screen.findByText('Delete failed')).toBeInTheDocument()
     expect(screen.getByText('/r/sample')).toBeInTheDocument()
+  })
+
+  it('saves memorial presentation settings', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url === '/api/admin/site-settings' && (!init || !init.method)) {
+        return new Response(
+          JSON.stringify({
+            settings: {
+              homeDirectoryEnabled: true,
+              memorialSlideshowEnabled: true,
+              memorialSlideshowIntervalMs: 5000,
+              memorialVideoLayout: 'grid',
+            },
+          }),
+          { status: 200 }
+        )
+      }
+      if (url === '/api/admin/site-settings' && init?.method === 'PATCH') {
+        return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      }
+      return new Response(JSON.stringify({ redirects: [] }), { status: 200 })
+    })
+
+    const user = userEvent.setup()
+    render(<AdminSettingsScreen />)
+
+    await screen.findByText('Memorial Presentation')
+    await user.selectOptions(screen.getByLabelText('Video Layout'), 'featured')
+    await user.clear(screen.getByLabelText('Slideshow Interval (milliseconds)'))
+    await user.type(screen.getByLabelText('Slideshow Interval (milliseconds)'), '6000')
+    await user.click(screen.getByRole('button', { name: 'Save Memorial Presentation' }))
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/admin/site-settings',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: expect.stringContaining('"memorialVideoLayout":"featured"'),
+      })
+    )
   })
 })

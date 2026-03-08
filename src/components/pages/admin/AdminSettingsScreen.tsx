@@ -15,6 +15,13 @@ type RedirectItem = {
   created_at: string
 }
 
+type SiteSettings = {
+  homeDirectoryEnabled: boolean
+  memorialSlideshowEnabled: boolean
+  memorialSlideshowIntervalMs: number
+  memorialVideoLayout: 'grid' | 'featured'
+}
+
 export function AdminSettingsScreen() {
   const [redirects, setRedirects] = useState<RedirectItem[]>([])
   const [shortcode, setShortcode] = useState('')
@@ -25,6 +32,9 @@ export function AdminSettingsScreen() {
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [homeDirectoryEnabled, setHomeDirectoryEnabled] = useState(false)
+  const [memorialSlideshowEnabled, setMemorialSlideshowEnabled] = useState(true)
+  const [memorialSlideshowIntervalMs, setMemorialSlideshowIntervalMs] = useState(4500)
+  const [memorialVideoLayout, setMemorialVideoLayout] = useState<'grid' | 'featured'>('grid')
   const [updatingSiteSettings, setUpdatingSiteSettings] = useState(false)
 
   const fetchRedirects = useCallback(async () => {
@@ -47,8 +57,11 @@ export function AdminSettingsScreen() {
   const fetchSiteSettings = useCallback(async () => {
     const response = await fetch('/api/admin/site-settings', { cache: 'no-store' })
     if (!response.ok) return
-    const payload = (await response.json()) as { settings?: { homeDirectoryEnabled?: boolean } }
+    const payload = (await response.json()) as { settings?: Partial<SiteSettings> }
     setHomeDirectoryEnabled(payload.settings?.homeDirectoryEnabled === true)
+    setMemorialSlideshowEnabled(payload.settings?.memorialSlideshowEnabled !== false)
+    setMemorialSlideshowIntervalMs(payload.settings?.memorialSlideshowIntervalMs || 4500)
+    setMemorialVideoLayout(payload.settings?.memorialVideoLayout === 'featured' ? 'featured' : 'grid')
   }, [])
 
   useEffect(() => {
@@ -92,25 +105,60 @@ export function AdminSettingsScreen() {
     setCreating(false)
   }
 
-  const toggleHomeDirectory = async () => {
+  const updateSiteSettings = async (updates: Partial<SiteSettings>, rollback: () => void) => {
     if (updatingSiteSettings) return
     setUpdatingSiteSettings(true)
-    const nextValue = !homeDirectoryEnabled
-    setHomeDirectoryEnabled(nextValue)
 
     const response = await fetch('/api/admin/site-settings', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ homeDirectoryEnabled: nextValue }),
+      body: JSON.stringify(updates),
     })
 
     if (!response.ok) {
-      setHomeDirectoryEnabled(!nextValue)
+      rollback()
       const payload = (await response.json().catch(() => null)) as { message?: string } | null
       setErrorMessage(payload?.message || 'Unable to update site settings.')
     }
 
     setUpdatingSiteSettings(false)
+  }
+
+  const toggleHomeDirectory = async () => {
+    if (updatingSiteSettings) return
+    const nextValue = !homeDirectoryEnabled
+    setHomeDirectoryEnabled(nextValue)
+    await updateSiteSettings({ homeDirectoryEnabled: nextValue }, () => setHomeDirectoryEnabled(!nextValue))
+  }
+
+  const toggleMemorialSlideshow = async () => {
+    if (updatingSiteSettings) return
+    const nextValue = !memorialSlideshowEnabled
+    setMemorialSlideshowEnabled(nextValue)
+    await updateSiteSettings(
+      { memorialSlideshowEnabled: nextValue },
+      () => setMemorialSlideshowEnabled(!nextValue)
+    )
+  }
+
+  const saveMemorialPresentation = async () => {
+    if (updatingSiteSettings) return
+    const clampedInterval = Math.min(12000, Math.max(2000, memorialSlideshowIntervalMs || 4500))
+    const previous = {
+      memorialSlideshowIntervalMs,
+      memorialVideoLayout,
+    }
+    setMemorialSlideshowIntervalMs(clampedInterval)
+    await updateSiteSettings(
+      {
+        memorialSlideshowIntervalMs: clampedInterval,
+        memorialVideoLayout,
+      },
+      () => {
+        setMemorialSlideshowIntervalMs(previous.memorialSlideshowIntervalMs)
+        setMemorialVideoLayout(previous.memorialVideoLayout)
+      }
+    )
   }
 
   const updateRedirect = async (
@@ -199,6 +247,54 @@ export function AdminSettingsScreen() {
         <Button variant={homeDirectoryEnabled ? 'secondary' : 'outline'} onClick={toggleHomeDirectory} disabled={updatingSiteSettings}>
           {updatingSiteSettings ? 'Saving...' : homeDirectoryEnabled ? 'Enabled' : 'Disabled'}
         </Button>
+      </section>
+
+      <section className="surface-card space-y-4 p-6">
+        <div className="space-y-1">
+          <h3 className="text-base font-semibold">Memorial Presentation</h3>
+          <p className="text-sm text-muted-foreground">Control how photos and videos appear on public memorial pages.</p>
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Photo Slideshow</p>
+            <Button variant={memorialSlideshowEnabled ? 'secondary' : 'outline'} onClick={toggleMemorialSlideshow} disabled={updatingSiteSettings}>
+              {updatingSiteSettings ? 'Saving...' : memorialSlideshowEnabled ? 'Enabled' : 'Disabled'}
+            </Button>
+          </div>
+          <div>
+            <label htmlFor="slideshow-interval" className="mb-1.5 block text-sm font-medium">
+              Slideshow Interval (milliseconds)
+            </label>
+            <Input
+              id="slideshow-interval"
+              type="number"
+              min={2000}
+              max={12000}
+              step={500}
+              value={memorialSlideshowIntervalMs}
+              onChange={(e) => setMemorialSlideshowIntervalMs(Number(e.target.value))}
+            />
+          </div>
+          <div>
+            <label htmlFor="video-layout" className="mb-1.5 block text-sm font-medium">
+              Video Layout
+            </label>
+            <select
+              id="video-layout"
+              className="w-full rounded-md border border-input bg-[var(--surface-1)] px-3 py-2 text-sm"
+              value={memorialVideoLayout}
+              onChange={(e) => setMemorialVideoLayout(e.target.value === 'featured' ? 'featured' : 'grid')}
+            >
+              <option value="grid">Grid</option>
+              <option value="featured">Featured + List</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <Button variant="outline" onClick={saveMemorialPresentation} disabled={updatingSiteSettings}>
+            {updatingSiteSettings ? 'Saving...' : 'Save Memorial Presentation'}
+          </Button>
+        </div>
       </section>
 
       <form onSubmit={createRedirect} className="surface-card space-y-4 p-6">

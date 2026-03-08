@@ -28,6 +28,9 @@ const mockTimelineSelect = vi.fn(() => ({ eq: mockTimelineEq }))
 const mockVideosOrder = vi.fn()
 const mockVideosEq = vi.fn(() => ({ order: mockVideosOrder }))
 const mockVideosSelect = vi.fn(() => ({ eq: mockVideosEq }))
+const mockSiteSettingsSingle = vi.fn()
+const mockSiteSettingsEq = vi.fn(() => ({ single: mockSiteSettingsSingle }))
+const mockSiteSettingsSelect = vi.fn(() => ({ eq: mockSiteSettingsEq }))
 
 vi.mock('next/navigation', () => ({
   notFound: () => mockNotFound(),
@@ -62,6 +65,7 @@ vi.mock('@/lib/supabase/server', () => ({
       if (table === 'photos') return { select: mockPhotosSelect }
       if (table === 'guestbook') return { select: mockGuestbookSelect }
       if (table === 'timeline_events') return { select: mockTimelineSelect }
+      if (table === 'site_settings') return { select: mockSiteSettingsSelect }
       return { select: mockVideosSelect }
     },
   }),
@@ -92,6 +96,7 @@ describe('/memorials/[slug] page', () => {
     mockGuestbookOrder.mockReset()
     mockTimelineOrder.mockReset()
     mockVideosOrder.mockReset()
+    mockSiteSettingsSingle.mockReset()
   })
 
   it('renders public memorial view with loaded resources', async () => {
@@ -100,6 +105,7 @@ describe('/memorials/[slug] page', () => {
     mockGuestbookOrder.mockResolvedValue({ data: [{ id: 'entry-1', name: 'Ana', message: 'Forever', created_at: '2026-01-01T00:00:00.000Z' }] })
     mockTimelineOrder.mockResolvedValue({ data: [{ id: 't1', year: 2000, text: 'A milestone' }] })
     mockVideosOrder.mockResolvedValue({ data: [{ id: 'v1', provider_id: 'abcdefghijk', title: 'Memories' }] })
+    mockSiteSettingsSingle.mockResolvedValue({ data: { memorial_slideshow_enabled: true, memorial_slideshow_interval_ms: 4500, memorial_video_layout: 'grid' } })
 
     const mod = await import('@/app/memorials/[slug]/page')
     const node = await mod.default({ params: Promise.resolve({ slug: 'jane' }) })
@@ -173,6 +179,7 @@ describe('/memorials/[slug] page', () => {
     mockGuestbookOrder.mockResolvedValue({ data: [] })
     mockTimelineOrder.mockResolvedValue({ data: [] })
     mockVideosOrder.mockResolvedValue({ data: [] })
+    mockSiteSettingsSingle.mockResolvedValue({ data: { memorial_slideshow_enabled: true, memorial_slideshow_interval_ms: 4500, memorial_video_layout: 'grid' } })
 
     const mod = await import('@/app/memorials/[slug]/page')
     const node = await mod.default({ params: Promise.resolve({ slug: 'jane' }) })

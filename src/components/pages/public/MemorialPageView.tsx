@@ -46,9 +46,18 @@ interface MemorialPageViewProps {
   videos: MemorialVideo[]
   timeline: MemorialTimeline[]
   guestbook: MemorialGuestbook[]
+  displaySettings?: {
+    memorialSlideshowEnabled: boolean
+    memorialSlideshowIntervalMs: number
+    memorialVideoLayout: 'grid' | 'featured'
+  }
 }
 
-export function MemorialPageView({ page, photos, videos, timeline, guestbook }: MemorialPageViewProps) {
+export function MemorialPageView({ page, photos, videos, timeline, guestbook, displaySettings }: MemorialPageViewProps) {
+  const slideshowEnabled = displaySettings?.memorialSlideshowEnabled !== false
+  const slideshowIntervalMs = displaySettings?.memorialSlideshowIntervalMs || 4500
+  const memorialVideoLayout = displaySettings?.memorialVideoLayout === 'featured' ? 'featured' : 'grid'
+
   return (
     <div className="min-h-screen pb-14">
       <TributeHero page={page} />
@@ -63,13 +72,17 @@ export function MemorialPageView({ page, photos, videos, timeline, guestbook }: 
 
         <section className="space-y-6">
           {photos.length > 0 ? (
-            <PublicGallery photos={photos.map((photo) => ({ ...photo, caption: photo.caption ?? undefined }))} />
+            <PublicGallery
+              photos={photos.map((photo) => ({ ...photo, caption: photo.caption ?? undefined }))}
+              slideshowEnabled={slideshowEnabled}
+              slideshowIntervalMs={slideshowIntervalMs}
+            />
           ) : (
             <div className="surface-card py-12 text-center text-sm italic text-muted-foreground">No photos shared yet.</div>
           )}
         </section>
 
-        <TributeVideos videos={videos} />
+        <TributeVideos videos={videos} layout={memorialVideoLayout} />
 
         <TributeTimeline timeline={timeline} />
 

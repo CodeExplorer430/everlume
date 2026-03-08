@@ -66,7 +66,7 @@ describe('MemorialPageView', () => {
     expect(screen.getByTestId('tribute-hero')).toBeInTheDocument()
     expect(screen.getByText('No photos shared yet.')).toBeInTheDocument()
     expect(mockPublicGallery).not.toHaveBeenCalled()
-    expect(mockTributeVideos).toHaveBeenCalledWith({ videos: [] })
+    expect(mockTributeVideos).toHaveBeenCalledWith({ videos: [], layout: 'grid' })
     expect(mockTributeTimeline).toHaveBeenCalledWith({ timeline: [] })
     expect(mockTributeGuestbook).toHaveBeenCalledWith({ pageId: 'page-1', fullName: 'Jane Doe', entries: [] })
   })
@@ -85,6 +85,8 @@ describe('MemorialPageView', () => {
     expect(screen.getByTestId('public-gallery')).toBeInTheDocument()
     expect(mockPublicGallery).toHaveBeenCalledWith({
       photos: [{ id: 'photo-1', image_url: '/image.jpg', thumb_url: '/thumb.jpg', caption: undefined }],
+      slideshowEnabled: true,
+      slideshowIntervalMs: 4500,
     })
   })
 })

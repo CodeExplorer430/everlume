@@ -36,4 +36,15 @@ describe('TributeVideos', () => {
     expect(videoEl).toBeTruthy()
     expect(videoEl?.getAttribute('src')).toContain('/video/upload/')
   })
+
+  it('renders featured layout shell when configured', () => {
+    render(
+      <TributeVideos
+        layout="featured"
+        videos={[{ id: 'v1', provider: 'youtube', provider_id: 'abcdefghijk', title: 'Family Clip' }]}
+      />
+    )
+
+    expect(screen.getByText('No additional videos yet.')).toBeInTheDocument()
+  })
 })
