@@ -41,9 +41,10 @@ Also verify app-side fallback:
 - `https://app.yourdomain.com/r/unknown` -> `/r/not-found?reason=missing`.
 - `https://app.yourdomain.com/r/test` -> `302` to target URL.
 
-## 4) Video Transcode Service (Cloud Run)
-Deploy the in-repo service before enabling direct video upload in production.
+## 4) Video Transcode Service
+Deploy a compatible transcode callback service before enabling direct video upload in production.
 
+### Cloud Run reference path
 1. Build/deploy service:
 ```bash
 ./scripts/ops/deploy-video-transcode-cloud-run.sh everlume-video-transcode us-central1 <gcp-project-id>
@@ -64,6 +65,18 @@ Deploy the in-repo service before enabling direct video upload in production.
 npm run ops:check-video-transcode
 npm run ops:check-video-transcode:synthetic
 ```
+
+### Platform alternatives
+Any platform is valid as long as it exposes the same API contract used by the checks above:
+- `GET /healthz`
+- `POST /jobs/init`
+- callback support for app `/api/internal/video-transcode/callback`
+
+Common alternatives:
+- Cloud Run Jobs/Service (reference implementation)
+- Fly.io app service
+- Render web service
+- Railway service
 
 ## 5) Local Validation
 Run before deploy:
