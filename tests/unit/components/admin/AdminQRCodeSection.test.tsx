@@ -15,7 +15,7 @@ describe('AdminQRCodeSection', () => {
       />
     )
 
-    expect(screen.getByTestId('qr-url').textContent).toContain('/r/grandma')
+    expect(screen.getByTestId('qr-url').textContent).toContain('/grandma')
   })
 
   it('allows selecting another active redirect url', async () => {
@@ -31,8 +31,8 @@ describe('AdminQRCodeSection', () => {
       />
     )
 
-    await user.selectOptions(screen.getByLabelText('Select URL for QR'), 'http://localhost:3000/r/lola')
-    expect(screen.getByTestId('qr-url').textContent).toContain('/r/lola')
+    await user.selectOptions(screen.getByLabelText('Select URL for QR'), 'http://localhost:3000/lola')
+    expect(screen.getByTestId('qr-url').textContent).toContain('/lola')
   })
 
   it('shows setup guidance when no active redirects exist', () => {
@@ -55,8 +55,8 @@ describe('AdminQRCodeSection', () => {
 
     const options = screen.getAllByRole('option')
     const labels = options.map((option) => option.textContent ?? '')
-    expect(labels.some((label) => label.includes('/r/grandma'))).toBe(true)
-    expect(labels.some((label) => label.includes('/r/nanay'))).toBe(true)
-    expect(labels.some((label) => label.includes('/r/legacy'))).toBe(false)
+    expect(labels.some((label) => label.includes('/grandma'))).toBe(true)
+    expect(labels.some((label) => label.includes('/nanay'))).toBe(true)
+    expect(labels.some((label) => label.includes('/legacy'))).toBe(false)
   })
 })

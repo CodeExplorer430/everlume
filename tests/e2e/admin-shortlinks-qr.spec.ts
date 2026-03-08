@@ -98,12 +98,12 @@ test('admin manages short links and sees QR section on memorial edit', async ({ 
   await page.getByPlaceholder('https://yourdomain.com/memorials/sample').fill('https://everlume.app/memorials/nanay')
   await page.getByRole('button', { name: /create redirect/i }).click()
 
-  await expect(page.getByText('/r/nanay')).toBeVisible()
+  await expect(page.getByRole('cell', { name: '/nanay', exact: true })).toBeVisible()
 
   await page.goto('/admin/memorials/550e8400-e29b-41d4-a716-446655440000', { waitUntil: 'domcontentloaded' })
   await expect(page.getByRole('heading', { name: /edit memorial/i })).toBeVisible({ timeout: 15000 })
   await expect(page.getByRole('heading', { name: /qr code for plaque/i })).toBeVisible({ timeout: 15000 })
-  await expect(page.getByText(/\/r\/grandma$/)).toBeVisible()
+  await expect(page.getByText(/\/grandma$/)).toBeVisible()
 })
 
 test('qr selector excludes inactive short links', async ({ page }) => {
@@ -154,8 +154,8 @@ test('qr selector excludes inactive short links', async ({ page }) => {
   await expect(page.getByLabel('Select URL for QR')).toBeVisible()
 
   const options = await page.locator('#qr-url-selector option').allTextContents()
-  expect(options.join(' ')).toContain('/r/grandma')
-  expect(options.join(' ')).toContain('/r/nanay')
-  expect(options.join(' ')).not.toContain('/r/legacy-code')
-  await expect(page.getByText('/r/legacy-code')).not.toBeVisible()
+  expect(options.join(' ')).toContain('/grandma')
+  expect(options.join(' ')).toContain('/nanay')
+  expect(options.join(' ')).not.toContain('/legacy-code')
+  await expect(page.getByText('/legacy-code')).not.toBeVisible()
 })

@@ -7,6 +7,11 @@ interface PageRecord {
   slug: string
   qr_template?: 'classic' | 'minimal' | 'warm'
   qr_caption?: string
+  qr_foreground_color?: '#111827' | '#14532d' | '#7c2d12'
+  qr_background_color?: '#ffffff' | '#f8fafc' | '#fffaf2'
+  qr_frame_style?: 'line' | 'rounded' | 'double'
+  qr_caption_font?: 'serif' | 'sans'
+  qr_show_logo?: boolean
 }
 
 interface RedirectRecord {
@@ -25,13 +30,13 @@ export function AdminQRCodeSection({ page, redirects }: AdminQRCodeSectionProps)
   const [selectedUrl, setSelectedUrl] = useState<string>('')
 
   const options = useMemo(() => {
-    const baseUrl = process.env.NEXT_PUBLIC_SHORT_DOMAIN || window.location.origin
+    const baseUrl = (process.env.NEXT_PUBLIC_SHORT_DOMAIN || window.location.origin).replace(/\/+$/, '')
     const redirectOptions = (redirects || [])
       .filter((r) => r.is_active !== false)
       .map((r) => ({
       key: r.id,
-      label: `Short: /r/${r.shortcode}${r.print_status === 'verified' ? ' (verified)' : ''}`,
-      value: `${baseUrl}/r/${r.shortcode}`,
+      label: `Short: /${r.shortcode}${r.print_status === 'verified' ? ' (verified)' : ''}`,
+      value: `${baseUrl}/${r.shortcode}`,
       }))
 
     return redirectOptions
@@ -71,6 +76,11 @@ export function AdminQRCodeSection({ page, redirects }: AdminQRCodeSectionProps)
               url={qrUrl}
               template={page.qr_template === 'minimal' || page.qr_template === 'warm' ? page.qr_template : 'classic'}
               caption={(page.qr_caption || 'Scan me!').trim()}
+              foregroundColor={page.qr_foreground_color}
+              backgroundColor={page.qr_background_color}
+              frameStyle={page.qr_frame_style}
+              captionFont={page.qr_caption_font}
+              showLogo={page.qr_show_logo === true}
             />
           </>
         ) : (

@@ -71,7 +71,20 @@ describe('redirector worker', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('returns 405 for non-GET methods', async () => {
+  it('allows HEAD methods for short-link checks', async () => {
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify([{ target_url: 'https://everlume.app/memorials/jane', is_active: true }]), { status: 200 })
+    )
+
+    const response = await worker.fetch(
+      new Request('https://go.everlume.app/grandma', { method: 'HEAD' }),
+      env
+    )
+
+    expect(response.status).toBe(302)
+  })
+
+  it('returns 405 for non-GET/HEAD methods', async () => {
     const response = await worker.fetch(
       new Request('https://go.everlume.app/grandma', { method: 'POST' }),
       env

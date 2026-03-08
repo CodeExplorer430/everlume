@@ -251,8 +251,8 @@ export function AdminSettingsScreen() {
 
       <section className="surface-card space-y-4 p-6">
         <div className="space-y-1">
-          <h3 className="text-base font-semibold">Memorial Presentation</h3>
-          <p className="text-sm text-muted-foreground">Control how photos and videos appear on public memorial pages.</p>
+          <h3 className="text-base font-semibold">Memorial Presentation Defaults</h3>
+          <p className="text-sm text-muted-foreground">Used when creating new memorial pages. Per-page settings can override these defaults.</p>
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
@@ -349,7 +349,7 @@ export function AdminSettingsScreen() {
               {redirects.length > 0 ? (
                 redirects.map((r) => (
                   <tr key={r.id}>
-                    <td className="px-4 py-3 font-medium">/r/{r.shortcode}</td>
+                    <td className="px-4 py-3 font-medium">/{r.shortcode}</td>
                     <td className="max-w-sm px-4 py-3 truncate text-muted-foreground">{r.target_url}</td>
                     <td className="px-4 py-3">
                       <span className={r.is_active ? 'text-emerald-700' : 'text-amber-700'}>

@@ -28,6 +28,9 @@ const mockTimelineSelect = vi.fn(() => ({ eq: mockTimelineEq }))
 const mockVideosOrder = vi.fn()
 const mockVideosEq = vi.fn(() => ({ order: mockVideosOrder }))
 const mockVideosSelect = vi.fn(() => ({ eq: mockVideosEq }))
+const mockSiteSettingsSingle = vi.fn()
+const mockSiteSettingsEq = vi.fn(() => ({ single: mockSiteSettingsSingle }))
+const mockSiteSettingsSelect = vi.fn(() => ({ eq: mockSiteSettingsEq }))
 
 vi.mock('next/navigation', () => ({
   notFound: () => mockNotFound(),
@@ -59,6 +62,7 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
     from: (table: string) => {
       if (table === 'pages') return { select: mockPageSelect }
+      if (table === 'site_settings') return { select: mockSiteSettingsSelect }
       if (table === 'photos') return { select: mockPhotosSelect }
       if (table === 'guestbook') return { select: mockGuestbookSelect }
       if (table === 'timeline_events') return { select: mockTimelineSelect }
@@ -92,6 +96,14 @@ describe('/memorials/[slug] page', () => {
     mockGuestbookOrder.mockReset()
     mockTimelineOrder.mockReset()
     mockVideosOrder.mockReset()
+    mockSiteSettingsSingle.mockReset()
+    mockSiteSettingsSingle.mockResolvedValue({
+      data: {
+        memorial_slideshow_enabled: true,
+        memorial_slideshow_interval_ms: 4500,
+        memorial_video_layout: 'grid',
+      },
+    })
   })
 
   it('renders public memorial view with loaded resources', async () => {
@@ -108,7 +120,7 @@ describe('/memorials/[slug] page', () => {
     expect(screen.getByTestId('memorial-page-view')).toBeInTheDocument()
     expect(mockMemorialPageView).toHaveBeenCalledWith(
       expect.objectContaining({
-        page: publicPage,
+        page: expect.objectContaining(publicPage),
         photos: expect.arrayContaining([expect.objectContaining({ id: 'photo-1' })]),
       })
     )

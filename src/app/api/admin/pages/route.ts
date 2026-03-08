@@ -29,6 +29,12 @@ export async function POST(request: NextRequest) {
   const { supabase, userId } = auth
 
   const { title, slug, fullName, dob, dod } = parsed.data
+  const { data: siteSettings } = await supabase
+    .from('site_settings')
+    .select('memorial_slideshow_enabled, memorial_slideshow_interval_ms, memorial_video_layout')
+    .eq('id', 1)
+    .single()
+
   const { data, error } = await supabase
     .from('pages')
     .insert({
@@ -38,6 +44,9 @@ export async function POST(request: NextRequest) {
       dob: dob || null,
       dod: dod || null,
       owner_id: userId,
+      memorial_slideshow_enabled: siteSettings?.memorial_slideshow_enabled !== false,
+      memorial_slideshow_interval_ms: Number(siteSettings?.memorial_slideshow_interval_ms) || 4500,
+      memorial_video_layout: siteSettings?.memorial_video_layout === 'featured' ? 'featured' : 'grid',
     })
     .select('id, slug')
     .single()

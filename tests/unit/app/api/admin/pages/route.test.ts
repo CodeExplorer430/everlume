@@ -7,12 +7,16 @@ const mockProfileSelect = vi.fn(() => ({ eq: mockProfileEq }))
 const mockInsertSingle = vi.fn()
 const mockInsertSelect = vi.fn(() => ({ single: mockInsertSingle }))
 const mockInsert = vi.fn(() => ({ select: mockInsertSelect }))
+const mockSettingsSingle = vi.fn()
+const mockSettingsEq = vi.fn(() => ({ single: mockSettingsSingle }))
+const mockSettingsSelect = vi.fn(() => ({ eq: mockSettingsEq }))
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
     auth: { getUser: mockGetUser },
     from: (table: string) => {
       if (table === 'profiles') return { select: mockProfileSelect }
+      if (table === 'site_settings') return { select: mockSettingsSelect }
       return { insert: mockInsert }
     },
   }),
@@ -24,6 +28,15 @@ describe('POST /api/admin/pages', () => {
     mockProfileSingle.mockReset()
     mockInsert.mockClear()
     mockInsertSingle.mockReset()
+    mockSettingsSingle.mockReset()
+    mockSettingsSingle.mockResolvedValue({
+      data: {
+        memorial_slideshow_enabled: true,
+        memorial_slideshow_interval_ms: 4500,
+        memorial_video_layout: 'grid',
+      },
+      error: null,
+    })
     mockProfileSingle.mockResolvedValue({ data: { role: 'editor', is_active: true }, error: null })
   })
 

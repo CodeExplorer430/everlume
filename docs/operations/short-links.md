@@ -19,6 +19,7 @@
 - Inactive code (`is_active=false`) -> HTTP 404
 - Missing/invalid code -> HTTP 404
 - Root path -> redirect to `FALLBACK_URL` when provided
+- Worker accepts both `GET` and `HEAD` for monitoring/curl checks.
 
 ## App Redirect Route Rules (`/r/[code]`)
 - Active code -> HTTP 302 to `target_url` (short cache).

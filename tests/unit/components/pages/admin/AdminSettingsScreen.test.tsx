@@ -34,7 +34,7 @@ describe('AdminSettingsScreen', () => {
     render(<AdminSettingsScreen />)
 
     expect(await screen.findByText('Short URL Management')).toBeInTheDocument()
-    expect(await screen.findByText('/r/sample')).toBeInTheDocument()
+    expect(await screen.findByText('/sample')).toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: 'Enabled' }).length).toBeGreaterThanOrEqual(1)
   })
 
@@ -146,7 +146,7 @@ describe('AdminSettingsScreen', () => {
 
     const user = userEvent.setup()
     render(<AdminSettingsScreen />)
-    await screen.findByText('/r/sample')
+    await screen.findByText('/sample')
 
     await user.click(screen.getByRole('button', { name: 'Mark redirect sample as verified' }))
     expect(fetchMock).toHaveBeenCalledWith(
@@ -158,7 +158,7 @@ describe('AdminSettingsScreen', () => {
     await user.click(screen.getByRole('button', { name: 'Delete redirect sample' }))
     expect(fetchMock).toHaveBeenCalledWith('/api/admin/redirects/r1', expect.objectContaining({ method: 'DELETE' }))
     expect(await screen.findByText('Delete failed')).toBeInTheDocument()
-    expect(screen.getByText('/r/sample')).toBeInTheDocument()
+    expect(screen.getByText('/sample')).toBeInTheDocument()
   })
 
   it('saves memorial presentation settings', async () => {
@@ -186,7 +186,7 @@ describe('AdminSettingsScreen', () => {
     const user = userEvent.setup()
     render(<AdminSettingsScreen />)
 
-    await screen.findByText('Memorial Presentation')
+    await screen.findByText('Memorial Presentation Defaults')
     await user.selectOptions(screen.getByLabelText('Video Layout'), 'featured')
     await user.clear(screen.getByLabelText('Slideshow Interval (milliseconds)'))
     await user.type(screen.getByLabelText('Slideshow Interval (milliseconds)'), '6000')

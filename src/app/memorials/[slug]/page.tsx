@@ -52,6 +52,11 @@ export default async function PublicTributePage({ params }: PageProps) {
   const supabase = await createClient()
 
   const { data: page } = await supabase.from('pages').select('*').eq('slug', slug).single()
+  const { data: siteSettings } = await supabase
+    .from('site_settings')
+    .select('memorial_slideshow_enabled, memorial_slideshow_interval_ms, memorial_video_layout')
+    .eq('id', 1)
+    .single()
 
   if (!page) {
     notFound()
@@ -94,9 +99,18 @@ export default async function PublicTributePage({ params }: PageProps) {
         })
       : photos || []
 
+  const resolvedPage = {
+    ...page,
+    memorial_slideshow_enabled:
+      page.memorial_slideshow_enabled ?? (siteSettings?.memorial_slideshow_enabled !== false),
+    memorial_slideshow_interval_ms: page.memorial_slideshow_interval_ms ?? (Number(siteSettings?.memorial_slideshow_interval_ms) || 4500),
+    memorial_video_layout:
+      page.memorial_video_layout ?? (siteSettings?.memorial_video_layout === 'featured' ? 'featured' : 'grid'),
+  }
+
   return (
     <MemorialPageView
-      page={page}
+      page={resolvedPage}
       photos={resolvedPhotos}
       videos={videos || []}
       timeline={timeline || []}
