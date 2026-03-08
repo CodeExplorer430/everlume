@@ -28,7 +28,7 @@ describe('QRCodeGenerator', () => {
     })
 
     const user = userEvent.setup()
-    render(<QRCodeGenerator url="https://example.com/r/jane" />)
+    render(<QRCodeGenerator url="https://example.com/r/jane" template="warm" caption="Remember me" />)
 
     await waitFor(() => {
       expect(mockToString).toHaveBeenCalledWith(
@@ -52,7 +52,7 @@ describe('QRCodeGenerator', () => {
       callback(new Error('generation failed'), '')
     })
 
-    render(<QRCodeGenerator url="https://example.com/r/jane" />)
+    render(<QRCodeGenerator url="https://example.com/r/jane" template="minimal" caption="Visit memorial" />)
 
     await waitFor(() => {
       expect(mockToString).toHaveBeenCalled()

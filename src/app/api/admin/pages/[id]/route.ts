@@ -18,6 +18,12 @@ const pageUpdateSchema = z
     accessMode: z.enum(['public', 'private', 'password']).optional(),
     password: z.string().min(6).max(128).optional(),
     heroImageUrl: z.string().trim().url().nullable().optional(),
+    memorialTheme: z.enum(['classic', 'serene', 'editorial']).optional(),
+    memorialSlideshowEnabled: z.boolean().optional(),
+    memorialSlideshowIntervalMs: z.number().int().min(2000).max(12000).optional(),
+    memorialVideoLayout: z.enum(['grid', 'featured']).optional(),
+    qrTemplate: z.enum(['classic', 'minimal', 'warm']).optional(),
+    qrCaption: z.string().trim().min(2).max(40).optional(),
   })
   .refine((value) => value.accessMode !== 'password' || Boolean(value.password), {
     message: 'Password is required when access mode is password.',
@@ -88,6 +94,12 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     password_hash: body.password ? hashPagePassword(body.password) : undefined,
     password_updated_at: body.password ? new Date().toISOString() : undefined,
     hero_image_url: body.heroImageUrl,
+    memorial_theme: body.memorialTheme,
+    memorial_slideshow_enabled: body.memorialSlideshowEnabled,
+    memorial_slideshow_interval_ms: body.memorialSlideshowIntervalMs,
+    memorial_video_layout: body.memorialVideoLayout,
+    qr_template: body.qrTemplate,
+    qr_caption: body.qrCaption,
     updated_at: new Date().toISOString(),
   }
 

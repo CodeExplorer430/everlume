@@ -7,9 +7,11 @@ import { Download } from 'lucide-react'
 
 interface QRCodeGeneratorProps {
   url: string
+  template?: 'classic' | 'minimal' | 'warm'
+  caption?: string
 }
 
-export function QRCodeGenerator({ url }: QRCodeGeneratorProps) {
+export function QRCodeGenerator({ url, template = 'classic', caption = 'Scan me!' }: QRCodeGeneratorProps) {
   const [svg, setSvg] = useState<string>('')
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
@@ -29,14 +31,22 @@ export function QRCodeGenerator({ url }: QRCodeGeneratorProps) {
 
   const buildPlaqueSvg = () => {
     if (!svg) return ''
+    const palette =
+      template === 'minimal'
+        ? { bg: '#ffffff', frame: '#1f2937', text: '#111827' }
+        : template === 'warm'
+          ? { bg: '#fffaf2', frame: '#7b5a36', text: '#503a23' }
+          : { bg: '#ffffff', frame: '#101010', text: '#111111' }
+    const captionFont = template === 'minimal' ? "normal 145px 'Helvetica Neue', Arial, sans-serif" : "italic 170px 'Times New Roman', Georgia, serif"
+
     return `
 <svg xmlns="http://www.w3.org/2000/svg" width="1800" height="2400" viewBox="0 0 1800 2400">
-  <rect width="1800" height="2400" fill="#ffffff"/>
-  <rect x="120" y="120" width="1560" height="1920" rx="24" fill="#ffffff" stroke="#101010" stroke-width="4"/>
+  <rect width="1800" height="2400" fill="${palette.bg}"/>
+  <rect x="120" y="120" width="1560" height="1920" rx="24" fill="${palette.bg}" stroke="${palette.frame}" stroke-width="4"/>
   <g transform="translate(200,220)">
     ${svg}
   </g>
-  <text x="900" y="2260" text-anchor="middle" font-size="170" font-style="italic" font-family="'Times New Roman', Georgia, serif" fill="#111111">Scan me!</text>
+  <text x="900" y="2260" text-anchor="middle" font="${captionFont}" fill="${palette.text}">${caption}</text>
 </svg>`.trim()
   }
 
@@ -64,18 +74,25 @@ export function QRCodeGenerator({ url }: QRCodeGeneratorProps) {
       return
     }
 
-    ctx.fillStyle = '#ffffff'
+    const palette =
+      template === 'minimal'
+        ? { bg: '#ffffff', frame: '#1f2937', text: '#111827' }
+        : template === 'warm'
+          ? { bg: '#fffaf2', frame: '#7b5a36', text: '#503a23' }
+          : { bg: '#ffffff', frame: '#101010', text: '#111111' }
+
+    ctx.fillStyle = palette.bg
     ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height)
 
-    ctx.strokeStyle = '#101010'
+    ctx.strokeStyle = palette.frame
     ctx.lineWidth = 4
     ctx.strokeRect(120, 120, 1560, 1920)
 
     ctx.drawImage(canvasRef.current, 200, 220, 1400, 1400)
-    ctx.fillStyle = '#111111'
+    ctx.fillStyle = palette.text
     ctx.textAlign = 'center'
-    ctx.font = "italic 170px 'Times New Roman', Georgia, serif"
-    ctx.fillText('Scan me!', 900, 2260)
+    ctx.font = template === 'minimal' ? "normal 145px 'Helvetica Neue', Arial, sans-serif" : "italic 170px 'Times New Roman', Georgia, serif"
+    ctx.fillText(caption, 900, 2260)
 
     const link = document.createElement('a')
     link.href = exportCanvas.toDataURL('image/png')
@@ -87,7 +104,7 @@ export function QRCodeGenerator({ url }: QRCodeGeneratorProps) {
     <div className="w-full space-y-3 text-center">
       <div className="mx-auto w-fit rounded-xl border border-border bg-white px-6 py-6 shadow-[var(--shadow-card)]">
         <div className="mx-auto w-fit" dangerouslySetInnerHTML={{ __html: svg }} />
-        <p className="pt-5 text-5xl italic text-foreground [font-family:Georgia,'Times_New_Roman',serif]">Scan me!</p>
+        <p className="pt-5 text-5xl italic text-foreground [font-family:Georgia,'Times_New_Roman',serif]">{caption}</p>
       </div>
       <p className="rounded-md border border-border bg-secondary/60 px-2 py-1 text-xs font-mono text-muted-foreground">{url}</p>
       <div className="grid grid-cols-1 gap-2">

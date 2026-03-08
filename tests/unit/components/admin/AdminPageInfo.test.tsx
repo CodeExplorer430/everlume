@@ -2,6 +2,28 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AdminPageInfo } from '@/components/admin/AdminPageInfo'
 
+type AdminPageProps = React.ComponentProps<typeof AdminPageInfo>['page']
+
+function makePage(overrides: Partial<AdminPageProps> = {}): AdminPageProps {
+  return {
+    id: 'page-1',
+    title: 'Sample',
+    slug: 'sample',
+    full_name: 'Jane Doe',
+    dob: null,
+    dod: null,
+    access_mode: 'public' as const,
+    privacy: 'public' as const,
+    memorial_theme: 'classic' as const,
+    memorial_slideshow_enabled: true,
+    memorial_slideshow_interval_ms: 4500,
+    memorial_video_layout: 'grid' as const,
+    qr_template: 'classic' as const,
+    qr_caption: 'Scan me!',
+    ...overrides,
+  }
+}
+
 describe('AdminPageInfo', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
@@ -12,16 +34,7 @@ describe('AdminPageInfo', () => {
     const { rerender } = render(
       <AdminPageInfo
         onUpdate={onUpdate}
-        page={{
-          id: 'page-1',
-          title: 'First Title',
-          slug: 'first-title',
-          full_name: 'Jane Doe',
-          dob: null,
-          dod: null,
-          access_mode: 'public',
-          privacy: 'public',
-        }}
+        page={makePage({ title: 'First Title', slug: 'first-title' })}
       />
     )
 
@@ -34,16 +47,7 @@ describe('AdminPageInfo', () => {
     rerender(
       <AdminPageInfo
         onUpdate={onUpdate}
-        page={{
-          id: 'page-1',
-          title: 'Server Updated Title',
-          slug: 'first-title',
-          full_name: 'Jane Doe',
-          dob: null,
-          dod: null,
-          access_mode: 'public',
-          privacy: 'public',
-        }}
+        page={makePage({ title: 'Server Updated Title', slug: 'first-title' })}
       />
     )
 
@@ -58,16 +62,7 @@ describe('AdminPageInfo', () => {
     render(
       <AdminPageInfo
         onUpdate={onUpdate}
-        page={{
-          id: 'page-9',
-          title: 'Sample',
-          slug: 'sample',
-          full_name: null,
-          dob: null,
-          dod: null,
-          access_mode: 'public',
-          privacy: 'public',
-        }}
+        page={makePage({ id: 'page-9', full_name: null })}
       />
     )
 
@@ -88,6 +83,10 @@ describe('AdminPageInfo', () => {
       password: 'secret123',
       title: 'Sample',
       slug: 'sample',
+      memorialTheme: 'classic',
+      memorialVideoLayout: 'grid',
+      qrTemplate: 'classic',
+      qrCaption: 'Scan me!',
     })
     expect(onUpdate).toHaveBeenCalledTimes(1)
     expect(screen.getByLabelText('Set or Rotate Password')).toHaveValue('')
@@ -100,16 +99,7 @@ describe('AdminPageInfo', () => {
     render(
       <AdminPageInfo
         onUpdate={vi.fn()}
-        page={{
-          id: 'page-7',
-          title: 'Sample',
-          slug: 'sample',
-          full_name: 'Jane',
-          dob: null,
-          dod: null,
-          access_mode: 'private',
-          privacy: 'private',
-        }}
+        page={makePage({ id: 'page-7', full_name: 'Jane', access_mode: 'private', privacy: 'private' })}
       />
     )
 
@@ -124,16 +114,7 @@ describe('AdminPageInfo', () => {
     render(
       <AdminPageInfo
         onUpdate={vi.fn()}
-        page={{
-          id: 'page-8',
-          title: 'Sample',
-          slug: 'sample',
-          full_name: 'Jane',
-          dob: null,
-          dod: null,
-          access_mode: 'public',
-          privacy: 'public',
-        }}
+        page={makePage({ id: 'page-8', full_name: 'Jane' })}
       />
     )
 
@@ -154,16 +135,7 @@ describe('AdminPageInfo', () => {
     render(
       <AdminPageInfo
         onUpdate={vi.fn()}
-        page={{
-          id: 'page-10',
-          title: 'Sample',
-          slug: 'sample',
-          full_name: null,
-          dob: null,
-          dod: null,
-          access_mode: 'public',
-          privacy: 'public',
-        }}
+        page={makePage({ id: 'page-10', full_name: null })}
       />
     )
 

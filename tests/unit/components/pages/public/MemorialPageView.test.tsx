@@ -55,7 +55,18 @@ describe('MemorialPageView', () => {
   it('renders empty gallery state when no photos are available', () => {
     render(
       <MemorialPageView
-        page={{ id: 'page-1', title: 'In Loving Memory', full_name: 'Jane Doe', hero_image_url: null, dob: null, dod: null }}
+        page={{
+          id: 'page-1',
+          title: 'In Loving Memory',
+          full_name: 'Jane Doe',
+          hero_image_url: null,
+          dob: null,
+          dod: null,
+          memorial_theme: 'classic',
+          memorial_slideshow_enabled: true,
+          memorial_slideshow_interval_ms: 4500,
+          memorial_video_layout: 'grid',
+        }}
         photos={[]}
         videos={[]}
         timeline={[]}
@@ -74,7 +85,18 @@ describe('MemorialPageView', () => {
   it('passes normalized photo captions to PublicGallery', () => {
     render(
       <MemorialPageView
-        page={{ id: 'page-1', title: 'In Loving Memory', full_name: null, hero_image_url: null, dob: null, dod: null }}
+        page={{
+          id: 'page-1',
+          title: 'In Loving Memory',
+          full_name: null,
+          hero_image_url: null,
+          dob: null,
+          dod: null,
+          memorial_theme: 'serene',
+          memorial_slideshow_enabled: true,
+          memorial_slideshow_interval_ms: 4500,
+          memorial_video_layout: 'grid',
+        }}
         photos={[{ id: 'photo-1', image_url: '/image.jpg', thumb_url: '/thumb.jpg', caption: null }]}
         videos={[{ id: 'v1', provider: 'youtube', provider_id: 'abcdefghijk', title: null }]}
         timeline={[{ id: 't1', year: 2001, text: 'Milestone' }]}

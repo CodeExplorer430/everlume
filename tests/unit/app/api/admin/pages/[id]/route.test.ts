@@ -69,6 +69,38 @@ describe('PATCH /api/admin/pages/[id]', () => {
       })
     )
   })
+
+  it('updates memorial presentation and qr preset fields for owner', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    mockPageSingle.mockResolvedValue({ data: { id: 'page-1' } })
+    mockUpdateEq.mockResolvedValue({ error: null })
+
+    const req = new Request('http://localhost/api/admin/pages/550e8400-e29b-41d4-a716-446655440000', {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        memorialTheme: 'serene',
+        memorialSlideshowEnabled: true,
+        memorialSlideshowIntervalMs: 6000,
+        memorialVideoLayout: 'featured',
+        qrTemplate: 'warm',
+        qrCaption: 'Remember me',
+      }),
+    })
+
+    const res = await PATCH(req as never, { params: Promise.resolve({ id: '550e8400-e29b-41d4-a716-446655440000' }) })
+    expect(res.status).toBe(200)
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        memorial_theme: 'serene',
+        memorial_slideshow_enabled: true,
+        memorial_slideshow_interval_ms: 6000,
+        memorial_video_layout: 'featured',
+        qr_template: 'warm',
+        qr_caption: 'Remember me',
+      })
+    )
+  })
 })
 
 describe('GET /api/admin/pages/[id]', () => {

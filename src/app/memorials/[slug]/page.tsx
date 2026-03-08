@@ -80,11 +80,6 @@ export default async function PublicTributePage({ params }: PageProps) {
   const { data: timeline } = await supabase.from('timeline_events').select('*').eq('page_id', page.id).order('year', { ascending: true })
 
   const { data: videos } = await supabase.from('videos').select('*').eq('page_id', page.id).order('created_at', { ascending: true })
-  const { data: siteSettings } = await supabase
-    .from('site_settings')
-    .select('memorial_slideshow_enabled, memorial_slideshow_interval_ms, memorial_video_layout')
-    .eq('id', 1)
-    .single()
 
   const resolvedPhotos =
     page.privacy === 'private' || page.access_mode === 'private' || page.access_mode === 'password'
@@ -106,11 +101,6 @@ export default async function PublicTributePage({ params }: PageProps) {
       videos={videos || []}
       timeline={timeline || []}
       guestbook={guestbook || []}
-      displaySettings={{
-        memorialSlideshowEnabled: siteSettings?.memorial_slideshow_enabled !== false,
-        memorialSlideshowIntervalMs: Number(siteSettings?.memorial_slideshow_interval_ms) || 4500,
-        memorialVideoLayout: siteSettings?.memorial_video_layout === 'featured' ? 'featured' : 'grid',
-      }}
     />
   )
 }

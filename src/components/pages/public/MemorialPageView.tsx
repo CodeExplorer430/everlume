@@ -11,6 +11,10 @@ type MemorialPage = {
   hero_image_url: string | null
   dob: string | null
   dod: string | null
+  memorial_theme?: 'classic' | 'serene' | 'editorial' | null
+  memorial_slideshow_enabled?: boolean | null
+  memorial_slideshow_interval_ms?: number | null
+  memorial_video_layout?: 'grid' | 'featured' | null
 }
 
 type MemorialPhoto = {
@@ -46,20 +50,22 @@ interface MemorialPageViewProps {
   videos: MemorialVideo[]
   timeline: MemorialTimeline[]
   guestbook: MemorialGuestbook[]
-  displaySettings?: {
-    memorialSlideshowEnabled: boolean
-    memorialSlideshowIntervalMs: number
-    memorialVideoLayout: 'grid' | 'featured'
-  }
 }
 
-export function MemorialPageView({ page, photos, videos, timeline, guestbook, displaySettings }: MemorialPageViewProps) {
-  const slideshowEnabled = displaySettings?.memorialSlideshowEnabled !== false
-  const slideshowIntervalMs = displaySettings?.memorialSlideshowIntervalMs || 4500
-  const memorialVideoLayout = displaySettings?.memorialVideoLayout === 'featured' ? 'featured' : 'grid'
+export function MemorialPageView({ page, photos, videos, timeline, guestbook }: MemorialPageViewProps) {
+  const slideshowEnabled = page.memorial_slideshow_enabled !== false
+  const slideshowIntervalMs = Number(page.memorial_slideshow_interval_ms) || 4500
+  const memorialVideoLayout = page.memorial_video_layout === 'featured' ? 'featured' : 'grid'
+  const themePreset = page.memorial_theme === 'serene' || page.memorial_theme === 'editorial' ? page.memorial_theme : 'classic'
+  const themeShellClass =
+    themePreset === 'serene'
+      ? 'bg-[radial-gradient(circle_at_12%_8%,rgba(164,194,173,0.24),transparent_44%),linear-gradient(180deg,#f3f7f3_0%,#edf3ee_100%)]'
+      : themePreset === 'editorial'
+        ? 'bg-[linear-gradient(180deg,#f6f1e8_0%,#eee6d7_100%)]'
+        : ''
 
   return (
-    <div className="min-h-screen pb-14">
+    <div className={`min-h-screen pb-14 ${themeShellClass}`} data-memorial-theme={themePreset}>
       <TributeHero page={page} />
 
       <main id="main-content" className="page-container space-y-12 py-10 md:space-y-16 md:py-14">

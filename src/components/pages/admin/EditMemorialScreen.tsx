@@ -21,6 +21,12 @@ interface MemorialPageRecord {
   dod: string | null
   privacy: 'public' | 'private'
   hero_image_url: string | null
+  memorial_theme?: 'classic' | 'serene' | 'editorial'
+  memorial_slideshow_enabled?: boolean
+  memorial_slideshow_interval_ms?: number
+  memorial_video_layout?: 'grid' | 'featured'
+  qr_template?: 'classic' | 'minimal' | 'warm'
+  qr_caption?: string
 }
 
 interface PhotoRecord {

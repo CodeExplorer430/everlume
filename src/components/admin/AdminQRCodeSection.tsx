@@ -5,6 +5,8 @@ import { QRCodeGenerator } from '@/components/admin/QRCodeGenerator'
 
 interface PageRecord {
   slug: string
+  qr_template?: 'classic' | 'minimal' | 'warm'
+  qr_caption?: string
 }
 
 interface RedirectRecord {
@@ -65,7 +67,11 @@ export function AdminQRCodeSection({ page, redirects }: AdminQRCodeSectionProps)
             <p className="w-full rounded-md border border-border bg-secondary/60 px-3 py-2 text-xs text-muted-foreground">
               QR links are generated from your short-domain redirect codes only.
             </p>
-            <QRCodeGenerator url={qrUrl} />
+            <QRCodeGenerator
+              url={qrUrl}
+              template={page.qr_template === 'minimal' || page.qr_template === 'warm' ? page.qr_template : 'classic'}
+              caption={(page.qr_caption || 'Scan me!').trim()}
+            />
           </>
         ) : (
           <p className="w-full rounded-md border border-dashed border-border px-3 py-4 text-center text-sm text-muted-foreground">

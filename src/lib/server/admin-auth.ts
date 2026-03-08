@@ -90,7 +90,12 @@ export async function assertPageOwnership(supabase: AdminSupabase, pageId: strin
 }
 
 export async function getOwnedPage(supabase: AdminSupabase, pageId: string, userId: string, role: AdminRole = 'viewer') {
-  let query = supabase.from('pages').select('id, title, slug, full_name, dob, dod, privacy, access_mode, hero_image_url').eq('id', pageId)
+  let query = supabase
+    .from('pages')
+    .select(
+      'id, title, slug, full_name, dob, dod, privacy, access_mode, hero_image_url, memorial_theme, memorial_slideshow_enabled, memorial_slideshow_interval_ms, memorial_video_layout, qr_template, qr_caption'
+    )
+    .eq('id', pageId)
   if (role !== 'admin') {
     query = query.eq('owner_id', userId)
   }

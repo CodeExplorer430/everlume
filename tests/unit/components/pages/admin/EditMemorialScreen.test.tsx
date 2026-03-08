@@ -60,6 +60,12 @@ describe('EditMemorialScreen', () => {
               dod: null,
               privacy: 'public',
               hero_image_url: null,
+              memorial_theme: 'classic',
+              memorial_slideshow_enabled: true,
+              memorial_slideshow_interval_ms: 4500,
+              memorial_video_layout: 'grid',
+              qr_template: 'classic',
+              qr_caption: 'Scan me!',
             },
           }),
           { status: 200 }
