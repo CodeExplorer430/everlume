@@ -1,7 +1,7 @@
 import { POST } from '@/app/api/admin/videos/uploads/init/route'
 
 const mockRequireAdminUser = vi.fn()
-const mockAssertPageOwnership = vi.fn()
+const mockAssertMemorialOwnership = vi.fn()
 const mockLogAdminAudit = vi.fn()
 
 const mockJobInsertSingle = vi.fn()
@@ -19,7 +19,7 @@ const mockGetVideoTranscodeApiTokenOrThrow = vi.fn()
 
 vi.mock('@/lib/server/admin-auth', () => ({
   requireAdminUser: (...args: unknown[]) => mockRequireAdminUser(...args),
-  assertPageOwnership: (...args: unknown[]) => mockAssertPageOwnership(...args),
+  assertMemorialOwnership: (...args: unknown[]) => mockAssertMemorialOwnership(...args),
   forbidden: (message: string) => new Response(JSON.stringify({ code: 'FORBIDDEN', message }), { status: 403 }),
   databaseError: (message: string) => new Response(JSON.stringify({ code: 'DATABASE_ERROR', message }), { status: 500 }),
 }))
@@ -39,7 +39,7 @@ describe('POST /api/admin/videos/uploads/init', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     mockRequireAdminUser.mockReset()
-    mockAssertPageOwnership.mockReset()
+    mockAssertMemorialOwnership.mockReset()
     mockLogAdminAudit.mockReset()
     mockIsVideoTranscodeConfigured.mockReset()
     mockGetVideoTranscodeApiBaseOrThrow.mockReset()
@@ -59,7 +59,7 @@ describe('POST /api/admin/videos/uploads/init', () => {
         },
       },
     })
-    mockAssertPageOwnership.mockResolvedValue(true)
+    mockAssertMemorialOwnership.mockResolvedValue(true)
     mockIsVideoTranscodeConfigured.mockReturnValue(true)
     mockGetVideoTranscodeApiBaseOrThrow.mockReturnValue('https://transcode.example.com')
     mockGetVideoTranscodeApiTokenOrThrow.mockReturnValue('token')
@@ -111,7 +111,7 @@ describe('POST /api/admin/videos/uploads/init', () => {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        pageId: 'not-a-uuid',
+        memorialId: 'not-a-uuid',
         fileName: '',
         fileSize: 139000000,
         mimeType: 'video/mp4',
@@ -130,7 +130,7 @@ describe('POST /api/admin/videos/uploads/init', () => {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        pageId: '550e8400-e29b-41d4-a716-446655440001',
+        memorialId: '550e8400-e29b-41d4-a716-446655440001',
         fileName: 'tribute.mp4',
         fileSize: 139000000,
         mimeType: 'video/mp4',
@@ -142,13 +142,13 @@ describe('POST /api/admin/videos/uploads/init', () => {
   })
 
   it('returns 403 when ownership check fails', async () => {
-    mockAssertPageOwnership.mockResolvedValue(false)
+    mockAssertMemorialOwnership.mockResolvedValue(false)
 
     const req = new Request('http://localhost/api/admin/videos/uploads/init', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        pageId: '550e8400-e29b-41d4-a716-446655440001',
+        memorialId: '550e8400-e29b-41d4-a716-446655440001',
         fileName: 'tribute.mp4',
         fileSize: 139000000,
         mimeType: 'video/mp4',
@@ -166,7 +166,7 @@ describe('POST /api/admin/videos/uploads/init', () => {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        pageId: '550e8400-e29b-41d4-a716-446655440001',
+        memorialId: '550e8400-e29b-41d4-a716-446655440001',
         fileName: 'tribute.mp4',
         fileSize: 139000000,
         mimeType: 'video/mp4',
@@ -184,7 +184,7 @@ describe('POST /api/admin/videos/uploads/init', () => {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        pageId: '550e8400-e29b-41d4-a716-446655440001',
+        memorialId: '550e8400-e29b-41d4-a716-446655440001',
         fileName: 'tribute.mp4',
         fileSize: 139000000,
         mimeType: 'video/mp4',
@@ -203,7 +203,7 @@ describe('POST /api/admin/videos/uploads/init', () => {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        pageId: '550e8400-e29b-41d4-a716-446655440001',
+        memorialId: '550e8400-e29b-41d4-a716-446655440001',
         fileName: 'tribute.mp4',
         fileSize: 139000000,
         mimeType: 'video/mp4',
@@ -223,7 +223,7 @@ describe('POST /api/admin/videos/uploads/init', () => {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        pageId: '550e8400-e29b-41d4-a716-446655440001',
+        memorialId: '550e8400-e29b-41d4-a716-446655440001',
         fileName: 'tribute.mp4',
         fileSize: 139000000,
         mimeType: 'video/mp4',
@@ -243,7 +243,7 @@ describe('POST /api/admin/videos/uploads/init', () => {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        pageId: '550e8400-e29b-41d4-a716-446655440001',
+        memorialId: '550e8400-e29b-41d4-a716-446655440001',
         fileName: 'tribute.mp4',
         fileSize: 139000000,
         mimeType: 'video/mp4',
@@ -263,7 +263,7 @@ describe('POST /api/admin/videos/uploads/init', () => {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        pageId: '550e8400-e29b-41d4-a716-446655440001',
+        memorialId: '550e8400-e29b-41d4-a716-446655440001',
         fileName: 'tribute.mp4',
         fileSize: 139000000,
         mimeType: 'video/mp4',
@@ -281,7 +281,7 @@ describe('POST /api/admin/videos/uploads/init', () => {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        pageId: '550e8400-e29b-41d4-a716-446655440001',
+        memorialId: '550e8400-e29b-41d4-a716-446655440001',
         fileName: 'tribute.mp4',
         fileSize: 139000000,
         mimeType: 'video/mp4',
@@ -298,7 +298,7 @@ describe('POST /api/admin/videos/uploads/init', () => {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        pageId: '550e8400-e29b-41d4-a716-446655440001',
+        memorialId: '550e8400-e29b-41d4-a716-446655440001',
         fileName: 'tribute.mp4',
         fileSize: 139000000,
         mimeType: 'video/mp4',
@@ -330,7 +330,7 @@ describe('POST /api/admin/videos/uploads/init', () => {
         action: 'video.upload_init',
         entity: 'video_upload',
         metadata: expect.objectContaining({
-          pageId: '550e8400-e29b-41d4-a716-446655440001',
+          memorialId: '550e8400-e29b-41d4-a716-446655440001',
           fileSize: 139000000,
         }),
       })

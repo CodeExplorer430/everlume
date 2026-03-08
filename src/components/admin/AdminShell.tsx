@@ -26,24 +26,26 @@ export function AdminShell({ userEmail, children }: AdminShellProps) {
 
   return (
     <div className="min-h-screen bg-transparent text-foreground">
-      <header className="sticky top-0 z-30 border-b border-border/80 bg-[var(--surface-2)]/95 backdrop-blur-md">
+      <header className="sticky top-0 z-30 border-b border-border/80 bg-[var(--surface-2)]/92 backdrop-blur-xl">
         <div className="page-container flex h-16 items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setOpen((v) => !v)} aria-label="Toggle navigation menu">
               {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </Button>
-            <Link href="/admin" className="group inline-flex items-center gap-2 rounded-md px-1 py-1">
-              <span className="rounded-md border border-border/80 bg-[var(--surface-1)] p-1.5">
+            <Link href="/admin" className="group inline-flex items-center gap-3 rounded-xl px-1 py-1">
+              <span className="rounded-2xl border border-border/80 bg-[var(--surface-1)] p-2 shadow-[0_12px_24px_rgba(41,49,40,0.08)]">
                 <Sparkles className="h-4 w-4 text-primary" />
               </span>
               <div>
                 <p className="text-sm font-semibold tracking-wide">Everlume Admin</p>
-                <p className="text-xs text-muted-foreground">Manage pages and memories</p>
+                <p className="text-xs text-muted-foreground">Manage memorials with confidence</p>
               </div>
             </Link>
           </div>
           <div className="flex items-center gap-3">
-            <p className="hidden text-xs text-muted-foreground sm:block">{userEmail}</p>
+            <div className="hidden rounded-full border border-border/70 bg-[var(--surface-1)] px-3 py-1.5 text-xs text-muted-foreground sm:block">
+              {userEmail}
+            </div>
             <form action="/auth/signout" method="post">
               <Button variant="outline" size="sm">
                 Sign out
@@ -60,7 +62,7 @@ export function AdminShell({ userEmail, children }: AdminShellProps) {
             open ? 'block' : 'hidden md:block'
           )}
         >
-          <nav className="space-y-1">
+          <nav className="space-y-1.5">
             {navItems.map((item) => {
               const isActive = item.href === '/admin' ? pathname === '/admin' : pathname.startsWith(item.href)
               const Icon = item.icon
@@ -70,14 +72,16 @@ export function AdminShell({ userEmail, children }: AdminShellProps) {
                   href={item.href}
                   onClick={() => setOpen(false)}
                   className={cn(
-                    'group flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors',
+                    'group flex items-center gap-3 rounded-2xl border px-3 py-3 text-sm transition-colors',
                     isActive
-                      ? 'border-primary/35 bg-primary/18 text-foreground'
+                      ? 'border-primary/30 bg-primary/14 text-foreground shadow-[0_12px_24px_rgba(72,97,79,0.08)]'
                       : 'border-transparent text-foreground hover:border-border/70 hover:bg-accent/65'
                   )}
                 >
-                  <Icon className={cn('h-4 w-4', isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground')} />
-                  <span>{item.label}</span>
+                  <span className={cn('rounded-xl p-2', isActive ? 'bg-white/75' : 'bg-transparent')}>
+                    <Icon className={cn('h-4 w-4', isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground')} />
+                  </span>
+                  <span className="font-medium">{item.label}</span>
                 </Link>
               )
             })}

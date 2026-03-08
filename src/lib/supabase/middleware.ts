@@ -1,9 +1,21 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { getE2EAuthSessionFromRequest, isE2EFakeAuthEnabled } from '@/lib/server/e2e-auth'
 import { getSupabasePublishableKeyOrThrow, getSupabaseUrlOrThrow } from '@/lib/supabase/env'
 
 export async function updateSession(request: NextRequest) {
   if (process.env.E2E_BYPASS_ADMIN_AUTH === '1' && request.nextUrl.pathname.startsWith('/admin')) {
+    return NextResponse.next({ request })
+  }
+
+  if (isE2EFakeAuthEnabled() && request.nextUrl.pathname.startsWith('/admin')) {
+    const session = getE2EAuthSessionFromRequest(request)
+    if (!session?.isActive) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      return NextResponse.redirect(url)
+    }
+
     return NextResponse.next({ request })
   }
 

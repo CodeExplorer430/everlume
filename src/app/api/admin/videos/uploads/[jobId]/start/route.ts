@@ -1,4 +1,4 @@
-import { assertPageOwnership, databaseError, forbidden, requireAdminUser } from '@/lib/server/admin-auth'
+import { assertMemorialOwnership, databaseError, forbidden, requireAdminUser } from '@/lib/server/admin-auth'
 import { logAdminAudit } from '@/lib/server/admin-audit'
 import {
   getVideoTranscodeApiBaseOrThrow,
@@ -33,8 +33,8 @@ export async function POST(_request: NextRequest, context: { params: Promise<{ j
     return databaseError('Unable to load upload job.')
   }
 
-  const ownsPage = await assertPageOwnership(supabase, job.page_id, userId, role)
-  if (!ownsPage) return forbidden('You do not have access to this upload job.')
+  const ownsMemorial = await assertMemorialOwnership(supabase, job.page_id, userId, role)
+  if (!ownsMemorial) return forbidden('You do not have access to this upload job.')
 
   if (job.status !== 'uploading' && job.status !== 'queued') {
     return NextResponse.json({ code: 'INVALID_STATE', message: 'Upload job is not ready to start processing.' }, { status: 409 })
@@ -83,7 +83,7 @@ export async function POST(_request: NextRequest, context: { params: Promise<{ j
     action: 'video.upload_start',
     entity: 'video_upload',
     entityId: job.id,
-    metadata: { pageId: job.page_id },
+    metadata: { memorialId: job.page_id },
   })
 
   return NextResponse.json({ ok: true }, { status: 202 })

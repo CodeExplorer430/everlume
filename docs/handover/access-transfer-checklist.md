@@ -35,13 +35,14 @@ Rotate after transfer and after any suspected leak:
 5. Remove old owner access if no longer needed.
 
 ## 5) Verification
-- Family owner signs in and edits a memorial page.
+- Family owner signs in and edits a memorial.
 - Family owner creates and verifies one short link.
 - Family owner runs required checks:
   - `npm run lint`
   - `npm run typecheck`
   - `npm run test:coverage`
   - `npm run test:e2e:webpack`
+  - `npm run test:e2e:auth`
   - `npm run test:perf`
 
 ## 6) Completion Record

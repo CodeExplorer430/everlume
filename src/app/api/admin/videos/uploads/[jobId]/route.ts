@@ -1,4 +1,4 @@
-import { assertPageOwnership, databaseError, forbidden, requireAdminUser } from '@/lib/server/admin-auth'
+import { assertMemorialOwnership, databaseError, forbidden, requireAdminUser } from '@/lib/server/admin-auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -29,8 +29,8 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ jo
     return databaseError('Unable to load upload job.')
   }
 
-  const ownsPage = await assertPageOwnership(supabase, job.page_id, userId, role)
-  if (!ownsPage) return forbidden('You do not have access to this upload job.')
+  const ownsMemorial = await assertMemorialOwnership(supabase, job.page_id, userId, role)
+  if (!ownsMemorial) return forbidden('You do not have access to this upload job.')
 
   return NextResponse.json({ job }, { status: 200 })
 }

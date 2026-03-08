@@ -33,7 +33,7 @@ describe('MediaUpload', () => {
     process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = ''
     process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET = ''
 
-    render(<MediaUpload pageId="page-1" onUploadComplete={vi.fn()} />)
+    render(<MediaUpload memorialId="page-1" onUploadComplete={vi.fn()} />)
 
     expect(
       screen.getByText(/Missing `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` or `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET`/)
@@ -59,7 +59,7 @@ describe('MediaUpload', () => {
     })
 
     const user = userEvent.setup()
-    render(<MediaUpload pageId="page-1" onUploadComplete={onUploadComplete} />)
+    render(<MediaUpload memorialId="page-1" onUploadComplete={onUploadComplete} />)
 
     await user.click(screen.getByRole('button', { name: 'Open Cloudinary Uploader' }))
     expect(openMock).toHaveBeenCalled()
@@ -108,7 +108,7 @@ describe('MediaUpload', () => {
     })
 
     const user = userEvent.setup()
-    render(<MediaUpload pageId="page-1" onUploadComplete={onUploadComplete} />)
+    render(<MediaUpload memorialId="page-1" onUploadComplete={onUploadComplete} />)
     await user.click(screen.getByRole('button', { name: 'Open Cloudinary Uploader' }))
 
     await act(async () => {

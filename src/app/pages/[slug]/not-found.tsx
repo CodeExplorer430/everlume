@@ -1,5 +1,1 @@
-import { redirect } from 'next/navigation'
-
-export default function LegacyPagesNotFoundRedirect() {
-  redirect('/memorials/unknown')
-}
+export { default } from '@/app/memorials/[slug]/not-found'

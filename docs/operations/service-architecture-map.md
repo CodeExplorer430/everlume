@@ -106,4 +106,5 @@ Minimum owner accounts to keep active:
 - Quality gates:
   - `npm run test:coverage`
   - `npm run test:e2e`
+  - `npm run test:e2e:auth`
   - `npm run test:launch-readiness`

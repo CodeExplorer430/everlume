@@ -1,14 +1,14 @@
 import { GET } from '@/app/api/admin/videos/uploads/[jobId]/route'
 
 const mockRequireAdminUser = vi.fn()
-const mockAssertPageOwnership = vi.fn()
+const mockAssertMemorialOwnership = vi.fn()
 const mockJobSingle = vi.fn()
 const mockJobEq = vi.fn(() => ({ single: mockJobSingle }))
 const mockJobSelect = vi.fn(() => ({ eq: mockJobEq }))
 
 vi.mock('@/lib/server/admin-auth', () => ({
   requireAdminUser: (...args: unknown[]) => mockRequireAdminUser(...args),
-  assertPageOwnership: (...args: unknown[]) => mockAssertPageOwnership(...args),
+  assertMemorialOwnership: (...args: unknown[]) => mockAssertMemorialOwnership(...args),
   forbidden: (message: string) => new Response(JSON.stringify({ code: 'FORBIDDEN', message }), { status: 403 }),
   databaseError: (message: string) => new Response(JSON.stringify({ code: 'DATABASE_ERROR', message }), { status: 500 }),
 }))
@@ -16,7 +16,7 @@ vi.mock('@/lib/server/admin-auth', () => ({
 describe('GET /api/admin/videos/uploads/[jobId]', () => {
   beforeEach(() => {
     mockRequireAdminUser.mockReset()
-    mockAssertPageOwnership.mockReset()
+    mockAssertMemorialOwnership.mockReset()
     mockJobSingle.mockReset()
     mockJobEq.mockClear()
     mockJobSelect.mockClear()
@@ -69,7 +69,7 @@ describe('GET /api/admin/videos/uploads/[jobId]', () => {
       data: { id: 'job-1', page_id: 'page-1', status: 'queued' },
       error: null,
     })
-    mockAssertPageOwnership.mockResolvedValue(false)
+    mockAssertMemorialOwnership.mockResolvedValue(false)
 
     const req = new Request('http://localhost/api/admin/videos/uploads/550e8400-e29b-41d4-a716-446655440000', { method: 'GET' })
     const res = await GET(req as never, { params: Promise.resolve({ jobId: '550e8400-e29b-41d4-a716-446655440000' }) })
@@ -104,7 +104,7 @@ describe('GET /api/admin/videos/uploads/[jobId]', () => {
       },
       error: null,
     })
-    mockAssertPageOwnership.mockResolvedValue(true)
+    mockAssertMemorialOwnership.mockResolvedValue(true)
 
     const req = new Request('http://localhost/api/admin/videos/uploads/550e8400-e29b-41d4-a716-446655440000', { method: 'GET' })
     const res = await GET(req as never, { params: Promise.resolve({ jobId: '550e8400-e29b-41d4-a716-446655440000' }) })

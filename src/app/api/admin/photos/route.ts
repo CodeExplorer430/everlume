@@ -1,10 +1,12 @@
-import { assertPageOwnership, databaseError, forbidden, requireAdminUser } from '@/lib/server/admin-auth'
+import { assertMemorialOwnership, databaseError, forbidden, requireAdminUser } from '@/lib/server/admin-auth'
 import { logAdminAudit } from '@/lib/server/admin-audit'
+import { resolveMemorialId } from '@/lib/server/memorials'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
 const createPhotoSchema = z.object({
-  pageId: z.string().uuid(),
+  memorialId: z.string().uuid().optional(),
+  pageId: z.string().uuid().optional(),
   caption: z.string().trim().max(240).optional().default(''),
   cloudinaryPublicId: z.string().trim().min(1).max(255),
   imageUrl: z.string().trim().url(),
@@ -13,6 +15,8 @@ const createPhotoSchema = z.object({
   format: z.string().trim().max(20).nullable().optional(),
   width: z.number().int().positive().nullable().optional(),
   height: z.number().int().positive().nullable().optional(),
+}).refine((value) => Boolean(resolveMemorialId(value)), {
+  message: 'Memorial id is required.',
 })
 
 export async function POST(request: NextRequest) {
@@ -32,14 +36,18 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return auth.response
   const { supabase, userId, role } = auth
 
-  const { pageId, caption, cloudinaryPublicId, imageUrl, thumbUrl, bytes, format, width, height } = parsed.data
-  const ownsPage = await assertPageOwnership(supabase, pageId, userId, role)
-  if (!ownsPage) return forbidden('You do not have access to this page.')
+  const { caption, cloudinaryPublicId, imageUrl, thumbUrl, bytes, format, width, height } = parsed.data
+  const memorialId = resolveMemorialId(parsed.data)
+  if (!memorialId) {
+    return NextResponse.json({ code: 'VALIDATION_ERROR', message: 'Memorial id is required.' }, { status: 400 })
+  }
+  const ownsMemorial = await assertMemorialOwnership(supabase, memorialId, userId, role)
+  if (!ownsMemorial) return forbidden('You do not have access to this memorial.')
 
   const { data, error } = await supabase
     .from('photos')
     .insert({
-      page_id: pageId,
+      page_id: memorialId,
       caption,
       cloudinary_public_id: cloudinaryPublicId,
       image_url: imageUrl,
@@ -61,7 +69,7 @@ export async function POST(request: NextRequest) {
     action: 'photo.create',
     entity: 'photo',
     entityId: data.id,
-    metadata: { pageId, cloudinaryPublicId },
+    metadata: { memorialId, cloudinaryPublicId },
   })
 
   return NextResponse.json({ photo: data }, { status: 201 })

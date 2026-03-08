@@ -16,6 +16,7 @@ vi.mock('@/lib/supabase/server', () => ({
 describe('requireAdminUser', () => {
   beforeEach(() => {
     delete process.env.E2E_BYPASS_ADMIN_AUTH
+    delete process.env.E2E_FAKE_AUTH
     delete process.env.E2E_ADMIN_ROLE
     vi.resetModules()
     mockGetUser.mockReset()
@@ -95,5 +96,24 @@ describe('requireAdminUser', () => {
 
     expect(auth.ok).toBe(false)
     if (!auth.ok) expect(auth.response.status).toBe(403)
+  })
+
+  it('honors fake e2e auth session when enabled', async () => {
+    process.env.E2E_FAKE_AUTH = '1'
+    const e2eAuth = await import('@/lib/server/e2e-auth')
+    vi.spyOn(e2eAuth, 'getE2EAuthSession').mockResolvedValue({
+      userId: 'fake-user',
+      email: 'e2e-admin@everlume.local',
+      role: 'admin',
+      isActive: true,
+      fullName: 'E2E Admin',
+      state: 'active',
+    })
+
+    const { requireAdminUser } = await import('@/lib/server/admin-auth')
+    const auth = await requireAdminUser({ minRole: 'editor' })
+
+    expect(auth.ok).toBe(true)
+    expect(mockGetUser).not.toHaveBeenCalled()
   })
 })

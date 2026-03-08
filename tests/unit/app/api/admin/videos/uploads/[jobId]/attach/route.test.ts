@@ -1,7 +1,7 @@
 import { POST } from '@/app/api/admin/videos/uploads/[jobId]/attach/route'
 
 const mockRequireAdminUser = vi.fn()
-const mockAssertPageOwnership = vi.fn()
+const mockAssertMemorialOwnership = vi.fn()
 const mockLogAdminAudit = vi.fn()
 
 const mockJobSingle = vi.fn()
@@ -16,7 +16,7 @@ const mockVideoInsert = vi.fn(() => ({ select: mockVideoInsertSelect }))
 
 vi.mock('@/lib/server/admin-auth', () => ({
   requireAdminUser: (...args: unknown[]) => mockRequireAdminUser(...args),
-  assertPageOwnership: (...args: unknown[]) => mockAssertPageOwnership(...args),
+  assertMemorialOwnership: (...args: unknown[]) => mockAssertMemorialOwnership(...args),
   forbidden: (message: string) => new Response(JSON.stringify({ code: 'FORBIDDEN', message }), { status: 403 }),
   databaseError: (message: string) => new Response(JSON.stringify({ code: 'DATABASE_ERROR', message }), { status: 500 }),
 }))
@@ -28,7 +28,7 @@ vi.mock('@/lib/server/admin-audit', () => ({
 describe('POST /api/admin/videos/uploads/[jobId]/attach', () => {
   beforeEach(() => {
     mockRequireAdminUser.mockReset()
-    mockAssertPageOwnership.mockReset()
+    mockAssertMemorialOwnership.mockReset()
     mockLogAdminAudit.mockReset()
 
     mockJobSingle.mockReset()
@@ -64,7 +64,7 @@ describe('POST /api/admin/videos/uploads/[jobId]/attach', () => {
         },
       },
     })
-    mockAssertPageOwnership.mockResolvedValue(true)
+    mockAssertMemorialOwnership.mockResolvedValue(true)
     mockJobSingle.mockResolvedValue({
       data: {
         id: 'job-1',
@@ -114,8 +114,8 @@ describe('POST /api/admin/videos/uploads/[jobId]/attach', () => {
     expect(res.status).toBe(500)
   })
 
-  it('returns 403 when user does not own page', async () => {
-    mockAssertPageOwnership.mockResolvedValue(false)
+  it('returns 403 when user does not own memorial', async () => {
+    mockAssertMemorialOwnership.mockResolvedValue(false)
 
     const req = new Request('http://localhost/api/admin/videos/uploads/550e8400-e29b-41d4-a716-446655440000/attach', { method: 'POST' })
     const res = await POST(req as never, { params: Promise.resolve({ jobId: '550e8400-e29b-41d4-a716-446655440000' }) })

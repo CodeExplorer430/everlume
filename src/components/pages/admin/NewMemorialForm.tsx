@@ -25,7 +25,7 @@ export function NewMemorialForm() {
     setLoading(true)
     setError(null)
 
-    const response = await fetch('/api/admin/pages', {
+    const response = await fetch('/api/admin/memorials', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -39,7 +39,7 @@ export function NewMemorialForm() {
 
     if (!response.ok) {
       const payload = (await response.json().catch(() => null)) as { message?: string } | null
-      setError(payload?.message || 'Unable to create memorial page.')
+      setError(payload?.message || 'Unable to create memorial.')
       setLoading(false)
       return
     }
@@ -58,16 +58,19 @@ export function NewMemorialForm() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <section className="surface-card space-y-1 p-6">
-        <h2 className="text-3xl font-semibold tracking-tight">Create New Memorial</h2>
-        <p className="text-sm text-muted-foreground">Start with core information now. You can enrich photos, timeline, and videos next.</p>
+      <section className="dashboard-hero surface-card space-y-2 p-6">
+        <p className="section-kicker">New Memorial</p>
+        <h2 className="text-3xl font-semibold tracking-[-0.03em]">Create New Memorial</h2>
+        <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
+          Start with the essential identity of the memorial. Photos, timeline events, guestbook moderation, and QR presentation can be refined after creation.
+        </p>
       </section>
 
       <form onSubmit={handleSubmit} className="surface-card space-y-5 p-6">
         <div className="grid gap-4">
           <div>
             <label htmlFor={titleId} className="mb-1.5 block text-sm font-medium">
-              Page Title
+              Memorial Title
             </label>
             <Input id={titleId} required value={title} onChange={handleTitleChange} placeholder="In Loving Memory of Jane Doe" />
           </div>
@@ -77,7 +80,7 @@ export function NewMemorialForm() {
               URL Slug
             </label>
             <div className="flex">
-              <span className="inline-flex items-center rounded-l-md border border-r-0 border-input bg-secondary px-3 text-sm text-muted-foreground">/memorials/</span>
+              <span className="inline-flex items-center rounded-l-xl border border-r-0 border-input bg-secondary px-3 text-sm text-muted-foreground">/memorials/</span>
               <Input
                 id={slugId}
                 required
@@ -87,6 +90,7 @@ export function NewMemorialForm() {
                 placeholder="jane-doe"
               />
             </div>
+            <p className="mt-1 text-xs text-muted-foreground">Use lowercase letters, numbers, and dashes for a stable public URL.</p>
           </div>
 
           <div>

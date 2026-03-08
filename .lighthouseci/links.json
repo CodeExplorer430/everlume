@@ -1,5 +1,5 @@
 {
-  "http://127.0.0.1:4173/": "https://storage.googleapis.com/lighthouse-infrastructure.appspot.com/reports/1772845773279-1795.report.html",
-  "http://127.0.0.1:4173/login": "https://storage.googleapis.com/lighthouse-infrastructure.appspot.com/reports/1772845774609-79223.report.html",
-  "http://127.0.0.1:4173/r/not-found?reason=missing": "https://storage.googleapis.com/lighthouse-infrastructure.appspot.com/reports/1772845775765-41086.report.html"
+  "http://127.0.0.1:4173/": "https://storage.googleapis.com/lighthouse-infrastructure.appspot.com/reports/1772977491173-53730.report.html",
+  "http://127.0.0.1:4173/login": "https://storage.googleapis.com/lighthouse-infrastructure.appspot.com/reports/1772977492357-6279.report.html",
+  "http://127.0.0.1:4173/r/not-found?reason=missing": "https://storage.googleapis.com/lighthouse-infrastructure.appspot.com/reports/1772977493483-92457.report.html"
 }

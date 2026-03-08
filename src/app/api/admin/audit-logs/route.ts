@@ -1,4 +1,5 @@
 import { databaseError, requireAdminUser } from '@/lib/server/admin-auth'
+import { normalizeAdminAuditLog } from '@/lib/server/admin-audit'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
@@ -16,5 +17,5 @@ export async function GET() {
     return databaseError('Unable to load audit logs.')
   }
 
-  return NextResponse.json({ logs: data ?? [] }, { status: 200 })
+  return NextResponse.json({ logs: (data ?? []).map(normalizeAdminAuditLog) }, { status: 200 })
 }

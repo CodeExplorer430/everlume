@@ -11,6 +11,7 @@ Checks:
 - `npm run typecheck`
 - `npm run test:coverage`
 - `npm run test:e2e` (webpack baseline)
+- `npm run test:e2e:auth` (password-based admin auth lane)
 - `npm run test:e2e:turbopack` (required parity run)
 - `e2e` alias check (passes only when both webpack + turbopack e2e jobs pass)
 - launch-readiness smoke (`/r/[code]` unit + short-links e2e flow)

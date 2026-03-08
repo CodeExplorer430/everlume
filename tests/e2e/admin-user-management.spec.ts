@@ -5,6 +5,7 @@ test('admin invites and updates users', async ({ page }) => {
   const users = [
     {
       id: 'u-1',
+      email: 'miguel@example.com',
       full_name: 'Miguel Velasco',
       role: 'admin',
       is_active: true,
@@ -25,6 +26,7 @@ test('admin invites and updates users', async ({ page }) => {
       const body = req.postDataJSON() as { fullName: string; role: 'admin' | 'editor' | 'viewer' }
       const created = {
         id: 'u-2',
+        email: 'editor@everlume.test',
         full_name: body.fullName,
         role: body.role,
         is_active: true,
@@ -73,5 +75,6 @@ test('admin invites and updates users', async ({ page }) => {
 
   page.on('dialog', (dialog) => dialog.accept())
   await page.getByRole('button', { name: /deactivate editor person/i }).click()
-  await expect(page.getByText('Inactive')).toBeVisible()
+  const editorRow = page.getByRole('row', { name: /editor person/i })
+  await expect(editorRow.getByText('Inactive', { exact: true })).toBeVisible()
 })

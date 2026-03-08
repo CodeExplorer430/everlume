@@ -10,7 +10,7 @@ Use this for production issues affecting family admins or public visitors.
 ## 2) First 15 Minutes
 1. Record timestamp and affected URLs.
 2. Identify affected scope:
-   - public pages,
+   - public memorials,
    - admin pages,
    - redirects/QR flows,
    - media/CDN.

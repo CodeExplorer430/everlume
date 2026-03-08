@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-03-04
 
-> Purpose: a full-stack web application allowing family members to create, manage, and share a digital memorial page for a loved one. The site must be accessible via a short URL and QR code printed on the memorial tablet. The application must provide an authenticated admin area for media management and guestbook moderation while offering a clean, fast, mobile-first public experience.
+> Purpose: a full-stack web application allowing family members to create, manage, and share a digital memorial for a loved one. The site must be accessible via a short URL and QR code printed on the memorial tablet. The application must provide an authenticated admin area for media management and guestbook moderation while offering a clean, fast, mobile-first public experience.
 
 ---
 
@@ -33,10 +33,10 @@
 ---
 
 ## 1. Overview & Goals
-**Goal:** Build a production-capable full-stack web app that lets family administrators upload and manage photos, videos, timeline entries, and guestbook messages for a memorial page. Public visitors access the memorial via an easy-to-scan QR and short URL printed on the memorial tablet.
+**Goal:** Build a production-capable full-stack web app that lets family administrators upload and manage photos, videos, timeline entries, and guestbook messages for a memorial. Public visitors access the memorial via an easy-to-scan QR and short URL printed on the memorial tablet.
 
 **Primary success criteria:**
-- Admin can sign in, upload media, and publish a memorial page without requiring technical knowledge.
+- Admin can sign in with an individual account, upload media, and publish a memorial without requiring technical knowledge.
 - Public page loads on mobile within 5 seconds on typical 4G connections.
 - A high-resolution, durable QR image can be generated and tested for engraving/printing.
 - Family can export/backup all media + guestbook entries.
@@ -59,10 +59,10 @@
 ---
 
 ## 4. Glossary
-- **Admin:** authenticated user who can manage a memorial page.
+- **Admin:** authenticated user who can manage a memorial.
 - **Guestbook:** public message list; entries may be moderated by admin.
 - **Short URL / Redirect:** stable URL used on plaque that can be repointed without reprinting.
-- **Public page:** the publicly visible memorial page.
+- **Public memorial:** the publicly visible memorial at `/memorials/:slug`.
 
 ---
 
@@ -71,7 +71,7 @@
 - Admin authentication and user management.
 - Media upload (images, poster for videos), metadata editing, gallery UI.
 - Video embedding (YouTube unlisted by default) + poster thumbnails.
-- Public memorial page with hero, gallery, timeline, guestbook, share/OG meta.
+- Public memorial with hero, gallery, timeline, guestbook, share/OG meta.
 - Short redirect route + QR generation (SVG/PNG) for printing.
 - Export of media metadata and guestbook (ZIP/CSV/JSON).
 
@@ -84,16 +84,16 @@
 
 ## 6. Functional Requirements
 ### 6.1 Admin / Management
-- FR-A1: Admin login using secure auth (email/password or magic link) via chosen auth provider.
-- FR-A2: Admin can create and edit a memorial page (title, full name, DOB, DOD, dedication text, slug).
+- FR-A1: Admin login using secure auth with individual email/password accounts via chosen auth provider.
+- FR-A2: Admin can create and edit a memorial (title, full name, DOB, DOD, dedication text, slug).
 - FR-A3: Admin can bulk upload images using Cloudinary Upload Widget; app stores Cloudinary IDs/URLs and renders transformed variants.
 - FR-A4: Admin can add video links (YouTube unlisted). Videos above 100MB are YouTube-only.
 - FR-A5: Admin can edit photo metadata (caption, date, order), set hero image, and remove assets.
-- FR-A6: Admin can moderate guestbook entries (approve/delete) and export guestbook to CSV/JSON.
+- FR-A6: Admin can moderate guestbook entries (approve/delete) and export memorial records through the archive surface (JSON/CSV/ZIP as applicable).
 - FR-A7: Admin can generate/download a print-ready QR (SVG + recommended PNG sizes) and manage short redirect codes.
 
 ### 6.2 Public
-- FR-P1: Public page accessible at `/memorials/:slug` and via short redirect `/r/:code`.
+- FR-P1: Public memorial accessible at `/memorials/:slug` and via short redirect `/r/:code`.
 - FR-P2: Show hero image, dates, dedication text, gallery with captions, embedded videos, and timeline.
 - FR-P3: Guestbook posting endpoint (POST), optionally protected by reCAPTCHA or rate limiting.
 - FR-P4: Images are lazy-loaded with responsive `srcset`; clicking opens lightbox/fullscreen.
@@ -102,12 +102,12 @@
 ### 6.3 Media & Exports
 - FR-M1: Images stored in Cloudinary and referenced by `cloudinary_public_id` and URLs in the database.
 - FR-M2: Thumbnails and web-optimized images generated with Cloudinary URL transformations (`w_400,f_auto,q_auto` etc.).
-- FR-M3: Exportable ZIP of selected assets and CSV/JSON of guestbook and metadata.
+- FR-M3: Exportable memorial archive with memorial JSON, guestbook CSV, photo metadata CSV, and photo ZIP.
 
 ---
 
 ## 7. Non-Functional Requirements
-- NFR-Perf: Time-to-interactive on mobile 4G <= 5s for main public page.
+- NFR-Perf: Time-to-interactive on mobile 4G <= 5s for the main public memorial.
 - NFR-Sec: HTTPS enforced; admin endpoints require authentication; inputs validated and sanitized.
 - NFR-Resilience: Backups of DB and original media kept offsite; app should recover from single-node failure.
 - NFR-Maint: Codebase documented, minimal dependencies, dev README + deployment docs.
@@ -118,8 +118,8 @@
 
 ## 8. User Roles & Permissions
 - **Super Admin** (developer / initial owner): full access to everything, perform DB exports.
-- **Admin** (family): create/edit pages, upload media, moderate guestbook, generate QR/shortcode.
-- **Public**: view pages, post guestbook entries (subject to moderation).
+- **Admin** (family): create/edit memorials, upload media, moderate guestbook, generate QR/shortcode.
+- **Public**: view memorials, post guestbook entries (subject to moderation).
 
 ---
 
@@ -151,33 +151,34 @@ High-level entities: `users`, `pages`, `photos`, `videos`, `timeline_events`, `g
 
 ## 11. API Endpoints (summary)
 **Public**
-- `GET /api/memorials/:slug` — return page JSON
-- `GET /api/memorials/:slug/photos` — paginated
-- `POST /api/memorials/:slug/guestbook` — add entry (rate-limited)
+- `GET /memorials/:slug` — render public memorial
+- `GET /api/public/pages/:slug/media` — return memorial media list with access enforcement
+- `POST /api/public/pages/:slug/unlock` — unlock password-protected memorial
+- `POST /api/guestbook` — add guestbook entry (rate-limited)
 
 **Admin (auth required)**
-- `POST /api/admin/memorials` — create
-- `PUT /api/admin/memorials/:id` — update
+- `POST /api/admin/memorials` — create memorial
+- `PATCH /api/admin/memorials/:id` — update memorial
 - `POST /api/admin/photos` — register uploaded photo metadata from Cloudinary uploads
 - `POST /api/admin/videos` — register video link
 - `GET /api/admin/guestbook` — list
 - `POST /api/admin/guestbook/:id/approve` — approve
-- `POST /api/admin/shortcodes` — create short redirect
+- `POST /api/admin/redirects` — create short redirect
 
 ---
 
 ## 12. UI Structure & Pages
 **Public pages**
 - Homepage (optional family listing)
-- Memorial page (`/memorials/:slug`): hero, gallery, videos, timeline, guestbook, share/print info
+- Memorial (`/memorials/:slug`): hero, gallery, videos, timeline, guestbook, share/print info
 
 **Admin pages**
 - Login / Profile
-- Dashboard: list of pages and quick actions
-- Page editor: meta, hero, timeline editor
+- Dashboard: list of memorials and quick actions
+- Memorial editor: meta, hero, timeline editor
 - Media manager: upload, bulk edit, reorder, delete
 - Guestbook moderation
-- Settings: shortcodes & QR export, privacy settings, export data
+- Settings: shortcodes & QR export, access mode defaults, export/archive guidance
 
 Design notes: mobile-first, progressive enhancement, keep keyboard navigation in mind.
 
@@ -239,7 +240,7 @@ Design notes: mobile-first, progressive enhancement, keep keyboard navigation in
 ## 18. Testing & QA Plan
 - Unit tests (backend logic): Jest / Playwright for E2E.
 - Integration tests for media flow (mock Cloudinary responses in dev when needed).
-- E2E: login, upload images, register photo, view public page, post guestbook, approve entry.
+- E2E: login, upload images, register photo, view public memorial, post guestbook, approve entry.
 - Manual QA: multiple phone models for scanning QR and loading pages in expected network conditions.
 - Accessibility audit: axe / Lighthouse.
 
@@ -247,9 +248,9 @@ Design notes: mobile-first, progressive enhancement, keep keyboard navigation in
 
 ## 19. Development Roadmap & Milestones (suggested order)
 1. Project setup: repo, supabase project, Vercel link, env config.
-2. Auth & basic admin flow (login + create page).
+2. Auth & basic admin flow (login + create memorial).
 3. Cloudinary upload widget + transformed image rendering + metadata persistence.
-4. Public page rendering (SSR) + gallery and lightbox.
+4. Public memorial rendering (SSR) + gallery and lightbox.
 5. Guestbook + moderation.
 6. Short redirect + QR generation; print test.
 7. Export & backup features; documentation & handover.
@@ -364,7 +365,7 @@ CREATE TABLE IF NOT EXISTS redirects (
 
 ## Implementation Status (2026-03-06)
 - Role-based admin API authorization implemented (`viewer`/`editor`/`admin`) via shared guard in `src/lib/server/admin-auth.ts`.
-- Private media flow implemented for `privacy=private` pages using short-lived signed proxy URLs.
+- Private and password-protected memorial media flow implemented using short-lived signed proxy URLs.
 - Guestbook anti-abuse upgraded with durable rate-limit adapter support (Upstash) plus optional CAPTCHA verification.
 - Admin mutation audit logging implemented with `admin_audit_logs` migration and `/api/admin/audit-logs` endpoint.
 - RLS hardening migration added for `admin_audit_logs` and stricter `profiles` read/update policies.

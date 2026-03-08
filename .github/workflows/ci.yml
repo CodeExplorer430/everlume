@@ -120,12 +120,40 @@ jobs:
             playwright-report
             test-results
 
+  e2e_auth:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: test_publishable_key
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: test_anon_key
+      NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: test-cloud
+      NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET: test-preset
+      NEXT_PUBLIC_SHORT_DOMAIN: https://fam.test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run test:e2e:install
+      - run: npm run test:e2e:auth
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-auth
+          path: |
+            playwright-report
+            test-results
+
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [e2e_webpack, e2e_turbopack]
+    needs: [e2e_webpack, e2e_turbopack, e2e_auth]
     steps:
-      - run: 'echo "e2e alias passed: webpack and turbopack e2e checks succeeded."'
+      - run: 'echo "e2e alias passed: webpack, turbopack, and auth-path e2e checks succeeded."'
 
   a11y:
     runs-on: ubuntu-latest

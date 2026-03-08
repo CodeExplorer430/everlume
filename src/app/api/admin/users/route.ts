@@ -19,6 +19,21 @@ async function assertAdminPrivileges() {
   return { ok: true as const, actorSupabase: auth.supabase, userId: auth.userId }
 }
 
+function getAuthRedirectTo(request: NextRequest) {
+  return new URL('/auth/callback?next=/login/reset-password', request.url).toString()
+}
+
+function deriveAccountState(
+  profile: { is_active: boolean },
+  authUser: { last_sign_in_at?: string | null } | null | undefined,
+  authLookupAvailable: boolean
+) {
+  if (!profile.is_active) return 'deactivated' as const
+  if (!authLookupAvailable) return 'active' as const
+  if (authUser?.last_sign_in_at) return 'active' as const
+  return 'invited' as const
+}
+
 export async function GET() {
   const authz = await assertAdminPrivileges()
   if (!authz.ok) return authz.response
@@ -35,14 +50,22 @@ export async function GET() {
 
   const { data, error } = await serviceRole
     .from('profiles')
-    .select('id, full_name, role, is_active, created_at, updated_at, invited_at, deactivated_at')
+    .select('id, email, full_name, role, is_active, created_at, updated_at, invited_at, deactivated_at')
     .order('created_at', { ascending: false })
 
   if (error) {
     return databaseError('Unable to load users.')
   }
 
-  return NextResponse.json({ users: data ?? [] }, { status: 200 })
+  const { data: authData, error: authError } = await serviceRole.auth.admin.listUsers()
+  const authLookupAvailable = !authError
+  const authUsersById = new Map((authData?.users ?? []).map((user) => [user.id, user]))
+  const users = (data ?? []).map((profile) => ({
+    ...profile,
+    account_state: deriveAccountState(profile, authUsersById.get(profile.id), authLookupAvailable),
+  }))
+
+  return NextResponse.json({ users }, { status: 200 })
 }
 
 export async function POST(request: NextRequest) {
@@ -79,6 +102,7 @@ export async function POST(request: NextRequest) {
 
   const { data: inviteData, error: inviteError } = await serviceRole.auth.admin.inviteUserByEmail(email, {
     data: { role, full_name: fullName },
+    redirectTo: getAuthRedirectTo(request),
   })
 
   if (inviteError || !inviteData.user) {
@@ -94,6 +118,7 @@ export async function POST(request: NextRequest) {
     .upsert(
       {
         id: inviteData.user.id,
+        email,
         full_name: fullName,
         role,
         is_active: true,
@@ -102,7 +127,7 @@ export async function POST(request: NextRequest) {
       },
       { onConflict: 'id' }
     )
-    .select('id, full_name, role, is_active, created_at, updated_at, invited_at, deactivated_at')
+    .select('id, email, full_name, role, is_active, created_at, updated_at, invited_at, deactivated_at')
     .single()
 
   if (profileError) {
@@ -117,5 +142,5 @@ export async function POST(request: NextRequest) {
     metadata: { role: profileData.role },
   })
 
-  return NextResponse.json({ user: profileData }, { status: 201 })
+  return NextResponse.json({ user: { ...profileData, account_state: 'invited' } }, { status: 201 })
 }

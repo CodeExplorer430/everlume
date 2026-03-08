@@ -12,7 +12,10 @@ Audience: family admins operating Everlume without developer support.
 1. Go to `Admin -> Create Memorial`.
 2. Fill title, slug, full name, birth/death dates.
 3. Save and open the memorial editor.
-4. Set page privacy (`public` for publish, `private` for restricted viewing).
+4. Set memorial access mode:
+   - `Public` to publish in the site and allow directory listing when homepage directory is enabled.
+   - `Password` to share by direct link with a family-provided password.
+   - `Private` to keep the memorial hidden from public visitors entirely.
 
 ## 3) Upload Media
 - Photos:
@@ -39,7 +42,7 @@ Audience: family admins operating Everlume without developer support.
 5. After physical scan test, mark link as **Verified**.
 
 ## 6) Export + Backup
-- Use page Export Data section for CSV/ZIP where available.
+- Use the memorial `Export and Archive` section for JSON, CSV, and photo ZIP downloads.
 - Keep original master photos/videos in shared family drive.
 - Confirm weekly that automated backups are succeeding (see operations docs).
 

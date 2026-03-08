@@ -231,9 +231,10 @@ export function AdminSettingsScreen() {
 
   return (
     <div className="space-y-6">
-      <section className="surface-card space-y-1 p-6">
-        <h2 className="text-3xl font-semibold tracking-tight">Short URL Management</h2>
-        <p className="text-sm text-muted-foreground">Create and maintain redirect codes used in printed QR plaques.</p>
+      <section className="dashboard-hero surface-card space-y-2 p-6">
+        <p className="section-kicker">Links and Launch Controls</p>
+        <h2 className="text-3xl font-semibold tracking-[-0.03em]">Short URL Management</h2>
+        <p className="text-sm leading-relaxed text-muted-foreground">Create and maintain redirect codes used in printed QR plaques.</p>
         <p className="text-xs text-muted-foreground">
           Codes must be 3-32 characters and use only lowercase letters, numbers, and dashes.
         </p>
@@ -242,7 +243,10 @@ export function AdminSettingsScreen() {
       <section className="surface-card flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <h3 className="text-base font-semibold">Homepage Directory</h3>
-          <p className="text-sm text-muted-foreground">Show a public list of memorial pages on the landing page.</p>
+          <p className="text-sm text-muted-foreground">
+            Show a public list of memorials on the landing page. Only memorials set to public appear here. Private and password-protected
+            pages stay hidden.
+          </p>
         </div>
         <Button variant={homeDirectoryEnabled ? 'secondary' : 'outline'} onClick={toggleHomeDirectory} disabled={updatingSiteSettings}>
           {updatingSiteSettings ? 'Saving...' : homeDirectoryEnabled ? 'Enabled' : 'Disabled'}
@@ -252,7 +256,7 @@ export function AdminSettingsScreen() {
       <section className="surface-card space-y-4 p-6">
         <div className="space-y-1">
           <h3 className="text-base font-semibold">Memorial Presentation Defaults</h3>
-          <p className="text-sm text-muted-foreground">Used when creating new memorial pages. Per-page settings can override these defaults.</p>
+          <p className="text-sm text-muted-foreground">Used when creating new memorials. Per-memorial settings can override these defaults.</p>
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
@@ -281,7 +285,7 @@ export function AdminSettingsScreen() {
             </label>
             <select
               id="video-layout"
-              className="w-full rounded-md border border-input bg-[var(--surface-1)] px-3 py-2 text-sm"
+              className="form-select w-full"
               value={memorialVideoLayout}
               onChange={(e) => setMemorialVideoLayout(e.target.value === 'featured' ? 'featured' : 'grid')}
             >

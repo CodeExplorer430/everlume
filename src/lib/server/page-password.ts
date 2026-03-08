@@ -11,13 +11,13 @@ function getAccessSecret() {
   return process.env.PAGE_ACCESS_TOKEN_SECRET || process.env.PRIVATE_MEDIA_TOKEN_SECRET || 'dev-page-access-secret'
 }
 
-export function hashPagePassword(password: string) {
+export function hashMemorialPassword(password: string) {
   const salt = randomBytes(16).toString('hex')
   const hash = pbkdf2Sync(password, salt, PBKDF2_ITERATIONS, KEY_LENGTH, DIGEST).toString('hex')
   return `${HASH_PREFIX}$${PBKDF2_ITERATIONS}$${salt}$${hash}`
 }
 
-export function verifyPagePassword(password: string, storedHash: string | null | undefined) {
+export function verifyMemorialPassword(password: string, storedHash: string | null | undefined) {
   if (!storedHash) return false
   const [prefix, iterString, salt, expected] = storedHash.split('$')
   if (prefix !== HASH_PREFIX || !iterString || !salt || !expected) return false
@@ -31,21 +31,21 @@ export function verifyPagePassword(password: string, storedHash: string | null |
   return timingSafeEqual(actual, expectedBuffer)
 }
 
-export function createPageAccessToken(pageId: string, passwordUpdatedAt: string | null) {
+export function createMemorialAccessToken(memorialId: string, passwordUpdatedAt: string | null) {
   const issuedAt = Math.floor(Date.now() / 1000)
   const passwordVersion = passwordUpdatedAt || 'unset'
-  const payload = `${COOKIE_VERSION}.${pageId}.${issuedAt}.${Buffer.from(passwordVersion).toString('base64url')}`
+  const payload = `${COOKIE_VERSION}.${memorialId}.${issuedAt}.${Buffer.from(passwordVersion).toString('base64url')}`
   const signature = createHmac('sha256', getAccessSecret()).update(payload).digest('base64url')
   return `${payload}.${signature}`
 }
 
-export function verifyPageAccessToken(token: string | undefined, pageId: string, passwordUpdatedAt: string | null) {
+export function verifyMemorialAccessToken(token: string | undefined, memorialId: string, passwordUpdatedAt: string | null) {
   if (!token) return false
   const segments = token.split('.')
   if (segments.length !== 5) return false
 
-  const [version, tokenPageId, issuedAtString, passwordVersionEncoded, signature] = segments
-  if (version !== COOKIE_VERSION || tokenPageId !== pageId) return false
+  const [version, tokenMemorialId, issuedAtString, passwordVersionEncoded, signature] = segments
+  if (version !== COOKIE_VERSION || tokenMemorialId !== memorialId) return false
 
   const issuedAt = Number(issuedAtString)
   if (!Number.isFinite(issuedAt)) return false
@@ -57,7 +57,7 @@ export function verifyPageAccessToken(token: string | undefined, pageId: string,
   const tokenPasswordVersion = Buffer.from(passwordVersionEncoded, 'base64url').toString('utf8')
   if (tokenPasswordVersion !== expectedPasswordVersion) return false
 
-  const payload = `${version}.${tokenPageId}.${issuedAtString}.${passwordVersionEncoded}`
+  const payload = `${version}.${tokenMemorialId}.${issuedAtString}.${passwordVersionEncoded}`
   const expectedSignature = createHmac('sha256', getAccessSecret()).update(payload).digest('base64url')
 
   const actualBuffer = Buffer.from(signature)
@@ -67,10 +67,17 @@ export function verifyPageAccessToken(token: string | undefined, pageId: string,
   return timingSafeEqual(actualBuffer, expectedBuffer)
 }
 
-export function getPageAccessCookieName(pageId: string) {
-  return `everlume_page_access_${pageId}`
+export function getMemorialAccessCookieName(memorialId: string) {
+  return `everlume_memorial_access_${memorialId}`
 }
 
-export function getPageAccessCookieMaxAge() {
+export function getMemorialAccessCookieMaxAge() {
   return COOKIE_MAX_AGE_SECONDS
 }
+
+export const hashPagePassword = hashMemorialPassword
+export const verifyPagePassword = verifyMemorialPassword
+export const createPageAccessToken = createMemorialAccessToken
+export const verifyPageAccessToken = verifyMemorialAccessToken
+export const getPageAccessCookieName = getMemorialAccessCookieName
+export const getPageAccessCookieMaxAge = getMemorialAccessCookieMaxAge

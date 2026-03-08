@@ -1,15 +1,19 @@
 import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit, getClientIp } from '@/lib/server/rate-limit'
+import { resolveMemorialId } from '@/lib/server/memorials'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
 const guestbookSchema = z.object({
-  pageId: z.string().uuid(),
+  memorialId: z.string().uuid().optional(),
+  pageId: z.string().uuid().optional(),
   name: z.string().trim().min(2).max(80),
   message: z.string().trim().min(3).max(2000),
   honeypot: z.string().optional(),
   submittedAt: z.number().int().optional(),
   captchaToken: z.string().trim().optional(),
+}).refine((value) => Boolean(resolveMemorialId(value)), {
+  message: 'Memorial id is required.',
 })
 
 const RATE_LIMIT_MAX = 5
@@ -101,7 +105,11 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const { pageId, name, message, honeypot, submittedAt, captchaToken } = parsed.data
+  const { name, message, honeypot, submittedAt, captchaToken } = parsed.data
+  const memorialId = resolveMemorialId(parsed.data)
+  if (!memorialId) {
+    return NextResponse.json({ code: 'VALIDATION_ERROR', message: 'Memorial id is required.' }, { status: 400 })
+  }
 
   if (honeypot && honeypot.trim().length > 0) {
     return NextResponse.json({ ok: true }, { status: 202 })
@@ -128,7 +136,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const rateKey = `guestbook:${ip}:${pageId}`
+  const rateKey = `guestbook:${ip}:${memorialId}`
   const rate = await checkRateLimit(rateKey, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS)
   if (!rate.allowed) {
     return NextResponse.json(
@@ -139,13 +147,13 @@ export async function POST(request: NextRequest) {
 
   const supabase = await createClient()
 
-  const { data: page } = await supabase.from('pages').select('id').eq('id', pageId).single()
-  if (!page) {
-    return NextResponse.json({ code: 'PAGE_NOT_FOUND', message: 'Memorial page not found.' }, { status: 404 })
+  const { data: memorial } = await supabase.from('pages').select('id').eq('id', memorialId).single()
+  if (!memorial) {
+    return NextResponse.json({ code: 'MEMORIAL_NOT_FOUND', message: 'Memorial not found.' }, { status: 404 })
   }
 
   const { error } = await supabase.from('guestbook').insert({
-    page_id: pageId,
+    page_id: memorialId,
     name,
     message,
   })

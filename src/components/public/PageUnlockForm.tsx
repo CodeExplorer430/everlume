@@ -39,7 +39,10 @@ export function PageUnlockForm({ slug }: PageUnlockFormProps) {
       <section className="surface-card w-full max-w-md space-y-5 p-6 md:p-8">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold">Memorial Access Required</h1>
-          <p className="text-sm text-muted-foreground">This memorial is password protected. Enter the family-provided password to continue.</p>
+          <p className="text-sm text-muted-foreground">
+            This memorial is password protected. Enter the family-provided password to continue. Protected memorials are shared by direct link
+            and do not appear in the public directory.
+          </p>
         </div>
 
         <form onSubmit={handleUnlock} className="space-y-4">

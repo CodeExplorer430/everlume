@@ -1,8 +1,8 @@
 import { AdminSupabase } from '@/lib/server/admin-auth'
 
 type AuditAction =
-  | 'page.create'
-  | 'page.update'
+  | 'memorial.create'
+  | 'memorial.update'
   | 'photo.create'
   | 'photo.update'
   | 'photo.delete'
@@ -22,14 +22,43 @@ type AuditAction =
   | 'user.create'
   | 'user.update'
   | 'user.deactivate'
+  | 'user.invite.resend'
+  | 'user.password.reset'
   | 'site_settings.update'
+
+type LegacyAuditAction = 'page.create' | 'page.update'
+type AuditLogAction = AuditAction | LegacyAuditAction
 
 type LogAdminAuditInput = {
   actorId: string
   action: AuditAction
-  entity: 'page' | 'photo' | 'video' | 'video_upload' | 'timeline' | 'guestbook' | 'redirect' | 'user' | 'site_settings'
+  entity: 'memorial' | 'photo' | 'video' | 'video_upload' | 'timeline' | 'guestbook' | 'redirect' | 'user' | 'site_settings'
   entityId: string
   metadata?: Record<string, unknown>
+}
+
+type AuditEntity =
+  | 'memorial'
+  | 'photo'
+  | 'video'
+  | 'video_upload'
+  | 'timeline'
+  | 'guestbook'
+  | 'redirect'
+  | 'user'
+  | 'site_settings'
+
+type LegacyAuditEntity = 'page'
+type AuditLogEntity = AuditEntity | LegacyAuditEntity
+
+type RawAuditLog = {
+  id: string
+  actor_id: string
+  action: AuditLogAction
+  entity: AuditLogEntity
+  entity_id: string
+  metadata: Record<string, unknown> | null
+  created_at: string
 }
 
 export async function logAdminAudit(supabase: AdminSupabase, input: LogAdminAuditInput) {
@@ -44,5 +73,23 @@ export async function logAdminAudit(supabase: AdminSupabase, input: LogAdminAudi
     })
   } catch {
     // Do not fail product flows if audit logging is unavailable.
+  }
+}
+
+export function normalizeAuditAction(action: AuditLogAction): AuditAction {
+  if (action === 'page.create') return 'memorial.create'
+  if (action === 'page.update') return 'memorial.update'
+  return action
+}
+
+export function normalizeAuditEntity(entity: AuditLogEntity): AuditEntity {
+  return entity === 'page' ? 'memorial' : entity
+}
+
+export function normalizeAdminAuditLog(log: RawAuditLog) {
+  return {
+    ...log,
+    action: normalizeAuditAction(log.action),
+    entity: normalizeAuditEntity(log.entity),
   }
 }

@@ -37,7 +37,7 @@ describe('TributeHero', () => {
   })
 
   it('renders gradient fallback and no date range when dates are missing', () => {
-    const { container } = render(
+    render(
       <TributeHero
         page={{
           title: 'Beloved Parent',
@@ -51,7 +51,7 @@ describe('TributeHero', () => {
 
     expect(screen.queryByTestId('hero-image')).not.toBeInTheDocument()
     expect(screen.getByText('Beloved Parent')).toBeInTheDocument()
-    expect(container.querySelector('.bg-gradient-to-b')).toBeInTheDocument()
+    expect(screen.getByTestId('hero-fallback')).toBeInTheDocument()
     expect(screen.queryByText(/Present/)).not.toBeInTheDocument()
   })
 })

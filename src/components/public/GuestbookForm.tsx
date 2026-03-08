@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
 interface GuestbookFormProps {
-  pageId: string
+  memorialId?: string
+  pageId?: string
 }
 
 type TurnstileWidgetId = string | number
@@ -29,7 +30,8 @@ declare global {
   }
 }
 
-export function GuestbookForm({ pageId }: GuestbookFormProps) {
+export function GuestbookForm({ memorialId, pageId }: GuestbookFormProps) {
+  const resolvedMemorialId = memorialId || pageId || ''
   const turnstileSiteKey = (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '').trim()
   const shouldUseCaptcha = turnstileSiteKey.length > 0
   const turnstileContainerRef = useRef<HTMLDivElement | null>(null)
@@ -87,7 +89,7 @@ export function GuestbookForm({ pageId }: GuestbookFormProps) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        pageId,
+        memorialId: resolvedMemorialId,
         name,
         message,
         honeypot,

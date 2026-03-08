@@ -12,7 +12,7 @@ describe('TimelineEditor', () => {
       new Response(JSON.stringify({ events: [{ id: 't1', year: 1990, text: 'Born' }] }), { status: 200 })
     )
 
-    render(<TimelineEditor pageId="page-1" />)
+    render(<TimelineEditor memorialId="page-1" />)
     expect(await screen.findByText('Born')).toBeInTheDocument()
   })
 
@@ -27,7 +27,7 @@ describe('TimelineEditor', () => {
     })
 
     const user = userEvent.setup()
-    render(<TimelineEditor pageId="page-1" />)
+    render(<TimelineEditor memorialId="page-1" />)
 
     await screen.findByText('Born')
     await user.type(screen.getByPlaceholderText('Year'), '2001')
@@ -45,7 +45,7 @@ describe('TimelineEditor', () => {
   it('shows load error when initial fetch fails', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ message: 'Timeline unavailable.' }), { status: 503 }))
 
-    render(<TimelineEditor pageId="page-2" />)
+    render(<TimelineEditor memorialId="page-2" />)
     expect(await screen.findByText('Timeline unavailable.')).toBeInTheDocument()
   })
 
@@ -59,7 +59,7 @@ describe('TimelineEditor', () => {
     })
 
     const user = userEvent.setup()
-    render(<TimelineEditor pageId="page-3" />)
+    render(<TimelineEditor memorialId="page-3" />)
 
     await screen.findByPlaceholderText('Event description...')
     await user.type(screen.getByPlaceholderText('Year'), '2001')
@@ -72,7 +72,7 @@ describe('TimelineEditor', () => {
   it('restores event and shows error when delete fails', async () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
       const url = String(input)
-      if (url.includes('/api/admin/pages/page-4/timeline')) {
+      if (url.includes('/api/admin/memorials/page-4/timeline')) {
         return new Response(JSON.stringify({ events: [{ id: 't1', year: 1990, text: 'Born' }] }), { status: 200 })
       }
       if (url === '/api/admin/timeline/t1' && init?.method === 'DELETE') {
@@ -82,7 +82,7 @@ describe('TimelineEditor', () => {
     })
 
     const user = userEvent.setup()
-    render(<TimelineEditor pageId="page-4" />)
+    render(<TimelineEditor memorialId="page-4" />)
 
     await screen.findByText('Born')
     await user.click(screen.getByRole('button', { name: /delete timeline event/i }))
@@ -95,7 +95,7 @@ describe('TimelineEditor', () => {
     let getCount = 0
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
       const url = String(input)
-      if (url.includes('/api/admin/pages/page-5/timeline')) {
+      if (url.includes('/api/admin/memorials/page-5/timeline')) {
         getCount += 1
         if (getCount === 1) {
           return new Response(JSON.stringify({ events: [] }), { status: 200 })
@@ -109,7 +109,7 @@ describe('TimelineEditor', () => {
     })
 
     const user = userEvent.setup()
-    render(<TimelineEditor pageId="page-5" />)
+    render(<TimelineEditor memorialId="page-5" />)
 
     await screen.findByPlaceholderText('Event description...')
     await user.type(screen.getByPlaceholderText('Year'), '2001')

@@ -5,6 +5,7 @@ const mockGuestbookModerationScreen = vi.fn()
 const mockNewMemorialForm = vi.fn()
 const mockAdminSettingsScreen = vi.fn()
 const mockUserManagementScreen = vi.fn()
+const mockEditMemorialScreen = vi.fn()
 const mockRedirect = vi.fn()
 
 const mockOrder = vi.fn()
@@ -47,6 +48,13 @@ vi.mock('@/components/pages/admin/UserManagementScreen', () => ({
   },
 }))
 
+vi.mock('@/components/pages/admin/EditMemorialScreen', () => ({
+  EditMemorialScreen: ({ pageId }: { pageId: string }) => {
+    mockEditMemorialScreen(pageId)
+    return <div data-testid="edit-memorial-screen">{pageId}</div>
+  },
+}))
+
 vi.mock('@/lib/supabase/server', () => ({
   createClient: () => mockCreateClient(),
 }))
@@ -58,11 +66,13 @@ vi.mock('next/navigation', () => ({
 describe('Admin page wrappers', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
+    delete process.env.E2E_FAKE_AUTH
     mockAdminDashboardView.mockReset()
     mockGuestbookModerationScreen.mockReset()
     mockNewMemorialForm.mockReset()
     mockAdminSettingsScreen.mockReset()
     mockUserManagementScreen.mockReset()
+    mockEditMemorialScreen.mockReset()
     mockRedirect.mockReset()
     mockOrder.mockReset()
     mockSelect.mockClear()
@@ -84,6 +94,18 @@ describe('Admin page wrappers', () => {
     expect(mockOrder).toHaveBeenCalledWith('created_at', { ascending: false })
     expect(screen.getByTestId('admin-dashboard-view')).toBeInTheDocument()
     expect(mockAdminDashboardView).toHaveBeenCalledWith({ pages })
+  })
+
+  it('skips the supabase query for the admin dashboard in fake auth mode', async () => {
+    process.env.E2E_FAKE_AUTH = '1'
+
+    const mod = await import('@/app/admin/page')
+    const node = await mod.default()
+    render(node)
+
+    expect(mockCreateClient).not.toHaveBeenCalled()
+    expect(mockAdminDashboardView).toHaveBeenCalledWith({ pages: [] })
+    delete process.env.E2E_FAKE_AUTH
   })
 
   it('renders guestbook moderation wrapper page', async () => {
@@ -120,6 +142,15 @@ describe('Admin page wrappers', () => {
 
     expect(screen.getByTestId('user-management-screen')).toBeInTheDocument()
     expect(mockUserManagementScreen).toHaveBeenCalled()
+  })
+
+  it('renders edit memorial wrapper page', async () => {
+    const mod = await import('@/app/admin/memorials/[id]/page')
+    const node = await mod.default({ params: Promise.resolve({ id: 'page-123' }) })
+    render(node)
+
+    expect(screen.getByTestId('edit-memorial-screen')).toBeInTheDocument()
+    expect(mockEditMemorialScreen).toHaveBeenCalledWith('page-123')
   })
 
   it('redirects legacy admin pages/[id] route to memorials path', async () => {

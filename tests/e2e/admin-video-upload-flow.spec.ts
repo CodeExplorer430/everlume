@@ -34,33 +34,33 @@ async function setupVideoUploadMocks(page: Page, scenario: UploadScenario = {}) 
     const url = new URL(req.url())
     const path = url.pathname
 
-    if (req.method() === 'GET' && path === `/api/admin/pages/${PAGE_ID}`) {
+    if (req.method() === 'GET' && path === `/api/admin/memorials/${PAGE_ID}`) {
       await fulfillJson(route, {
-        page: {
+        memorial: {
           id: PAGE_ID,
           title: 'In Loving Memory',
           slug: 'in-loving-memory',
           full_name: 'Jane Doe',
           dob: null,
           dod: null,
-          privacy: 'public',
+          accessMode: 'public',
           hero_image_url: null,
         },
       })
       return
     }
 
-    if (req.method() === 'GET' && path === `/api/admin/pages/${PAGE_ID}/redirects`) {
+    if (req.method() === 'GET' && path === `/api/admin/memorials/${PAGE_ID}/redirects`) {
       await fulfillJson(route, { redirects: [{ id: 'r-1', shortcode: 'jane', print_status: 'verified', is_active: true }] })
       return
     }
 
-    if (req.method() === 'GET' && path === `/api/admin/pages/${PAGE_ID}/photos`) {
+    if (req.method() === 'GET' && path === `/api/admin/memorials/${PAGE_ID}/photos`) {
       await fulfillJson(route, { photos: [] })
       return
     }
 
-    if (req.method() === 'GET' && path === `/api/admin/pages/${PAGE_ID}/videos`) {
+    if (req.method() === 'GET' && path === `/api/admin/memorials/${PAGE_ID}/videos`) {
       await fulfillJson(route, { videos })
       return
     }

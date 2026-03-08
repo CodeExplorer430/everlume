@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 
 const mockMemorialPageView = vi.fn()
 const mockPageUnlockForm = vi.fn()
-const mockCanAccessMemorialPage = vi.fn()
+const mockCanAccessMemorial = vi.fn()
 const mockCreateSignedMediaToken = vi.fn()
 const mockNotFound = vi.fn(() => {
   throw new Error('NEXT_NOT_FOUND')
@@ -51,7 +51,12 @@ vi.mock('@/components/public/PageUnlockForm', () => ({
 }))
 
 vi.mock('@/lib/server/page-access', () => ({
-  canAccessMemorialPage: (...args: unknown[]) => mockCanAccessMemorialPage(...args),
+  canAccessMemorial: (...args: unknown[]) => mockCanAccessMemorial(...args),
+  canAccessMemorialPage: (...args: unknown[]) => mockCanAccessMemorial(...args),
+  resolvePageAccessMode: (page: { access_mode?: 'public' | 'private' | 'password' | null; privacy?: 'public' | 'private' | null }) =>
+    page.access_mode || (page.privacy === 'private' ? 'private' : 'public'),
+  memorialRequiresProtectedMedia: (page: { access_mode?: 'public' | 'private' | 'password' | null; privacy?: 'public' | 'private' | null }) =>
+    (page.access_mode || (page.privacy === 'private' ? 'private' : 'public')) !== 'public',
 }))
 
 vi.mock('@/lib/server/private-media', () => ({
@@ -88,7 +93,7 @@ describe('/memorials/[slug] page', () => {
     vi.resetModules()
     mockMemorialPageView.mockReset()
     mockPageUnlockForm.mockReset()
-    mockCanAccessMemorialPage.mockReset()
+    mockCanAccessMemorial.mockReset()
     mockCreateSignedMediaToken.mockReset()
     mockNotFound.mockClear()
     mockPageSingle.mockReset()
@@ -128,7 +133,7 @@ describe('/memorials/[slug] page', () => {
 
   it('returns unlock form when password access is required', async () => {
     mockPageSingle.mockResolvedValue({ data: { ...publicPage, access_mode: 'password', privacy: 'private' } })
-    mockCanAccessMemorialPage.mockResolvedValue({ allowed: false, requiresPassword: true })
+    mockCanAccessMemorial.mockResolvedValue({ allowed: false, requiresPassword: true })
 
     const mod = await import('@/app/memorials/[slug]/page')
     const node = await mod.default({ params: Promise.resolve({ slug: 'jane' }) })
@@ -141,7 +146,7 @@ describe('/memorials/[slug] page', () => {
 
   it('throws notFound when memorial is inaccessible', async () => {
     mockPageSingle.mockResolvedValue({ data: { ...publicPage, access_mode: 'private', privacy: 'private' } })
-    mockCanAccessMemorialPage.mockResolvedValue({ allowed: false, requiresPassword: false })
+    mockCanAccessMemorial.mockResolvedValue({ allowed: false, requiresPassword: false })
 
     const mod = await import('@/app/memorials/[slug]/page')
     await expect(mod.default({ params: Promise.resolve({ slug: 'jane' }) })).rejects.toThrow('NEXT_NOT_FOUND')
@@ -150,7 +155,7 @@ describe('/memorials/[slug] page', () => {
 
   it('generates password-protected metadata when access requires password', async () => {
     mockPageSingle.mockResolvedValue({ data: { ...publicPage, access_mode: 'password', privacy: 'private' } })
-    mockCanAccessMemorialPage.mockResolvedValue({ allowed: false, requiresPassword: true })
+    mockCanAccessMemorial.mockResolvedValue({ allowed: false, requiresPassword: true })
 
     const mod = await import('@/app/memorials/[slug]/page')
     const metadata = await mod.generateMetadata({ params: Promise.resolve({ slug: 'jane' }) })
@@ -177,9 +182,25 @@ describe('/memorials/[slug] page', () => {
     )
   })
 
+  it('prefers canonical access_mode over conflicting legacy privacy when rendering a public memorial', async () => {
+    mockPageSingle.mockResolvedValue({ data: { ...publicPage, privacy: 'private', access_mode: 'public' } })
+    mockPhotosOrder.mockResolvedValue({ data: [{ id: 'photo-1', page_id: 'page-1', image_url: '/img.jpg', thumb_url: '/thumb.jpg', caption: null }] })
+    mockGuestbookOrder.mockResolvedValue({ data: [] })
+    mockTimelineOrder.mockResolvedValue({ data: [] })
+    mockVideosOrder.mockResolvedValue({ data: [] })
+
+    const mod = await import('@/app/memorials/[slug]/page')
+    const node = await mod.default({ params: Promise.resolve({ slug: 'jane' }) })
+    render(node)
+
+    expect(mockCanAccessMemorial).not.toHaveBeenCalled()
+    expect(mockCreateSignedMediaToken).not.toHaveBeenCalled()
+    expect(screen.getByTestId('memorial-page-view')).toBeInTheDocument()
+  })
+
   it('resolves signed photo urls for private memorial rendering', async () => {
     mockPageSingle.mockResolvedValue({ data: { ...publicPage, access_mode: 'password', privacy: 'private' } })
-    mockCanAccessMemorialPage.mockResolvedValue({ allowed: true, requiresPassword: false })
+    mockCanAccessMemorial.mockResolvedValue({ allowed: true, requiresPassword: false })
     mockCreateSignedMediaToken.mockImplementation((photoId: string, variant: string) => `${photoId}-${variant}-token`)
     mockPhotosOrder.mockResolvedValue({ data: [{ id: 'photo-1', page_id: 'page-1', image_url: null, thumb_url: null, caption: 'Memory' }] })
     mockGuestbookOrder.mockResolvedValue({ data: [] })

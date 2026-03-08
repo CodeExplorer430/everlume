@@ -104,9 +104,12 @@ export function GuestbookModerationScreen() {
 
   return (
     <div className="space-y-5">
-      <section className="surface-card space-y-1 p-6">
-        <h2 className="text-3xl font-semibold tracking-tight">Guestbook Moderation</h2>
-        <p className="text-sm text-muted-foreground">Approve, unapprove, or remove messages before they appear publicly.</p>
+      <section className="dashboard-hero surface-card space-y-2 p-6">
+        <p className="section-kicker">Guestbook Review</p>
+        <h2 className="text-3xl font-semibold tracking-[-0.03em]">Guestbook Moderation</h2>
+        <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
+          Review messages with care before they appear on the public memorial page. Pending messages stay private until approved.
+        </p>
       </section>
 
       {errorMessage && (
@@ -122,7 +125,7 @@ export function GuestbookModerationScreen() {
       <div className="surface-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
-            <thead className="bg-secondary/80 text-xs uppercase tracking-[0.12em] text-muted-foreground">
+            <thead className="bg-secondary/80 text-xs uppercase tracking-[0.14em] text-muted-foreground">
               <tr>
                 <th className="px-4 py-3 text-left">Status</th>
                 <th className="px-4 py-3 text-left">From / Page</th>
@@ -143,7 +146,7 @@ export function GuestbookModerationScreen() {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="font-medium">{entry.name}</div>
+                      <div className="font-medium text-foreground">{entry.name}</div>
                       <div className="text-xs text-muted-foreground">{entry.pages?.title || 'Untitled page'}</div>
                     </td>
                     <td className="px-4 py-3">

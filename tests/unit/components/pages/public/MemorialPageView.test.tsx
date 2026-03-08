@@ -79,7 +79,7 @@ describe('MemorialPageView', () => {
     expect(mockPublicGallery).not.toHaveBeenCalled()
     expect(mockTributeVideos).toHaveBeenCalledWith({ videos: [], layout: 'grid' })
     expect(mockTributeTimeline).toHaveBeenCalledWith({ timeline: [] })
-    expect(mockTributeGuestbook).toHaveBeenCalledWith({ pageId: 'page-1', fullName: 'Jane Doe', entries: [] })
+    expect(mockTributeGuestbook).toHaveBeenCalledWith({ memorialId: 'page-1', fullName: 'Jane Doe', entries: [] })
   })
 
   it('passes normalized photo captions to PublicGallery', () => {

@@ -40,7 +40,7 @@ describe('POST /api/admin/videos', () => {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        pageId: '550e8400-e29b-41d4-a716-446655440000',
+        memorialId: '550e8400-e29b-41d4-a716-446655440000',
         url: 'https://example.com/video',
       }),
     })
@@ -61,7 +61,7 @@ describe('POST /api/admin/videos', () => {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        pageId: '550e8400-e29b-41d4-a716-446655440000',
+        memorialId: '550e8400-e29b-41d4-a716-446655440000',
         url: 'https://www.youtube.com/watch?v=abcdefghijk',
         title: 'Clip',
       }),

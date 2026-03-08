@@ -4,8 +4,7 @@ const mockLandingContent = vi.fn<(props: { directoryEnabled: boolean; memorials:
 const mockSingle = vi.fn()
 const mockLimit = vi.fn()
 const mockOrder = vi.fn(() => ({ limit: mockLimit }))
-const mockPagesEq = vi.fn(() => ({ order: mockOrder }))
-const mockPagesSelect = vi.fn(() => ({ eq: mockPagesEq }))
+const mockPagesSelect = vi.fn(() => ({ order: mockOrder }))
 const mockSettingsEq = vi.fn(() => ({ single: mockSingle }))
 const mockSettingsSelect = vi.fn(() => ({ eq: mockSettingsEq }))
 const mockCreatePublicClient = vi.fn(() => ({
@@ -78,5 +77,31 @@ describe('Home page data loading', () => {
 
     expect(mockPagesSelect).not.toHaveBeenCalled()
     expect(mockLandingContent).toHaveBeenCalledWith(expect.objectContaining({ directoryEnabled: false, memorials: [] }))
+  })
+
+  it('filters memorial directory entries with canonical access_mode first', async () => {
+    mockSingle.mockResolvedValue({ data: { home_directory_enabled: true }, error: null })
+    mockLimit.mockResolvedValue({
+      data: [
+        { id: 'p1', title: 'Public', slug: 'public', full_name: 'Public Person', privacy: 'private', access_mode: 'public' },
+        { id: 'p2', title: 'Hidden', slug: 'hidden', full_name: 'Hidden Person', privacy: 'public', access_mode: 'password' },
+        { id: 'p3', title: 'Legacy Public', slug: 'legacy-public', full_name: 'Legacy Public', privacy: 'public', access_mode: null },
+      ],
+      error: null,
+    })
+
+    const mod = await import('@/app/page')
+    const node = await mod.default()
+    render(node)
+
+    expect(mockLandingContent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        directoryEnabled: true,
+        memorials: [
+          { id: 'p1', title: 'Public', slug: 'public', full_name: 'Public Person', privacy: 'private', access_mode: 'public' },
+          { id: 'p3', title: 'Legacy Public', slug: 'legacy-public', full_name: 'Legacy Public', privacy: 'public', access_mode: null },
+        ],
+      })
+    )
   })
 })

@@ -30,6 +30,7 @@ describe('app/admin/layout', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     delete process.env.E2E_BYPASS_ADMIN_AUTH
+    delete process.env.E2E_FAKE_AUTH
     delete process.env.E2E_ADMIN_EMAIL
     mockAdminShell.mockReset()
     mockRedirect.mockClear()
@@ -72,5 +73,25 @@ describe('app/admin/layout', () => {
     expect(mockAdminShell).toHaveBeenCalledWith(
       expect.objectContaining({ userEmail: 'owner@example.com' })
     )
+  })
+
+  it('renders AdminShell from fake e2e auth session', async () => {
+    process.env.E2E_FAKE_AUTH = '1'
+    const e2eAuth = await import('@/lib/server/e2e-auth')
+    vi.spyOn(e2eAuth, 'getE2EAuthSession').mockResolvedValue({
+      userId: 'fake-user',
+      email: 'fake@example.com',
+      role: 'admin',
+      isActive: true,
+      fullName: 'Fake Admin',
+      state: 'active',
+    })
+
+    const mod = await import('@/app/admin/layout')
+    const node = await mod.default({ children: <div>Admin child</div> })
+    render(node)
+
+    expect(mockCreateClient).not.toHaveBeenCalled()
+    expect(mockAdminShell).toHaveBeenCalledWith(expect.objectContaining({ userEmail: 'fake@example.com' }))
   })
 })

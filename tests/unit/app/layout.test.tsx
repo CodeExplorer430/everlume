@@ -20,6 +20,19 @@ describe('app/layout', () => {
     mockServiceWorkerRegister.mockReset()
   })
 
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it('publishes a canonical metadataBase from the app url helper', async () => {
+    vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://everlume.app')
+    vi.resetModules()
+
+    const mod = await import('@/app/layout')
+
+    expect(mod.metadata.metadataBase?.toString()).toBe('https://everlume.app/')
+  })
+
   it('renders root layout with skip link, service worker register, and children', async () => {
     const mod = await import('@/app/layout')
     const node = mod.default({ children: <div>App child</div> })

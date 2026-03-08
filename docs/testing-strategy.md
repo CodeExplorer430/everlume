@@ -11,6 +11,7 @@ This repository uses a layered strategy:
 - `npm run test:coverage`: run tests with V8 coverage gates
 - `npm run test:e2e:install`: install Chromium browser for Playwright
 - `npm run test:e2e`: run Playwright end-to-end tests (webpack-backed Next dev)
+- `npm run test:e2e:auth`: run the password-based admin auth Playwright lane with fake test-only credentials
 - `npm run test:launch-readiness`: run redirect health + short-link QR launch smoke checks
 - `npm run test:a11y`: run Playwright accessibility smoke suite
 - `npm run test:perf`: run Lighthouse CI performance/accessibility budget checks
@@ -19,14 +20,16 @@ This repository uses a layered strategy:
 
 ## E2E Runtime Mode
 - Default e2e runner uses webpack-backed Next dev for stability.
+- Default e2e smoke coverage still uses `E2E_BYPASS_ADMIN_AUTH=1` for deterministic admin UI coverage.
+- The dedicated auth lane uses `E2E_FAKE_AUTH=1` and `NEXT_PUBLIC_E2E_FAKE_AUTH=1` to exercise login, deactivated-account rejection, and password reset/setup without depending on hosted Supabase.
 - Turbopack e2e can fail on some environments with LightningCSS/Tailwind module resolution. Keep Turbopack runs as diagnostic mode until upstream/toolchain behavior stabilizes.
 
 ## Coverage Policy
 Global coverage threshold (enforced in CI):
-- Lines: 10%
-- Functions: 10%
-- Statements: 10%
-- Branches: 10%
+- Lines: 85%
+- Functions: 85%
+- Statements: 85%
+- Branches: 75%
 
 Coverage scope:
 - Vitest coverage now scans all `src/**/*.{ts,tsx}` with explicit exclusions for declaration/setup artifacts.
@@ -35,13 +38,13 @@ Coverage scope:
 CI and local tests are mock-first for external systems:
 - Supabase calls are mocked in unit/component tests
 - Cloudinary widget integration is mocked in component tests
-- E2E flows focus on deterministic UX and routing smoke checks
+- E2E flows are split between deterministic UI smoke checks and the dedicated password-auth lane
 - Lighthouse CI enforces score budgets for `/`, `/login`, and short-link fallback route.
 
 ## Trust Boundary Coverage
 Server mutation endpoints are covered with focused route tests:
 - `POST /api/guestbook`
-- `POST /api/admin/pages`
+- `POST /api/admin/memorials`
 - `GET /api/admin/guestbook`
 - `POST /api/admin/redirects`
 - `GET /api/admin/redirects`
@@ -49,18 +52,18 @@ Server mutation endpoints are covered with focused route tests:
 - `DELETE /api/admin/redirects/:id`
 - `GET /api/health/redirects`
 - `POST /api/admin/videos`
-- `GET /api/admin/pages/:id/videos`
+- `GET /api/admin/memorials/:id/videos`
 - `DELETE /api/admin/videos/:id`
 - `POST /api/admin/photos`
-- `GET /api/admin/pages/:id/photos`
+- `GET /api/admin/memorials/:id/photos`
 - `PATCH /api/admin/photos/:id`
 - `DELETE /api/admin/photos/:id`
 - `POST /api/admin/timeline`
-- `GET /api/admin/pages/:id/timeline`
-- `PATCH /api/admin/pages/:id`
-- `GET /api/admin/pages/:id`
-- `GET /api/admin/pages/:id/redirects`
-- `GET /api/admin/pages/:id/guestbook`
+- `GET /api/admin/memorials/:id/timeline`
+- `PATCH /api/admin/memorials/:id`
+- `GET /api/admin/memorials/:id`
+- `GET /api/admin/memorials/:id/redirects`
+- `GET /api/admin/memorials/:id/guestbook`
 
 These tests verify validation, auth/ownership checks, and success-path persistence calls.
 Short-link routing behavior is also covered (`GET /r/[code]` active, missing, disabled paths).

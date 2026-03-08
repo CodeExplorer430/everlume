@@ -3,13 +3,13 @@
 Operational cadence for family admins.
 
 ## Weekly
-- Verify critical pages open on mobile (`/`, one memorial page, one short link).
+- Verify critical routes open on mobile (`/`, one memorial, one short link).
 - Review guestbook moderation queue.
 - Confirm active short links still point to valid targets.
 - Check latest backup workflow runs in GitHub Actions.
 
 ## Monthly
-- Export guestbook CSV and photo metadata for archive.
+- Export the memorial archive package and verify recent guestbook/photo exports.
 - Review user access list (`Admin -> Users`) and deactivate unused accounts.
 - Re-verify at least one printed QR code in real camera conditions.
 
@@ -21,7 +21,7 @@ Operational cadence for family admins.
 ## Annually
 - Rotate all platform API keys/secrets.
 - Validate account recovery methods and MFA backups.
-- Review privacy settings for all memorial pages.
+- Review access modes for all memorials.
 
 ## Escalation Triggers
 - Short-link failures > 5 minutes.

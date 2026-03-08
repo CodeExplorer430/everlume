@@ -5,13 +5,12 @@ describe('LandingContent', () => {
   it('renders primary CTA links with primary button styling', () => {
     render(<LandingContent directoryEnabled={false} memorials={[]} />)
 
-    const openAdmin = screen.getByRole('link', { name: 'Open Admin' })
-    const getStarted = screen.getByRole('link', { name: 'Get Started' })
+    const openAdminLinks = screen.getAllByRole('link', { name: 'Open Admin' })
 
-    expect(openAdmin.className).toContain('bg-primary')
-    expect(openAdmin.className).toContain('text-primary-foreground')
-    expect(getStarted.className).toContain('bg-primary')
-    expect(getStarted.className).toContain('text-primary-foreground')
+    expect(openAdminLinks[0].className).toContain('bg-primary')
+    expect(openAdminLinks[0].className).toContain('text-primary-foreground')
+    expect(openAdminLinks[1].className).toContain('bg-primary')
+    expect(openAdminLinks[1].className).toContain('text-primary-foreground')
   })
 
   it('does not render memorial directory when disabled', () => {
@@ -31,13 +30,14 @@ describe('LandingContent', () => {
     )
 
     expect(screen.getByText('Memorial Directory')).toBeInTheDocument()
+    expect(screen.getByText(/Private and password-protected pages remain outside this directory\./)).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 4, name: 'Maria Santos' })).toBeInTheDocument()
     expect(screen.getByText('Memorial page')).toBeInTheDocument()
-    expect(screen.getAllByRole('link', { name: 'View Memorial' })[0]).toHaveAttribute('href', '/memorials/maria-santos')
+    expect(screen.getAllByRole('link', { name: 'View memorial' })[0]).toHaveAttribute('href', '/memorials/maria-santos')
   })
 
   it('renders empty-state text when directory is enabled with no memorials', () => {
     render(<LandingContent directoryEnabled memorials={[]} />)
-    expect(screen.getByText('No memorial pages are listed yet.')).toBeInTheDocument()
+    expect(screen.getByText('Public memorial sharing is enabled, but no families have published a directory-listed memorial yet.')).toBeInTheDocument()
   })
 })

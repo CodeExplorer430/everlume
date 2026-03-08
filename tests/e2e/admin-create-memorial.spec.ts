@@ -4,7 +4,7 @@ import { fulfillJson, mockAdminRoute } from './helpers/admin-api-mocks'
 test('admin can create memorial from form flow', async ({ page }) => {
   let capturedBody: Record<string, unknown> | null = null
 
-  await mockAdminRoute(page, /\/api\/admin\/pages$/, async (route) => {
+  await mockAdminRoute(page, /\/api\/admin\/memorials$/, async (route) => {
     const req = route.request()
 
     if (req.method() === 'POST') {

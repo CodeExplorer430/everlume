@@ -9,5 +9,5 @@ test('login page renders form controls', async ({ page }) => {
 
 test('home page includes how-it-works section', async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByRole('heading', { name: /How Everlume Works/i })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Three measured steps from setup to remembrance/i })).toBeVisible()
 })

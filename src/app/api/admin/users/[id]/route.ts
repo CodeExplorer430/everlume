@@ -23,6 +23,29 @@ async function assertAdminPrivileges() {
   return { ok: true as const, actorSupabase: auth.supabase, userId: auth.userId }
 }
 
+function deriveAccountState(
+  profile: { is_active: boolean },
+  authUser: { last_sign_in_at?: string | null } | null | undefined,
+  authLookupAvailable: boolean
+) {
+  if (!profile.is_active) return 'deactivated' as const
+  if (!authLookupAvailable) return 'active' as const
+  if (authUser?.last_sign_in_at) return 'active' as const
+  return 'invited' as const
+}
+
+async function resolveAccountState(
+  serviceRole: ReturnType<typeof createServiceRoleClient>,
+  profile: { id: string; is_active: boolean }
+) {
+  if (!profile.is_active) return 'deactivated' as const
+
+  const { data, error } = await serviceRole.auth.admin.listUsers()
+  const authLookupAvailable = !error
+  const authUser = data?.users?.find((user) => user.id === profile.id)
+  return deriveAccountState(profile, authUser, authLookupAvailable)
+}
+
 async function countActiveAdmins(supabase: {
   from: (table: 'profiles') => {
     select: (columns: string, options?: { head?: boolean; count?: 'exact' }) => {
@@ -113,7 +136,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     .from('profiles')
     .update(updatePayload)
     .eq('id', parsedParams.data.id)
-    .select('id, full_name, role, is_active, created_at, updated_at, invited_at, deactivated_at')
+    .select('id, email, full_name, role, is_active, created_at, updated_at, invited_at, deactivated_at')
     .single()
 
   if (error) {
@@ -133,7 +156,9 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     },
   })
 
-  return NextResponse.json({ user: data, shouldSignOutSelf }, { status: 200 })
+  const accountState = await resolveAccountState(serviceRole, data)
+
+  return NextResponse.json({ user: { ...data, account_state: accountState }, shouldSignOutSelf }, { status: 200 })
 }
 
 export async function DELETE(_request: NextRequest, context: { params: Promise<{ id: string }> }) {
@@ -177,10 +202,12 @@ export async function DELETE(_request: NextRequest, context: { params: Promise<{
     }
   }
 
-  const { error } = await serviceRole
+  const { data, error } = await serviceRole
     .from('profiles')
     .update({ is_active: false, deactivated_at: new Date().toISOString(), updated_at: new Date().toISOString() })
     .eq('id', parsedParams.data.id)
+    .select('id, email, full_name, role, is_active, created_at, updated_at, invited_at, deactivated_at')
+    .single()
 
   if (error) {
     return databaseError('Unable to deactivate user.')
@@ -194,5 +221,12 @@ export async function DELETE(_request: NextRequest, context: { params: Promise<{
     metadata: { selfAction: parsedParams.data.id === userId },
   })
 
-  return NextResponse.json({ ok: true, shouldSignOutSelf: parsedParams.data.id === userId }, { status: 200 })
+  return NextResponse.json(
+    {
+      ok: true,
+      shouldSignOutSelf: parsedParams.data.id === userId,
+      user: { ...data, account_state: 'deactivated' as const },
+    },
+    { status: 200 }
+  )
 }

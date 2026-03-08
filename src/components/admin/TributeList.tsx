@@ -16,16 +16,17 @@ interface TributeListProps {
 export function TributeList({ pages }: TributeListProps) {
   return (
     <div className="surface-card overflow-hidden">
-      <div className="border-b border-border px-5 py-4">
-        <h3 className="text-lg font-semibold">Your Memorial Pages</h3>
+      <div className="border-b border-border/70 px-5 py-4">
+        <p className="section-kicker">Library</p>
+        <h3 className="mt-1 text-lg font-semibold">Your Memorials</h3>
       </div>
       <ul className="divide-y divide-border">
         {pages && pages.length > 0 ? (
           pages.map((page) => (
             <li key={page.id} className="px-5 py-4 transition-colors hover:bg-secondary/45">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h4 className="text-sm font-semibold">{page.title}</h4>
+                <div className="space-y-1">
+                  <h4 className="text-sm font-semibold text-foreground">{page.title}</h4>
                   <p className="text-sm text-muted-foreground">/memorials/{page.slug}</p>
                 </div>
                 <div className="flex gap-2">
@@ -46,7 +47,7 @@ export function TributeList({ pages }: TributeListProps) {
             </li>
           ))
         ) : (
-          <li className="px-5 py-12 text-center text-sm text-muted-foreground">No memorial pages created yet.</li>
+          <li className="px-5 py-12 text-center text-sm text-muted-foreground">No memorials created yet.</li>
         )}
       </ul>
     </div>

@@ -1,12 +1,16 @@
-import { assertPageOwnership, databaseError, forbidden, requireAdminUser } from '@/lib/server/admin-auth'
+import { assertMemorialOwnership, databaseError, forbidden, requireAdminUser } from '@/lib/server/admin-auth'
 import { logAdminAudit } from '@/lib/server/admin-audit'
+import { resolveMemorialId } from '@/lib/server/memorials'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
 const timelineSchema = z.object({
-  pageId: z.string().uuid(),
+  memorialId: z.string().uuid().optional(),
+  pageId: z.string().uuid().optional(),
   year: z.number().int().min(1000).max(2100),
   text: z.string().trim().min(1).max(500),
+}).refine((value) => Boolean(resolveMemorialId(value)), {
+  message: 'Memorial id is required.',
 })
 
 export async function POST(request: NextRequest) {
@@ -29,14 +33,18 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return auth.response
   const { supabase, userId, role } = auth
 
-  const { pageId, year, text } = parsed.data
-  const ownsPage = await assertPageOwnership(supabase, pageId, userId, role)
-  if (!ownsPage) return forbidden('You do not have access to this page.')
+  const { year, text } = parsed.data
+  const memorialId = resolveMemorialId(parsed.data)
+  if (!memorialId) {
+    return NextResponse.json({ code: 'VALIDATION_ERROR', message: 'Memorial id is required.' }, { status: 400 })
+  }
+  const ownsMemorial = await assertMemorialOwnership(supabase, memorialId, userId, role)
+  if (!ownsMemorial) return forbidden('You do not have access to this memorial.')
 
   const { data, error } = await supabase
     .from('timeline_events')
     .insert({
-      page_id: pageId,
+      page_id: memorialId,
       year,
       text,
     })
@@ -52,7 +60,7 @@ export async function POST(request: NextRequest) {
     action: 'timeline.create',
     entity: 'timeline',
     entityId: data.id,
-    metadata: { pageId: data.page_id },
+    metadata: { memorialId: data.page_id },
   })
 
   return NextResponse.json({ event: data }, { status: 201 })

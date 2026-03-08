@@ -29,6 +29,7 @@ Use this checklist before printing memorial plaques/cards and before production 
   npm run typecheck
   npm run test:coverage
   npm run test:e2e:webpack
+  npm run test:e2e:auth
   ```
 - Confirm redirect health endpoint:
   - `GET /api/health/redirects` returns `{ ok: true }`.

@@ -38,7 +38,7 @@ describe('POST /api/admin/photos', () => {
     const req = new Request('http://localhost/api/admin/photos', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ pageId: 'invalid' }),
+      body: JSON.stringify({ memorialId: 'invalid' }),
     })
 
     const res = await POST(req as never)
@@ -57,7 +57,7 @@ describe('POST /api/admin/photos', () => {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        pageId: '550e8400-e29b-41d4-a716-446655440000',
+        memorialId: '550e8400-e29b-41d4-a716-446655440000',
         caption: 'Sunset',
         cloudinaryPublicId: 'everlume/abc',
         imageUrl: 'https://res.cloudinary.com/demo/image/upload/abc.jpg',

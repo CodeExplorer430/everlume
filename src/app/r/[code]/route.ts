@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getE2ERedirectFixtureByCode, isE2EPublicFixturesEnabled } from '@/lib/server/e2e-public-fixtures'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function GET(
@@ -14,6 +15,28 @@ export async function GET(
     fallbackUrl.searchParams.set('reason', 'invalid')
     const response = NextResponse.redirect(fallbackUrl, 302)
     response.headers.set('Cache-Control', 'no-store')
+    return response
+  }
+
+  if (isE2EPublicFixturesEnabled()) {
+    const fixture = getE2ERedirectFixtureByCode(normalizedCode)
+
+    if (!fixture) {
+      fallbackUrl.searchParams.set('reason', 'missing')
+      const response = NextResponse.redirect(fallbackUrl, 302)
+      response.headers.set('Cache-Control', 'no-store')
+      return response
+    }
+
+    if (fixture.is_active === false) {
+      fallbackUrl.searchParams.set('reason', 'disabled')
+      const response = NextResponse.redirect(fallbackUrl, 302)
+      response.headers.set('Cache-Control', 'no-store')
+      return response
+    }
+
+    const response = NextResponse.redirect(new URL(fixture.target_url, request.url), 302)
+    response.headers.set('Cache-Control', 'public, max-age=60, s-maxage=60, stale-while-revalidate=60')
     return response
   }
 

@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { createPageAccessToken, getPageAccessCookieMaxAge, getPageAccessCookieName, verifyPagePassword } from '@/lib/server/page-password'
+import { verifyE2EMemorialPassword } from '@/lib/server/e2e-public-fixtures'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -25,6 +26,26 @@ export async function POST(request: NextRequest, context: { params: Promise<{ sl
     return NextResponse.json({ code: 'VALIDATION_ERROR', message: 'Enter your access password.' }, { status: 400 })
   }
 
+  const fixtureResult = verifyE2EMemorialPassword(parsedParams.data.slug, parsedPayload.data.password)
+  if (fixtureResult) {
+    if (!fixtureResult.ok) {
+      return NextResponse.json({ code: 'INVALID_PASSWORD', message: 'The password is incorrect.' }, { status: 401 })
+    }
+
+    const token = createPageAccessToken(fixtureResult.page.id, fixtureResult.page.password_updated_at || null)
+    const response = NextResponse.json({ ok: true }, { status: 200 })
+
+    response.cookies.set(getPageAccessCookieName(fixtureResult.page.id), token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: getPageAccessCookieMaxAge(),
+    })
+
+    return response
+  }
+
   const supabase = await createClient()
   const { data: page } = await supabase
     .from('pages')
@@ -48,7 +69,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ sl
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    path: '/memorials',
+    path: '/',
     maxAge: getPageAccessCookieMaxAge(),
   })
 

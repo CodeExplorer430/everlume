@@ -39,7 +39,7 @@ describe('POST /api/guestbook', () => {
     const req = new Request('http://localhost/api/guestbook', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ pageId: 'bad-id', name: '', message: '' }),
+      body: JSON.stringify({ memorialId: 'bad-id', name: '', message: '' }),
     })
 
     const res = await POST(req as never)
@@ -54,7 +54,7 @@ describe('POST /api/guestbook', () => {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-forwarded-for': '1.2.3.4' },
       body: JSON.stringify({
-        pageId: '550e8400-e29b-41d4-a716-446655440000',
+        memorialId: '550e8400-e29b-41d4-a716-446655440000',
         name: 'Maria',
         message: 'Forever remembered',
         submittedAt: Date.now() - 3000,
@@ -79,7 +79,7 @@ describe('POST /api/guestbook', () => {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-forwarded-for': '1.2.3.4' },
       body: JSON.stringify({
-        pageId: '550e8400-e29b-41d4-a716-446655440000',
+        memorialId: '550e8400-e29b-41d4-a716-446655440000',
         name: 'Maria',
         message: 'Forever remembered',
         submittedAt: Date.now() - 3000,
@@ -101,7 +101,7 @@ describe('POST /api/guestbook', () => {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-forwarded-for': '1.2.3.4' },
       body: JSON.stringify({
-        pageId: '550e8400-e29b-41d4-a716-446655440000',
+        memorialId: '550e8400-e29b-41d4-a716-446655440000',
         name: 'Maria',
         message: 'Forever remembered',
         submittedAt: Date.now() - 3000,
@@ -120,7 +120,7 @@ describe('POST /api/guestbook', () => {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-forwarded-for': '1.2.3.4' },
       body: JSON.stringify({
-        pageId: '550e8400-e29b-41d4-a716-446655440000',
+        memorialId: '550e8400-e29b-41d4-a716-446655440000',
         name: 'Maria',
         message: 'Forever remembered',
         submittedAt: Date.now() - 3000,
@@ -144,7 +144,7 @@ describe('POST /api/guestbook', () => {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-forwarded-for': '1.2.3.4' },
       body: JSON.stringify({
-        pageId: '550e8400-e29b-41d4-a716-446655440000',
+        memorialId: '550e8400-e29b-41d4-a716-446655440000',
         name: 'Maria',
         message: 'Forever remembered',
         submittedAt: Date.now() - 3000,
@@ -168,7 +168,7 @@ describe('POST /api/guestbook', () => {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-forwarded-for': '1.2.3.4' },
       body: JSON.stringify({
-        pageId: '550e8400-e29b-41d4-a716-446655440000',
+        memorialId: '550e8400-e29b-41d4-a716-446655440000',
         name: 'Maria',
         message: 'Forever remembered',
         submittedAt: Date.now() - 3000,
@@ -194,7 +194,7 @@ describe('POST /api/guestbook', () => {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-forwarded-for': '1.2.3.4' },
       body: JSON.stringify({
-        pageId: '550e8400-e29b-41d4-a716-446655440000',
+        memorialId: '550e8400-e29b-41d4-a716-446655440000',
         name: 'Maria',
         message: 'Forever remembered',
         submittedAt: Date.now() - 3000,

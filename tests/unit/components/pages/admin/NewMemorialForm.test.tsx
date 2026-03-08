@@ -26,14 +26,14 @@ describe('NewMemorialForm', () => {
     const user = userEvent.setup()
     render(<NewMemorialForm />)
 
-    await user.type(screen.getByLabelText('Page Title'), 'In Loving Memory')
+    await user.type(screen.getByLabelText('Memorial Title'), 'In Loving Memory')
     expect(screen.getByLabelText('URL Slug')).toHaveValue('in-loving-memory')
 
     await user.clear(screen.getByLabelText('URL Slug'))
     await user.type(screen.getByLabelText('URL Slug'), 'custom-slug')
 
-    await user.clear(screen.getByLabelText('Page Title'))
-    await user.type(screen.getByLabelText('Page Title'), 'Changed Title')
+    await user.clear(screen.getByLabelText('Memorial Title'))
+    await user.type(screen.getByLabelText('Memorial Title'), 'Changed Title')
     expect(screen.getByLabelText('URL Slug')).toHaveValue('custom-slug')
   })
 
@@ -43,13 +43,13 @@ describe('NewMemorialForm', () => {
     const user = userEvent.setup()
     render(<NewMemorialForm />)
 
-    await user.type(screen.getByLabelText('Page Title'), 'Jane Doe')
+    await user.type(screen.getByLabelText('Memorial Title'), 'Jane Doe')
     await user.type(screen.getByLabelText('URL Slug'), 'jane-doe')
     await user.type(screen.getByLabelText('Full Name'), 'Jane Doe')
     await user.click(screen.getByRole('button', { name: 'Create Memorial' }))
 
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/admin/pages',
+      '/api/admin/memorials',
       expect.objectContaining({
         method: 'POST',
       })
@@ -64,7 +64,7 @@ describe('NewMemorialForm', () => {
     const user = userEvent.setup()
     render(<NewMemorialForm />)
 
-    await user.type(screen.getByLabelText('Page Title'), 'Jane Doe')
+    await user.type(screen.getByLabelText('Memorial Title'), 'Jane Doe')
     await user.type(screen.getByLabelText('URL Slug'), 'jane-doe')
     await user.click(screen.getByRole('button', { name: 'Create Memorial' }))
 

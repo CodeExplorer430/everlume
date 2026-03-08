@@ -19,6 +19,7 @@ vi.mock('next/cache', () => ({
 
 describe('POST /auth/signout', () => {
   beforeEach(() => {
+    delete process.env.E2E_FAKE_AUTH
     mockGetUser.mockReset()
     mockSignOut.mockReset()
     mockRevalidatePath.mockReset()
@@ -47,5 +48,25 @@ describe('POST /auth/signout', () => {
     expect(res.headers.get('location')).toBe('http://localhost/login')
     expect(mockSignOut).toHaveBeenCalled()
     expect(mockRevalidatePath).toHaveBeenCalledWith('/', 'layout')
+  })
+
+  it('clears fake e2e auth sessions without calling supabase signOut', async () => {
+    process.env.E2E_FAKE_AUTH = '1'
+    const e2eAuth = await import('@/lib/server/e2e-auth')
+    vi.spyOn(e2eAuth, 'getE2EAuthSession').mockResolvedValue({
+      userId: 'fake-user',
+      email: 'fake@example.com',
+      role: 'admin',
+      isActive: true,
+      fullName: 'Fake Admin',
+      state: 'active',
+    })
+
+    const req = new Request('http://localhost/auth/signout', { method: 'POST' })
+    const res = await POST(req as never)
+
+    expect(res.status).toBe(302)
+    expect(res.cookies.get('everlume_e2e_auth')?.value).toBe('')
+    expect(mockSignOut).not.toHaveBeenCalled()
   })
 })

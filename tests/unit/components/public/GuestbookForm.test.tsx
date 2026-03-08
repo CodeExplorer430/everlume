@@ -32,7 +32,7 @@ describe('GuestbookForm', () => {
     )
     const user = userEvent.setup()
 
-    render(<GuestbookForm pageId="page-1" />)
+    render(<GuestbookForm memorialId="page-1" />)
 
     await user.type(screen.getByLabelText('Your Name'), 'Maria')
     await user.type(screen.getByLabelText('Your Message'), 'Forever remembered')
@@ -42,7 +42,7 @@ describe('GuestbookForm', () => {
       '/api/guestbook',
       expect.objectContaining({
         method: 'POST',
-        body: expect.stringContaining('"pageId":"page-1"'),
+        body: expect.stringContaining('"memorialId":"page-1"'),
       })
     )
     expect(await screen.findByText('Thank you for sharing')).toBeInTheDocument()
@@ -54,7 +54,7 @@ describe('GuestbookForm', () => {
     )
     const user = userEvent.setup()
 
-    render(<GuestbookForm pageId="page-1" />)
+    render(<GuestbookForm memorialId="page-1" />)
 
     await user.type(screen.getByLabelText('Your Name'), 'Maria')
     await user.type(screen.getByLabelText('Your Message'), 'Forever remembered')
@@ -83,7 +83,7 @@ describe('GuestbookForm', () => {
     })
 
     const user = userEvent.setup()
-    render(<GuestbookForm pageId="page-1" />)
+    render(<GuestbookForm memorialId="page-1" />)
 
     await user.type(screen.getByLabelText('Your Name'), 'Maria')
     await user.type(screen.getByLabelText('Your Message'), 'Forever remembered')

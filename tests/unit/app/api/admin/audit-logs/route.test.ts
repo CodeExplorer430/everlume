@@ -35,7 +35,7 @@ describe('GET /api/admin/audit-logs', () => {
       supabase: { from: mockFrom },
     })
     mockLimit.mockResolvedValue({
-      data: [{ id: 'log-1', action: 'page.create' }],
+      data: [{ id: 'log-1', action: 'page.create', entity: 'page' }],
       error: null,
     })
 
@@ -44,5 +44,6 @@ describe('GET /api/admin/audit-logs', () => {
 
     expect(response.status).toBe(200)
     expect(payload.logs).toHaveLength(1)
+    expect(payload.logs[0]).toMatchObject({ action: 'memorial.create', entity: 'memorial' })
   })
 })

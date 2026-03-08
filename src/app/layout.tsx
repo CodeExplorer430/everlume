@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
 import { ServiceWorkerRegister } from '@/components/public/ServiceWorkerRegister'
+import { getAppBaseUrl } from '@/lib/site-url'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -14,6 +15,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
+  metadataBase: getAppBaseUrl(),
   title: 'Everlume',
   description: 'Create and share memorial pages with photos, timelines, videos, and moderated guestbook messages.',
   icons: {

@@ -1,6 +1,6 @@
 # Everlume
 
-A full-stack web app for creating, managing, and sharing memorial pages with QR-friendly short links.
+A full-stack web app for creating, managing, and sharing memorials with QR-friendly short links.
 
 ## Core Stack
 - **Frontend:** Next.js 16 (App Router) + TypeScript + Tailwind CSS
@@ -11,12 +11,13 @@ A full-stack web app for creating, managing, and sharing memorial pages with QR-
 - **Short Links/DNS:** Cloudflare Workers + Cloudflare DNS
 
 ## Features
-- Authenticated admin dashboard for managing memorial pages
+- Authenticated admin dashboard for managing memorials with individual admin accounts
 - Cloudinary bulk photo upload and optimized gallery rendering
-- YouTube video embedding workflow in admin/public pages
+- YouTube video embedding workflow in admin and public memorials
 - Timeline editor and moderated guestbook
 - QR code generation with short-link support
-- CSV/ZIP export tools for guestbook and media metadata
+- Export and archive tools for memorial JSON, guestbook CSV, photo metadata CSV, and photo ZIP
+- Public, password-protected, and private memorial access modes
 
 ## Local Setup
 
@@ -34,6 +35,7 @@ Create `.env.local`:
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_APP_URL=https://app.yourdomain.com
 NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
 NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your_unsigned_upload_preset
 NEXT_PUBLIC_SHORT_DOMAIN=https://go.yourdomain.com
@@ -103,6 +105,8 @@ npm run build
 
 `ops:*` scripts automatically read `.env` and `.env.local` (shell-provided environment variables still take precedence).
 
+`NEXT_PUBLIC_APP_URL` is the preferred canonical public origin used for metadata and public sharing URLs. If omitted, the app falls back to Vercel host envs or localhost in development.
+
 ## Testing
 ```bash
 npm run test:unit
@@ -110,6 +114,7 @@ npm run test:worker
 npm run test:coverage
 npm run test:e2e:install
 npm run test:e2e
+npm run test:e2e:auth
 npm run test:launch-readiness
 npm run test:perf
 ```
@@ -121,8 +126,9 @@ npm run test:e2e:webpack
 ```
 
 `npm run test:e2e` uses webpack-backed Next dev by default for stability in this environment. Use `npm run test:e2e:turbopack` only for Turbopack diagnostics.
+`npm run test:e2e:auth` runs the password-based admin auth lane with the test-only cookie session harness instead of the blanket admin bypass.
 
-Coverage gates are currently enforced at 10% global thresholds in CI.
+Coverage gates are enforced at 85% for lines/functions/statements and 75% for branches in CI.
 
 ## CI/CD
 - **GitHub Actions CI:** lint, typecheck, unit coverage, worker tests, e2e (webpack + turbopack required), a11y, launch-readiness, Lighthouse perf/a11y gate, and build on PRs/pushes (`.github/workflows/ci.yml`)
@@ -164,5 +170,12 @@ npm run ops:check-video-transcode
 ## Security Notes
 - Admin APIs enforce role-based access (`viewer`, `editor`, `admin`).
 - Admin write actions are recorded in `admin_audit_logs`.
-- Private memorial photos are served through short-lived signed proxy URLs.
+- Password-protected and private memorial photos are served through short-lived signed proxy URLs.
 - Guestbook endpoint requires durable rate limiting (`upstash`) and CAPTCHA in production.
+
+## Canonical Routes
+- Public memorials: `/memorials/:slug`
+- Admin memorial editor: `/admin/memorials/:id`
+- Admin memorial creation: `/admin/memorials/new`
+
+Legacy `/pages/*` and `/admin/pages/*` routes remain as compatibility redirects only.

@@ -22,7 +22,7 @@ describe('page-password helpers', () => {
   })
 
   it('provides stable cookie metadata', () => {
-    expect(getPageAccessCookieName('abc')).toBe('everlume_page_access_abc')
+    expect(getPageAccessCookieName('abc')).toBe('everlume_memorial_access_abc')
     expect(getPageAccessCookieMaxAge()).toBeGreaterThan(0)
   })
 })

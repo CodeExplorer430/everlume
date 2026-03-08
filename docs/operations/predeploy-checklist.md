@@ -16,6 +16,7 @@ Use these values:
 Then set:
 - `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`
 - `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=everlume_unsigned_upload`
+- `NEXT_PUBLIC_APP_URL=https://app.yourdomain.com`
 
 ## 2) Cloudflare Worker + Short Domain
 1. Deploy worker `everlume-redirector`.
@@ -23,14 +24,15 @@ Then set:
 3. Set worker secrets:
    - `SUPABASE_URL`
    - `SUPABASE_SECRET_KEY` (or legacy `SUPABASE_SERVICE_ROLE_KEY`)
-   - `FALLBACK_URL` (temporary public page until Vercel is live)
+   - `FALLBACK_URL` (temporary public memorial or holding page until Vercel is live)
 4. Set app env:
+   - `NEXT_PUBLIC_APP_URL=https://app.yourdomain.com`
    - `NEXT_PUBLIC_SHORT_DOMAIN=https://go.yourdomain.com`
 
 ## 3) Redirect Smoke Test
 Insert one row in `redirects` table:
 - `shortcode`: `test`
-- `target_url`: temporary public page or staging memorial URL
+- `target_url`: temporary public memorial or staging memorial URL
 
 Check:
 - `https://go.yourdomain.com/test` -> `302` to target.
@@ -40,6 +42,7 @@ Check:
 Also verify app-side fallback:
 - `https://app.yourdomain.com/r/unknown` -> `/r/not-found?reason=missing`.
 - `https://app.yourdomain.com/r/test` -> `302` to target URL.
+- When homepage directory is enabled, `/r/not-found` should expose `Browse Public Memorials` linking to `/#memorial-directory`.
 
 ## 4) Video Transcode Service
 Deploy a compatible transcode callback service before enabling direct video upload in production.
@@ -56,6 +59,7 @@ Deploy a compatible transcode callback service before enabling direct video uplo
    - `CLOUDINARY_API_KEY`
    - `CLOUDINARY_API_SECRET`
 3. Set app env vars:
+   - `NEXT_PUBLIC_APP_URL=https://app.yourdomain.com`
    - `VIDEO_TRANSCODE_API_BASE=<cloud-run-url>`
    - `VIDEO_TRANSCODE_API_TOKEN=<same-as-service-token>`
    - `VIDEO_TRANSCODE_CALLBACK_TOKEN=<same-as-service-callback-token>`
@@ -90,6 +94,7 @@ npm run lint
 npm run typecheck
 npm run test:coverage
 npm run test:e2e:webpack
+npm run test:e2e:auth
 ```
 
 Production gate note:

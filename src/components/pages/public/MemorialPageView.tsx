@@ -73,8 +73,9 @@ export function MemorialPageView({ page, photos, videos, timeline, guestbook }: 
       <TributeHero page={page} />
 
       <main id="main-content" className="page-container space-y-12 py-10 md:space-y-16 md:py-14">
-        <section className="mx-auto max-w-3xl text-center">
-          <h2 className="section-title">Our Memories</h2>
+        <section className="surface-card mx-auto max-w-4xl px-6 py-8 text-center md:px-10">
+          <p className="section-kicker">Remembrance</p>
+          <h2 className="section-title mt-2">Our Memories</h2>
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground md:text-base">
             Welcome to the memorial page for {page.full_name || 'our loved one'}. We invite you to explore the gallery and leave a message for the family.
           </p>
@@ -98,7 +99,7 @@ export function MemorialPageView({ page, photos, videos, timeline, guestbook }: 
 
         <TributeTimeline timeline={timeline} />
 
-        <TributeGuestbook pageId={page.id} fullName={page.full_name} entries={guestbook} />
+        <TributeGuestbook memorialId={page.id} fullName={page.full_name} entries={guestbook} />
       </main>
 
       <footer className="border-t border-border/80 py-10 text-center text-xs text-muted-foreground md:text-sm">

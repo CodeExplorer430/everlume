@@ -89,6 +89,7 @@ export function PublicGallery({
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4">
         {photos.map((photo, index) => {
           const thumbUrl = photo.thumb_url || photo.image_url || ''
+          const usesProtectedMediaProxy = thumbUrl.startsWith('/api/public/media/') || (photo.image_url || '').startsWith('/api/public/media/')
           return (
             <button
               key={photo.id}
@@ -102,6 +103,7 @@ export function PublicGallery({
                   alt={photo.caption || `Memorial photo ${index + 1}`}
                   fill
                   sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
+                  unoptimized={usesProtectedMediaProxy}
                   className={`${fit === 'contain' ? 'object-contain bg-white/80 p-1.5' : 'object-cover'} transition-transform duration-500 hover:scale-105`}
                 />
               ) : (
@@ -162,6 +164,7 @@ export function PublicGallery({
                 alt={photos[selectedIndex].caption || `Memorial photo ${selectedIndex + 1}`}
                 fill
                 sizes="100vw"
+                unoptimized={(photos[selectedIndex].image_url || photos[selectedIndex].thumb_url || '').startsWith('/api/public/media/')}
                 className={`rounded-md ${fit === 'contain' ? 'object-contain' : 'object-cover'} shadow-2xl transition-all duration-700`}
                 priority
               />

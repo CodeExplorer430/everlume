@@ -106,4 +106,34 @@ describe('GuestbookModerationScreen', () => {
       expect(fetchMock).toHaveBeenCalledWith('/api/admin/guestbook/entry-1', expect.objectContaining({ method: 'DELETE' }))
     })
   })
+
+  it('rolls back unapprove when the API rejects the change', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url === '/api/admin/guestbook' && (!init || !init.method)) {
+        return new Response(JSON.stringify({ entries: [{ ...sampleEntry, is_approved: true }] }), { status: 200 })
+      }
+      if (url === '/api/admin/guestbook/entry-1/unapprove' && init?.method === 'POST') {
+        return new Response(JSON.stringify({ message: 'Unapprove failed' }), { status: 500 })
+      }
+      return new Response(JSON.stringify({}), { status: 200 })
+    })
+
+    const user = userEvent.setup()
+    render(<GuestbookModerationScreen />)
+    await screen.findByText('Approved')
+
+    await user.click(screen.getByRole('button', { name: 'Unapprove guestbook entry from Ana' }))
+
+    expect(await screen.findByText('Unapprove failed')).toBeInTheDocument()
+    expect(screen.getByText('Approved')).toBeInTheDocument()
+  })
+
+  it('renders the empty state when there are no guestbook entries', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ entries: [] }), { status: 200 }))
+
+    render(<GuestbookModerationScreen />)
+
+    expect(await screen.findByText('No guestbook entries found yet.')).toBeInTheDocument()
+  })
 })

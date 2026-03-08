@@ -1,8 +1,16 @@
 import { LandingContent } from '@/components/pages/public/HomeLanding'
+import { resolveMemorialAccessMode } from '@/lib/server/memorials'
 import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
 
-type HomeMemorial = { id: string; title: string; slug: string; full_name: string | null }
+type HomeMemorial = {
+  id: string
+  title: string
+  slug: string
+  full_name: string | null
+  privacy?: 'public' | 'private' | null
+  access_mode?: 'public' | 'private' | 'password' | null
+}
 
 const getHomeDirectoryEnabled = unstable_cache(
   async () => {
@@ -20,12 +28,11 @@ const getPublicMemorialDirectory = unstable_cache(
     const supabase = createPublicClient()
     const { data, error } = await supabase
       .from('pages')
-      .select('id, title, slug, full_name')
-      .eq('privacy', 'public')
+      .select('id, title, slug, full_name, privacy, access_mode')
       .order('created_at', { ascending: false })
       .limit(24)
     if (error) return [] as HomeMemorial[]
-    return (data || []) as HomeMemorial[]
+    return ((data || []) as HomeMemorial[]).filter((memorial) => resolveMemorialAccessMode(memorial) === 'public')
   },
   ['home:public-memorial-directory'],
   { revalidate: 120 }

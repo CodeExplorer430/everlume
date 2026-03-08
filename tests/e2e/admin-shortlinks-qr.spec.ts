@@ -59,28 +59,28 @@ test('admin manages short links and sees QR section on memorial edit', async ({ 
       return
     }
 
-    if (req.method() === 'GET' && /\/api\/admin\/pages\/[^/]+\/redirects$/.test(url)) {
+    if (req.method() === 'GET' && /\/api\/admin\/memorials\/[^/]+\/redirects$/.test(url)) {
       await fulfillJson(route, { redirects: [{ id: 'r-1', shortcode: 'grandma', print_status: 'verified', is_active: true }] })
       return
     }
 
-    if (req.method() === 'GET' && /\/api\/admin\/pages\/[^/]+$/.test(url)) {
+    if (req.method() === 'GET' && /\/api\/admin\/memorials\/[^/]+$/.test(url)) {
       await fulfillJson(route, {
-        page: {
+        memorial: {
           id: '550e8400-e29b-41d4-a716-446655440000',
           title: 'In Loving Memory',
           slug: 'in-loving-memory',
           full_name: 'Jane Doe',
           dob: null,
           dod: null,
-          privacy: 'public',
+          accessMode: 'public',
           hero_image_url: null,
         },
       })
       return
     }
 
-    if (req.method() === 'GET' && /\/api\/admin\/pages\/.+\/(photos|timeline|videos)$/.test(url)) {
+    if (req.method() === 'GET' && /\/api\/admin\/memorials\/.+\/(photos|timeline|videos)$/.test(url)) {
       const key = url.match(/(photos|timeline|videos)$/)?.[1]
       if (key === 'photos') await fulfillJson(route, { photos: [] })
       if (key === 'timeline') await fulfillJson(route, { events: [] })
@@ -111,7 +111,7 @@ test('qr selector excludes inactive short links', async ({ page }) => {
     const req = route.request()
     const url = req.url()
 
-    if (req.method() === 'GET' && /\/api\/admin\/pages\/[^/]+\/redirects$/.test(url)) {
+    if (req.method() === 'GET' && /\/api\/admin\/memorials\/[^/]+\/redirects$/.test(url)) {
       await fulfillJson(route, {
         redirects: [
           { id: 'r-1', shortcode: 'grandma', print_status: 'verified', is_active: true },
@@ -122,23 +122,23 @@ test('qr selector excludes inactive short links', async ({ page }) => {
       return
     }
 
-    if (req.method() === 'GET' && /\/api\/admin\/pages\/[^/]+$/.test(url)) {
+    if (req.method() === 'GET' && /\/api\/admin\/memorials\/[^/]+$/.test(url)) {
       await fulfillJson(route, {
-        page: {
+        memorial: {
           id: '550e8400-e29b-41d4-a716-446655440000',
           title: 'In Loving Memory',
           slug: 'in-loving-memory',
           full_name: 'Jane Doe',
           dob: null,
           dod: null,
-          privacy: 'public',
+          accessMode: 'public',
           hero_image_url: null,
         },
       })
       return
     }
 
-    if (req.method() === 'GET' && /\/api\/admin\/pages\/.+\/(photos|timeline|videos)$/.test(url)) {
+    if (req.method() === 'GET' && /\/api\/admin\/memorials\/.+\/(photos|timeline|videos)$/.test(url)) {
       const key = url.match(/(photos|timeline|videos)$/)?.[1]
       if (key === 'photos') await fulfillJson(route, { photos: [] })
       if (key === 'timeline') await fulfillJson(route, { events: [] })

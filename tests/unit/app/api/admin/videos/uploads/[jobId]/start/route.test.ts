@@ -1,7 +1,7 @@
 import { POST } from '@/app/api/admin/videos/uploads/[jobId]/start/route'
 
 const mockRequireAdminUser = vi.fn()
-const mockAssertPageOwnership = vi.fn()
+const mockAssertMemorialOwnership = vi.fn()
 const mockLogAdminAudit = vi.fn()
 const mockIsVideoTranscodeConfigured = vi.fn()
 const mockGetVideoTranscodeApiBaseOrThrow = vi.fn()
@@ -15,7 +15,7 @@ const mockJobUpdate = vi.fn(() => ({ eq: mockJobUpdateEq }))
 
 vi.mock('@/lib/server/admin-auth', () => ({
   requireAdminUser: (...args: unknown[]) => mockRequireAdminUser(...args),
-  assertPageOwnership: (...args: unknown[]) => mockAssertPageOwnership(...args),
+  assertMemorialOwnership: (...args: unknown[]) => mockAssertMemorialOwnership(...args),
   forbidden: (message: string) => new Response(JSON.stringify({ code: 'FORBIDDEN', message }), { status: 403 }),
   databaseError: (message: string) => new Response(JSON.stringify({ code: 'DATABASE_ERROR', message }), { status: 500 }),
 }))
@@ -34,7 +34,7 @@ describe('POST /api/admin/videos/uploads/[jobId]/start', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     mockRequireAdminUser.mockReset()
-    mockAssertPageOwnership.mockReset()
+    mockAssertMemorialOwnership.mockReset()
     mockLogAdminAudit.mockReset()
     mockIsVideoTranscodeConfigured.mockReset()
     mockGetVideoTranscodeApiBaseOrThrow.mockReset()
@@ -56,7 +56,7 @@ describe('POST /api/admin/videos/uploads/[jobId]/start', () => {
         }),
       },
     })
-    mockAssertPageOwnership.mockResolvedValue(true)
+    mockAssertMemorialOwnership.mockResolvedValue(true)
     mockIsVideoTranscodeConfigured.mockReturnValue(true)
     mockGetVideoTranscodeApiBaseOrThrow.mockReturnValue('https://transcode.example.com')
     mockGetVideoTranscodeApiTokenOrThrow.mockReturnValue('token-1')
@@ -99,8 +99,8 @@ describe('POST /api/admin/videos/uploads/[jobId]/start', () => {
     expect(res.status).toBe(500)
   })
 
-  it('returns 403 when user does not own page', async () => {
-    mockAssertPageOwnership.mockResolvedValue(false)
+  it('returns 403 when user does not own memorial', async () => {
+    mockAssertMemorialOwnership.mockResolvedValue(false)
 
     const req = new Request('http://localhost/api/admin/videos/uploads/550e8400-e29b-41d4-a716-446655440000/start', { method: 'POST' })
     const res = await POST(req as never, { params: Promise.resolve({ jobId: '550e8400-e29b-41d4-a716-446655440000' }) })
@@ -199,7 +199,7 @@ describe('POST /api/admin/videos/uploads/[jobId]/start', () => {
       expect.objectContaining({
         action: 'video.upload_start',
         entity: 'video_upload',
-        metadata: { pageId: 'page-1' },
+        metadata: { memorialId: 'page-1' },
       })
     )
   })

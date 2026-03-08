@@ -5,7 +5,7 @@ describe('TributeList', () => {
   it('renders empty state', () => {
     render(<TributeList pages={[]} />)
 
-    expect(screen.getByText('No memorial pages created yet.')).toBeInTheDocument()
+    expect(screen.getByText('No memorials created yet.')).toBeInTheDocument()
   })
 
   it('renders memorial items with view and edit links', () => {
@@ -23,6 +23,7 @@ describe('TributeList', () => {
     )
 
     expect(screen.getByText('In Loving Memory')).toBeInTheDocument()
+    expect(screen.getByText('Your Memorials')).toBeInTheDocument()
     expect(screen.getByText('/memorials/jane-doe')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /View/i })).toHaveAttribute('href', '/memorials/jane-doe')
     expect(screen.getByRole('link', { name: /Edit/i })).toHaveAttribute('href', '/admin/memorials/page-1')

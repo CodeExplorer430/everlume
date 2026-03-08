@@ -5,15 +5,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Globe, Lock, Shield } from 'lucide-react'
 
-type AdminPage = {
+type AdminMemorial = {
   id: string
   title: string
   slug: string
   full_name: string | null
   dob: string | null
   dod: string | null
-  access_mode?: 'public' | 'private' | 'password'
-  privacy: 'public' | 'private'
+  accessMode: 'public' | 'private' | 'password'
   memorial_theme?: 'classic' | 'serene' | 'editorial'
   memorial_slideshow_enabled?: boolean
   memorial_slideshow_interval_ms?: number
@@ -30,7 +29,7 @@ type AdminPage = {
 }
 
 interface AdminPageInfoProps {
-  page: AdminPage
+  page: AdminMemorial
   onUpdate: () => void
 }
 
@@ -38,7 +37,7 @@ export function AdminPageInfo({ page, onUpdate }: AdminPageInfoProps) {
   return <AdminPageInfoForm key={serializePageKey(page)} page={page} onUpdate={onUpdate} />
 }
 
-function serializePageKey(page: AdminPage) {
+function serializePageKey(page: AdminMemorial) {
   return [
     page.id,
     page.title,
@@ -46,8 +45,7 @@ function serializePageKey(page: AdminPage) {
     page.full_name ?? '',
     page.dob ?? '',
     page.dod ?? '',
-    page.access_mode ?? '',
-    page.privacy,
+    page.accessMode,
     page.memorial_theme ?? 'classic',
     String(page.memorial_slideshow_enabled ?? true),
     String(page.memorial_slideshow_interval_ms ?? 4500),
@@ -64,6 +62,21 @@ function serializePageKey(page: AdminPage) {
   ].join('|')
 }
 
+const accessModeDescriptions: Record<'public' | 'private' | 'password', { title: string; body: string }> = {
+  public: {
+    title: 'Visible by direct link and eligible for the homepage directory.',
+    body: 'Use this when the memorial should be discoverable to visitors. Public memorials may appear on the landing-page directory when that setting is enabled.',
+  },
+  private: {
+    title: 'Hidden from public visitors and excluded from the homepage directory.',
+    body: 'Use this for memorials that should remain internal to the family or admin team. Visitors without admin access will not be able to open the page.',
+  },
+  password: {
+    title: 'Protected by a family-managed password and excluded from the homepage directory.',
+    body: 'Use this when visitors should access the memorial by direct link plus password. Protected memorials keep media behind signed access and require a current password to enter.',
+  },
+}
+
 function AdminPageInfoForm({ page, onUpdate }: AdminPageInfoProps) {
   const accessModeId = 'page-access-mode'
   const passwordId = 'page-password'
@@ -74,7 +87,6 @@ function AdminPageInfoForm({ page, onUpdate }: AdminPageInfoProps) {
   const dodId = 'page-dod'
   const [formData, setFormData] = useState({
     ...page,
-    access_mode: page.access_mode || (page.privacy === 'private' ? 'private' : 'public'),
     memorial_theme: page.memorial_theme || 'classic',
     memorial_slideshow_enabled: page.memorial_slideshow_enabled !== false,
     memorial_slideshow_interval_ms: page.memorial_slideshow_interval_ms || 4500,
@@ -98,7 +110,7 @@ function AdminPageInfoForm({ page, onUpdate }: AdminPageInfoProps) {
     setUpdating(true)
     setErrorMessage(null)
 
-    const response = await fetch(`/api/admin/pages/${page.id}`, {
+    const response = await fetch(`/api/admin/memorials/${page.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -107,7 +119,7 @@ function AdminPageInfoForm({ page, onUpdate }: AdminPageInfoProps) {
         fullName: formData.full_name,
         dob: formData.dob,
         dod: formData.dod,
-        accessMode: formData.access_mode,
+        accessMode: formData.accessMode,
         password: password || undefined,
         memorialTheme: formData.memorial_theme,
         memorialSlideshowEnabled: formData.memorial_slideshow_enabled,
@@ -127,7 +139,7 @@ function AdminPageInfoForm({ page, onUpdate }: AdminPageInfoProps) {
 
     if (!response.ok) {
       const payload = (await response.json().catch(() => null)) as { message?: string } | null
-      setErrorMessage(payload?.message || 'Unable to save page details.')
+      setErrorMessage(payload?.message || 'Unable to save memorial details.')
       setUpdating(false)
       return
     }
@@ -143,26 +155,25 @@ function AdminPageInfoForm({ page, onUpdate }: AdminPageInfoProps) {
 
       <div className="flex items-center justify-between rounded-md border border-border bg-secondary/55 p-3">
         <div className="flex items-center gap-2 text-sm font-medium">
-          {formData.access_mode === 'public' ? (
+          {formData.accessMode === 'public' ? (
             <Globe className="h-4 w-4 text-primary" />
-          ) : formData.access_mode === 'private' ? (
+          ) : formData.accessMode === 'private' ? (
             <Lock className="h-4 w-4 text-amber-700" />
           ) : (
             <Shield className="h-4 w-4 text-violet-700" />
           )}
-          <span className="capitalize">{formData.access_mode} Mode</span>
+          <span className="capitalize">{formData.accessMode} Mode</span>
         </div>
         <label htmlFor={accessModeId} className="sr-only">
           Access mode
         </label>
         <select
           id={accessModeId}
-          value={formData.access_mode}
+          value={formData.accessMode}
           onChange={(e) =>
             setFormData({
               ...formData,
-              access_mode: e.target.value as 'public' | 'private' | 'password',
-              privacy: e.target.value === 'public' ? 'public' : 'private',
+              accessMode: e.target.value as 'public' | 'private' | 'password',
             })
           }
           className="h-9 rounded-md border border-input bg-[var(--surface-1)] px-2 text-sm"
@@ -173,7 +184,12 @@ function AdminPageInfoForm({ page, onUpdate }: AdminPageInfoProps) {
         </select>
       </div>
 
-      {formData.access_mode === 'password' && (
+      <div className="rounded-md border border-border/70 bg-secondary/25 px-3 py-2">
+        <p className="text-sm font-medium text-foreground">{accessModeDescriptions[formData.accessMode].title}</p>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{accessModeDescriptions[formData.accessMode].body}</p>
+      </div>
+
+      {formData.accessMode === 'password' && (
         <div>
           <label htmlFor={passwordId} className="mb-1.5 block text-sm font-medium">
             Set or Rotate Password
@@ -192,7 +208,7 @@ function AdminPageInfoForm({ page, onUpdate }: AdminPageInfoProps) {
 
       <div>
         <label htmlFor={titleId} className="mb-1.5 block text-sm font-medium">
-          Page Title
+          Memorial Title
         </label>
         <Input id={titleId} value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
       </div>

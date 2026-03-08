@@ -1,6 +1,7 @@
 import { verifySignedMediaToken } from '@/lib/server/private-media'
 import { createClient } from '@/lib/supabase/server'
-import { canAccessPrivatePage } from '@/lib/server/page-access'
+import { canAccessMemorial, memorialRequiresProtectedMedia } from '@/lib/server/page-access'
+import { getE2EPhotoFixtureById } from '@/lib/server/e2e-public-fixtures'
 import { NextRequest, NextResponse } from 'next/server'
 
 type Variant = 'image' | 'thumb'
@@ -19,10 +20,31 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pho
     return NextResponse.json({ code: 'FORBIDDEN', message: 'Invalid or expired media token.' }, { status: 403 })
   }
 
+  const fixture = getE2EPhotoFixtureById(photoId)
+  if (fixture) {
+    if (!memorialRequiresProtectedMedia(fixture.page)) {
+      return NextResponse.json({ code: 'FORBIDDEN', message: 'This endpoint only serves non-public memorial media.' }, { status: 403 })
+    }
+
+    const access = await canAccessMemorial(fixture.page)
+    if (!access.allowed) {
+      return NextResponse.json({ code: 'FORBIDDEN', message: 'You do not have access to this media.' }, { status: 403 })
+    }
+
+    const sourceUrl = variant === 'thumb' ? fixture.photo.thumb_url || fixture.photo.image_url : fixture.photo.image_url
+    if (!sourceUrl) {
+      return NextResponse.json({ code: 'NOT_FOUND', message: 'Media URL is missing.' }, { status: 404 })
+    }
+
+    const response = NextResponse.redirect(new URL(sourceUrl, request.url), 307)
+    response.headers.set('Cache-Control', 'private, max-age=60, stale-while-revalidate=60')
+    return response
+  }
+
   const supabase = await createClient()
   const { data: photo } = await supabase
     .from('photos')
-    .select('id, image_url, thumb_url, page_id, pages!inner(owner_id, privacy)')
+    .select('id, image_url, thumb_url, page_id, pages!inner(id, owner_id, privacy, access_mode, password_updated_at)')
     .eq('id', photoId)
     .single()
 
@@ -31,11 +53,11 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pho
   }
 
   const page = Array.isArray(photo.pages) ? photo.pages[0] : photo.pages
-  if (!page || page.privacy !== 'private') {
-    return NextResponse.json({ code: 'FORBIDDEN', message: 'This endpoint only serves private media.' }, { status: 403 })
+  if (!page || !memorialRequiresProtectedMedia(page)) {
+    return NextResponse.json({ code: 'FORBIDDEN', message: 'This endpoint only serves non-public memorial media.' }, { status: 403 })
   }
 
-  const access = await canAccessPrivatePage(page.owner_id)
+  const access = await canAccessMemorial(page)
   if (!access.allowed) {
     return NextResponse.json({ code: 'FORBIDDEN', message: 'You do not have access to this media.' }, { status: 403 })
   }

@@ -9,7 +9,8 @@ export default function TributeNotFound() {
           <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">404</p>
           <h2 className="text-3xl font-semibold">Memorial page not found</h2>
           <p className="text-sm text-muted-foreground">
-            This memorial page may be private, unpublished, or the link may be incorrect. Please verify the short link or ask the family admin.
+            This memorial may be private, password protected, unpublished, or the link may be incorrect. Please verify the direct link or ask the
+            family admin for an updated URL.
           </p>
           <Button asChild>
             <Link href="/">Back to Home</Link>

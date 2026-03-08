@@ -18,6 +18,7 @@ vi.mock('@/lib/supabase/env', () => ({
 describe('updateSession middleware', () => {
   beforeEach(() => {
     delete process.env.E2E_BYPASS_ADMIN_AUTH
+    delete process.env.E2E_FAKE_AUTH
     mockGetUser.mockReset()
     mockCreateServerClient.mockReset()
     mockCreateServerClient.mockImplementation((_url: string, _key: string, options: { cookies: { setAll: (cookies: CookieArg[]) => void } }) => {
@@ -67,5 +68,30 @@ describe('updateSession middleware', () => {
     const response = await updateSession(request)
 
     expect(response.cookies.get('sb-session')?.value).toBe('abc')
+  })
+
+  it('allows admin requests through fake e2e auth sessions without creating a supabase client', async () => {
+    process.env.E2E_FAKE_AUTH = '1'
+
+    const request = new NextRequest('http://localhost/admin/users', {
+      headers: {
+        cookie:
+          'everlume_e2e_auth=' +
+          encodeURIComponent(
+            JSON.stringify({
+              userId: 'fake-user',
+              email: 'fake@example.com',
+              role: 'admin',
+              isActive: true,
+              fullName: 'Fake Admin',
+              state: 'active',
+            })
+          ),
+      },
+    })
+    const response = await updateSession(request)
+
+    expect(response.status).toBe(200)
+    expect(mockCreateServerClient).not.toHaveBeenCalled()
   })
 })

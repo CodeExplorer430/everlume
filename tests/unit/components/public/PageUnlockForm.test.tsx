@@ -25,6 +25,8 @@ describe('PageUnlockForm', () => {
         })
       )
     })
+
+    expect(screen.getByText(/Protected memorials are shared by direct link and do not appear in the public directory\./)).toBeInTheDocument()
   })
 
   it('shows error when unlock fails', async () => {

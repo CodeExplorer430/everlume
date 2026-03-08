@@ -1,15 +1,19 @@
-import { assertPageOwnership, databaseError, forbidden, requireAdminUser } from '@/lib/server/admin-auth'
+import { assertMemorialOwnership, databaseError, forbidden, requireAdminUser } from '@/lib/server/admin-auth'
 import { logAdminAudit } from '@/lib/server/admin-audit'
+import { resolveMemorialId } from '@/lib/server/memorials'
 import { getVideoTranscodeApiBaseOrThrow, getVideoTranscodeApiTokenOrThrow, isVideoTranscodeConfigured } from '@/lib/server/video-upload'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
 const initSchema = z.object({
-  pageId: z.string().uuid(),
+  memorialId: z.string().uuid().optional(),
+  pageId: z.string().uuid().optional(),
   fileName: z.string().trim().min(1).max(200),
   fileSize: z.number().int().positive().max(1024 * 1024 * 1024),
   mimeType: z.string().trim().min(1).max(100),
   title: z.string().trim().max(120).optional().default(''),
+}).refine((value) => Boolean(resolveMemorialId(value)), {
+  message: 'Memorial id is required.',
 })
 
 const transcodeInitResponseSchema = z.object({
@@ -29,7 +33,7 @@ export async function POST(request: NextRequest) {
   const parsed = initSchema.safeParse(payload)
   if (!parsed.success) {
     return NextResponse.json(
-      { code: 'VALIDATION_ERROR', message: 'Provide a valid page id, filename, mime type, and file size.' },
+      { code: 'VALIDATION_ERROR', message: 'Provide a valid memorial id, filename, mime type, and file size.' },
       { status: 400 }
     )
   }
@@ -38,14 +42,18 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return auth.response
   const { supabase, userId, role } = auth
 
-  const { pageId, fileName, fileSize, mimeType, title } = parsed.data
-  const ownsPage = await assertPageOwnership(supabase, pageId, userId, role)
-  if (!ownsPage) return forbidden('You do not have access to this page.')
+  const { fileName, fileSize, mimeType, title } = parsed.data
+  const memorialId = resolveMemorialId(parsed.data)
+  if (!memorialId) {
+    return NextResponse.json({ code: 'VALIDATION_ERROR', message: 'Memorial id is required.' }, { status: 400 })
+  }
+  const ownsMemorial = await assertMemorialOwnership(supabase, memorialId, userId, role)
+  if (!ownsMemorial) return forbidden('You do not have access to this memorial.')
 
   const { data: job, error: jobError } = await supabase
     .from('video_upload_jobs')
     .insert({
-      page_id: pageId,
+      page_id: memorialId,
       created_by: userId,
       status: 'queued',
       title: title || null,
@@ -83,7 +91,8 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         jobId: job.id,
-        pageId,
+        memorialId,
+        pageId: memorialId,
         fileName,
         fileSize,
         mimeType,
@@ -131,7 +140,7 @@ export async function POST(request: NextRequest) {
     action: 'video.upload_init',
     entity: 'video_upload',
     entityId: job.id,
-    metadata: { pageId, fileSize, mimeType },
+    metadata: { memorialId, fileSize, mimeType },
   })
 
   return NextResponse.json(

@@ -5,7 +5,7 @@ test('@a11y landing page exposes expected landmarks and keyboard focus', async (
 
   await expect(page.getByRole('banner')).toBeVisible()
   await expect(page.getByRole('main')).toBeVisible()
-  await expect(page.getByRole('link', { name: /open admin/i })).toBeVisible()
+  await expect(page.getByRole('main').getByRole('link', { name: /open admin/i }).first()).toBeVisible()
 
   await page.keyboard.press('Tab')
   await expect(page.getByRole('link', { name: /skip to content/i })).toBeFocused()
