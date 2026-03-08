@@ -1,10 +1,11 @@
 import { createSignedMediaToken } from '@/lib/server/private-media'
 import { createClient } from '@/lib/supabase/server'
 import { canAccessMemorial, memorialRequiresProtectedMedia } from '@/lib/server/page-access'
+import { getMemorialMediaConsentCookieName, verifyMemorialMediaConsentToken } from '@/lib/server/media-consent'
 import { getE2EMemorialFixtureBySlug } from '@/lib/server/e2e-public-fixtures'
 import { NextRequest, NextResponse } from 'next/server'
 
-export async function GET(_request: NextRequest, context: { params: Promise<{ slug: string }> }) {
+export async function GET(request: NextRequest, context: { params: Promise<{ slug: string }> }) {
   const { slug } = await context.params
   const fixture = getE2EMemorialFixtureBySlug(slug)
 
@@ -16,6 +17,13 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ sl
       }
 
       return NextResponse.json({ code: 'FORBIDDEN', message: 'This memorial is private.' }, { status: 403 })
+    }
+
+    if (memorialRequiresProtectedMedia(fixture.memorial)) {
+      const consentToken = request.cookies.get(getMemorialMediaConsentCookieName(fixture.memorial.id))?.value
+      if (!verifyMemorialMediaConsentToken(consentToken, fixture.memorial.id, fixture.memorial.password_updated_at || null)) {
+        return NextResponse.json({ code: 'CONSENT_REQUIRED', message: 'Confirm the protected media notice before viewing photos.' }, { status: 403 })
+      }
     }
 
     const resolvedPhotos =
@@ -58,6 +66,13 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ sl
     }
 
     return NextResponse.json({ code: 'FORBIDDEN', message: 'This memorial is private.' }, { status: 403 })
+  }
+
+  if (memorialRequiresProtectedMedia(page)) {
+    const consentToken = request.cookies.get(getMemorialMediaConsentCookieName(page.id))?.value
+    if (!verifyMemorialMediaConsentToken(consentToken, page.id, page.password_updated_at || null)) {
+      return NextResponse.json({ code: 'CONSENT_REQUIRED', message: 'Confirm the protected media notice before viewing photos.' }, { status: 403 })
+    }
   }
 
   const { data: photos, error } = await supabase

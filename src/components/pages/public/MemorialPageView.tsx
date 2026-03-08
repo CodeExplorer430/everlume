@@ -1,5 +1,6 @@
 import { PublicGallery } from '@/components/public/PublicGallery'
 import { MemorialActionBar } from '@/components/public/MemorialActionBar'
+import { ProtectedMediaConsentGate } from '@/components/public/ProtectedMediaConsentGate'
 import { TributeHero } from '@/components/public/TributeHero'
 import { TributeVideos } from '@/components/public/TributeVideos'
 import { TributeTimeline } from '@/components/public/TributeTimeline'
@@ -55,9 +56,20 @@ interface MemorialPageViewProps {
   timeline: MemorialTimeline[]
   guestbook: MemorialGuestbook[]
   accessMode?: 'public' | 'password' | 'private'
+  requiresMediaConsent?: boolean
+  mediaConsentSlug?: string
 }
 
-export function MemorialPageView({ memorial, photos, videos, timeline, guestbook, accessMode = 'public' }: MemorialPageViewProps) {
+export function MemorialPageView({
+  memorial,
+  photos,
+  videos,
+  timeline,
+  guestbook,
+  accessMode = 'public',
+  requiresMediaConsent = false,
+  mediaConsentSlug,
+}: MemorialPageViewProps) {
   const slideshowEnabled = memorial.memorial_slideshow_enabled !== false
   const slideshowIntervalMs = Number(memorial.memorial_slideshow_interval_ms) || 4500
   const memorialVideoLayout = memorial.memorial_video_layout === 'featured' ? 'featured' : 'grid'
@@ -89,7 +101,9 @@ export function MemorialPageView({ memorial, photos, videos, timeline, guestbook
         </section>
 
         <section id="photos" className="space-y-6 print-avoid-break">
-          {photos.length > 0 ? (
+          {requiresMediaConsent && mediaConsentSlug ? (
+            <ProtectedMediaConsentGate slug={mediaConsentSlug} />
+          ) : photos.length > 0 ? (
             <PublicGallery
               photos={photos.map((photo) => ({ ...photo, caption: photo.caption ?? undefined }))}
               slideshowEnabled={slideshowEnabled}
@@ -108,7 +122,7 @@ export function MemorialPageView({ memorial, photos, videos, timeline, guestbook
           )}
         </section>
 
-        <TributeVideos videos={videos} layout={memorialVideoLayout} />
+        {!requiresMediaConsent && <TributeVideos videos={videos} layout={memorialVideoLayout} />}
 
         <TributeTimeline timeline={timeline} />
 

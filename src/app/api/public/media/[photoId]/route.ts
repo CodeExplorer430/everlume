@@ -1,7 +1,9 @@
 import { verifySignedMediaToken } from '@/lib/server/private-media'
 import { createClient } from '@/lib/supabase/server'
 import { canAccessMemorial, memorialRequiresProtectedMedia } from '@/lib/server/page-access'
+import { getMemorialMediaConsentCookieName, tryInsertMemorialMediaAccess, verifyMemorialMediaConsentToken } from '@/lib/server/media-consent'
 import { getE2EPhotoFixtureById } from '@/lib/server/e2e-public-fixtures'
+import { resolveMemorialAccessMode } from '@/lib/server/memorials'
 import { NextRequest, NextResponse } from 'next/server'
 
 type Variant = 'image' | 'thumb'
@@ -29,6 +31,11 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pho
     const access = await canAccessMemorial(fixture.memorial)
     if (!access.allowed) {
       return NextResponse.json({ code: 'FORBIDDEN', message: 'You do not have access to this media.' }, { status: 403 })
+    }
+
+    const consentToken = request.cookies.get(getMemorialMediaConsentCookieName(fixture.memorial.id))?.value
+    if (!verifyMemorialMediaConsentToken(consentToken, fixture.memorial.id, fixture.memorial.password_updated_at || null)) {
+      return NextResponse.json({ code: 'CONSENT_REQUIRED', message: 'Confirm the protected media notice before viewing photos.' }, { status: 403 })
     }
 
     const sourceUrl = variant === 'thumb' ? fixture.photo.thumb_url || fixture.photo.image_url : fixture.photo.image_url
@@ -62,6 +69,11 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pho
     return NextResponse.json({ code: 'FORBIDDEN', message: 'You do not have access to this media.' }, { status: 403 })
   }
 
+  const consentToken = request.cookies.get(getMemorialMediaConsentCookieName(page.id))?.value
+  if (!verifyMemorialMediaConsentToken(consentToken, page.id, page.password_updated_at || null)) {
+    return NextResponse.json({ code: 'CONSENT_REQUIRED', message: 'Confirm the protected media notice before viewing photos.' }, { status: 403 })
+  }
+
   const sourceUrl = variant === 'thumb' ? photo.thumb_url || photo.image_url : photo.image_url
   if (!sourceUrl) {
     return NextResponse.json({ code: 'NOT_FOUND', message: 'Media URL is missing.' }, { status: 404 })
@@ -71,6 +83,16 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pho
   if (!upstream.ok || !upstream.body) {
     return NextResponse.json({ code: 'UPSTREAM_ERROR', message: 'Unable to load media.' }, { status: 502 })
   }
+
+  await tryInsertMemorialMediaAccess({
+    request,
+    memorialId: page.id,
+    photoId: photo.id,
+    accessMode: resolveMemorialAccessMode(page),
+    eventType: 'media_accessed',
+    mediaKind: variant === 'thumb' ? 'gallery_thumb' : 'gallery_image',
+    mediaVariant: variant,
+  })
 
   return new NextResponse(upstream.body, {
     status: 200,

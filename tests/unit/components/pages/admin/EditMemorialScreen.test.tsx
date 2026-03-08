@@ -32,6 +32,10 @@ vi.mock('@/components/admin/AdminPhotoGallery', () => ({
   ),
 }))
 
+vi.mock('@/components/admin/MemorialConsentLog', () => ({
+  MemorialConsentLog: () => <div>Memorial Consent Log Mock</div>,
+}))
+
 describe('EditMemorialScreen', () => {
   beforeEach(() => {
     vi.restoreAllMocks()

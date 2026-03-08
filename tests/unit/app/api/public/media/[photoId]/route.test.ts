@@ -3,6 +3,8 @@ import { GET } from '@/app/api/public/media/[photoId]/route'
 
 const mockVerifyToken = vi.fn()
 const mockCanAccessMemorial = vi.fn()
+const mockVerifyConsent = vi.fn()
+const mockTryInsertMediaAccess = vi.fn()
 const mockPhotoSingle = vi.fn()
 const mockPhotoEq = vi.fn(() => ({ single: mockPhotoSingle }))
 const mockPhotoSelect = vi.fn(() => ({ eq: mockPhotoEq }))
@@ -12,6 +14,12 @@ vi.stubGlobal('fetch', fetchMock)
 
 vi.mock('@/lib/server/private-media', () => ({
   verifySignedMediaToken: (...args: unknown[]) => mockVerifyToken(...args),
+}))
+
+vi.mock('@/lib/server/media-consent', () => ({
+  getMemorialMediaConsentCookieName: (memorialId: string) => `everlume_memorial_media_consent_${memorialId}`,
+  verifyMemorialMediaConsentToken: (...args: unknown[]) => mockVerifyConsent(...args),
+  tryInsertMemorialMediaAccess: (...args: unknown[]) => mockTryInsertMediaAccess(...args),
 }))
 
 vi.mock('@/lib/server/page-access', () => ({
@@ -32,8 +40,11 @@ describe('GET /api/public/media/[photoId]', () => {
   beforeEach(() => {
     mockVerifyToken.mockReset()
     mockCanAccessMemorial.mockReset()
+    mockVerifyConsent.mockReset()
+    mockTryInsertMediaAccess.mockReset()
     mockPhotoSingle.mockReset()
     fetchMock.mockReset()
+    mockVerifyConsent.mockReturnValue(true)
   })
 
   afterEach(() => {
@@ -112,6 +123,29 @@ describe('GET /api/public/media/[photoId]', () => {
     expect(res.status).toBe(404)
   })
 
+  it('returns 403 when protected media consent is missing', async () => {
+    mockVerifyToken.mockReturnValue(true)
+    mockPhotoSingle.mockResolvedValue({
+      data: {
+        id: 'photo-1',
+        image_url: 'https://example.com/photo.jpg',
+        thumb_url: null,
+        pages: { id: 'page-1', owner_id: 'owner-1', privacy: 'private', access_mode: 'password', password_updated_at: '2026-03-01T00:00:00.000Z' },
+      },
+    })
+    mockCanAccessMemorial.mockResolvedValue({ allowed: true, requiresPassword: false })
+    mockVerifyConsent.mockReturnValue(false)
+
+    const req = new NextRequest('http://localhost/api/public/media/photo-1?token=valid')
+    const res = await GET(req, { params: Promise.resolve({ photoId: 'photo-1' }) })
+
+    expect(res.status).toBe(403)
+    await expect(res.json()).resolves.toMatchObject({
+      code: 'CONSENT_REQUIRED',
+    })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
   it('returns 502 when the upstream image fetch fails', async () => {
     mockVerifyToken.mockReturnValue(true)
     mockPhotoSingle.mockResolvedValue({
@@ -155,6 +189,14 @@ describe('GET /api/public/media/[photoId]', () => {
     expect(fetchMock).toHaveBeenCalledWith('https://example.com/photo-thumb.jpg', { cache: 'no-store' })
     expect(res.status).toBe(200)
     expect(res.headers.get('content-type')).toBe('image/webp')
+    expect(mockTryInsertMediaAccess).toHaveBeenCalledWith(
+      expect.objectContaining({
+        memorialId: 'page-1',
+        photoId: 'photo-1',
+        eventType: 'media_accessed',
+        mediaKind: 'gallery_thumb',
+      })
+    )
   })
 
   it('allows password-protected memorial media after unlock access is granted', async () => {

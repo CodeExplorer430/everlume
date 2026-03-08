@@ -53,6 +53,18 @@ type RedirectRow = {
   created_at: string
 }
 
+type MediaConsentRow = {
+  id: string
+  event_type: 'consent_granted' | 'media_accessed'
+  access_mode: 'public' | 'private' | 'password'
+  consent_source: string
+  media_kind: string | null
+  media_variant: string | null
+  ip_hash: string
+  user_agent_hash: string
+  created_at: string
+}
+
 type MemorialRow = {
   id: string
   title: string
@@ -89,6 +101,7 @@ export function DataExport({ memorialId, memorialTitle }: DataExportProps) {
   const [loadingPhotos, setLoadingPhotos] = useState(false)
   const [loadingZip, setLoadingZip] = useState(false)
   const [loadingPackage, setLoadingPackage] = useState(false)
+  const [loadingConsent, setLoadingConsent] = useState(false)
   const [noticeMessage, setNoticeMessage] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
@@ -244,13 +257,14 @@ export function DataExport({ memorialId, memorialTitle }: DataExportProps) {
     setErrorMessage(null)
 
     try {
-      const [memorialPayload, photosPayload, videosPayload, timelinePayload, guestbookPayload, redirectsPayload] = await Promise.all([
+      const [memorialPayload, photosPayload, videosPayload, timelinePayload, guestbookPayload, redirectsPayload, consentPayload] = await Promise.all([
         readJsonOrThrow<{ memorial?: MemorialRow }>(await fetch(`/api/admin/memorials/${memorialId}`, { cache: 'no-store' }), 'Unable to load memorial details.'),
         readJsonOrThrow<{ photos?: PhotoRow[] }>(await fetch(`/api/admin/memorials/${memorialId}/photos`, { cache: 'no-store' }), 'Unable to load photos.'),
         readJsonOrThrow<{ videos?: VideoRow[] }>(await fetch(`/api/admin/memorials/${memorialId}/videos`, { cache: 'no-store' }), 'Unable to load videos.'),
         readJsonOrThrow<{ events?: TimelineRow[] }>(await fetch(`/api/admin/memorials/${memorialId}/timeline`, { cache: 'no-store' }), 'Unable to load timeline events.'),
         readJsonOrThrow<{ entries?: GuestbookRow[] }>(await fetch(`/api/admin/memorials/${memorialId}/guestbook`, { cache: 'no-store' }), 'Unable to load guestbook entries.'),
         readJsonOrThrow<{ redirects?: RedirectRow[] }>(await fetch(`/api/admin/memorials/${memorialId}/redirects`, { cache: 'no-store' }), 'Unable to load redirects.'),
+        readJsonOrThrow<{ logs?: MediaConsentRow[] }>(await fetch(`/api/admin/memorials/${memorialId}/media-consent`, { cache: 'no-store' }), 'Unable to load protected media consent records.'),
       ])
 
       const memorial = memorialPayload.memorial
@@ -269,6 +283,7 @@ export function DataExport({ memorialId, memorialTitle }: DataExportProps) {
           timeline: timelinePayload.events ?? [],
           guestbook: guestbookPayload.entries ?? [],
           redirects: redirectsPayload.redirects ?? [],
+          mediaConsent: consentPayload.logs ?? [],
         },
         `${sanitizeFileStem(memorialTitle)}_memorial_package.json`
       )
@@ -277,6 +292,44 @@ export function DataExport({ memorialId, memorialTitle }: DataExportProps) {
       setErrorMessage(`JSON export failed: ${message}`)
     } finally {
       setLoadingPackage(false)
+    }
+  }
+
+  const exportMediaConsent = async () => {
+    setLoadingConsent(true)
+    setNoticeMessage(null)
+    setErrorMessage(null)
+
+    try {
+      const payload = await readJsonOrThrow<{ logs?: MediaConsentRow[] }>(
+        await fetch(`/api/admin/memorials/${memorialId}/media-consent`, { cache: 'no-store' }),
+        'Unable to load protected media consent records.'
+      )
+      const data = payload.logs ?? []
+
+      if (data.length === 0) {
+        setNoticeMessage('No protected media consent records to export.')
+        return
+      }
+
+      const headers = ['Event', 'Media Kind', 'Media Variant', 'Access Mode', 'Consent Source', 'IP Hash', 'User Agent Hash', 'Recorded At']
+      const rows = data.map((entry) => [
+        entry.event_type,
+        entry.media_kind || '',
+        entry.media_variant || '',
+        entry.access_mode,
+        entry.consent_source,
+        entry.ip_hash,
+        entry.user_agent_hash,
+        `"${new Date(entry.created_at).toLocaleString()}"`,
+      ])
+
+      downloadCSV([headers.join(','), ...rows.map((row) => row.join(','))].join('\n'), `${sanitizeFileStem(memorialTitle)}_media_consent.csv`)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Export failed.'
+      setErrorMessage(`Export failed: ${message}`)
+    } finally {
+      setLoadingConsent(false)
     }
   }
 
@@ -299,6 +352,11 @@ export function DataExport({ memorialId, memorialTitle }: DataExportProps) {
         <Button variant="outline" onClick={exportGuestbook} disabled={loadingGuestbook} className="w-full justify-start">
           <FileText className="mr-2 h-4 w-4" />
           {loadingGuestbook ? 'Exporting...' : 'Export Guestbook (CSV)'}
+        </Button>
+
+        <Button variant="outline" onClick={exportMediaConsent} disabled={loadingConsent} className="w-full justify-start">
+          <FileText className="mr-2 h-4 w-4" />
+          {loadingConsent ? 'Exporting...' : 'Export Media Consent (CSV)'}
         </Button>
 
         <Button variant="outline" onClick={exportPhotoMetadata} disabled={loadingPhotos} className="w-full justify-start">

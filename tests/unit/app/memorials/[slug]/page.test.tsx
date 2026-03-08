@@ -4,6 +4,8 @@ const mockMemorialPageView = vi.fn()
 const mockMemorialUnlockForm = vi.fn()
 const mockCanAccessMemorial = vi.fn()
 const mockCreateSignedMediaToken = vi.fn()
+const mockVerifyMediaConsent = vi.fn()
+const mockCookies = vi.fn()
 const mockNotFound = vi.fn(() => {
   throw new Error('NEXT_NOT_FOUND')
 })
@@ -36,6 +38,10 @@ vi.mock('next/navigation', () => ({
   notFound: () => mockNotFound(),
 }))
 
+vi.mock('next/headers', () => ({
+  cookies: () => mockCookies(),
+}))
+
 vi.mock('@/components/pages/public/MemorialPageView', () => ({
   MemorialPageView: (props: unknown) => {
     mockMemorialPageView(props)
@@ -60,6 +66,11 @@ vi.mock('@/lib/server/page-access', () => ({
 
 vi.mock('@/lib/server/private-media', () => ({
   createSignedMediaToken: (...args: unknown[]) => mockCreateSignedMediaToken(...args),
+}))
+
+vi.mock('@/lib/server/media-consent', () => ({
+  getMemorialMediaConsentCookieName: (memorialId: string) => `everlume_memorial_media_consent_${memorialId}`,
+  verifyMemorialMediaConsentToken: (...args: unknown[]) => mockVerifyMediaConsent(...args),
 }))
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -95,6 +106,8 @@ describe('/memorials/[slug] page', () => {
     mockMemorialUnlockForm.mockReset()
     mockCanAccessMemorial.mockReset()
     mockCreateSignedMediaToken.mockReset()
+    mockVerifyMediaConsent.mockReset()
+    mockCookies.mockReset()
     mockNotFound.mockClear()
     mockPageSingle.mockReset()
     mockPhotosOrder.mockReset()
@@ -108,6 +121,10 @@ describe('/memorials/[slug] page', () => {
         memorial_slideshow_interval_ms: 4500,
         memorial_video_layout: 'grid',
       },
+    })
+    mockVerifyMediaConsent.mockReturnValue(true)
+    mockCookies.mockResolvedValue({
+      get: vi.fn(() => ({ value: 'valid-consent-token' })),
     })
   })
 
@@ -228,6 +245,35 @@ describe('/memorials/[slug] page', () => {
             thumb_url: '/api/public/media/photo-1?variant=thumb&token=photo-1-thumb-token',
           }),
         ],
+      })
+    )
+  })
+
+  it('requires explicit media consent before protected media is rendered', async () => {
+    mockPageSingle.mockResolvedValue({
+      data: { ...publicPage, access_mode: 'password', privacy: 'private', password_updated_at: '2026-03-01T00:00:00.000Z' },
+    })
+    mockCanAccessMemorial.mockResolvedValue({ allowed: true, requiresPassword: false })
+    mockVerifyMediaConsent.mockReturnValue(false)
+    mockPhotosOrder.mockResolvedValue({ data: [{ id: 'photo-1', page_id: 'page-1', image_url: '/img.jpg', thumb_url: '/thumb.jpg', caption: null }] })
+    mockGuestbookOrder.mockResolvedValue({ data: [] })
+    mockTimelineOrder.mockResolvedValue({ data: [] })
+    mockVideosOrder.mockResolvedValue({ data: [{ id: 'v1', provider_id: 'abcdefghijk', title: 'Memories' }] })
+
+    const mod = await import('@/app/memorials/[slug]/page')
+    const node = await mod.default({ params: Promise.resolve({ slug: 'jane' }) })
+    render(node)
+
+    expect(mockCreateSignedMediaToken).not.toHaveBeenCalled()
+    expect(mockMemorialPageView).toHaveBeenCalledWith(
+      expect.objectContaining({
+        requiresMediaConsent: true,
+        mediaConsentSlug: 'jane',
+        memorial: expect.objectContaining({
+          hero_image_url: null,
+        }),
+        photos: [],
+        videos: [],
       })
     )
   })

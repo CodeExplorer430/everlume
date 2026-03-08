@@ -47,6 +47,26 @@ describe('DataExport', () => {
           { status: 200 }
         )
       }
+      if (url === '/api/admin/memorials/page-1/media-consent') {
+        return new Response(
+          JSON.stringify({
+            logs: [
+              {
+                id: 'c1',
+                event_type: 'consent_granted',
+                access_mode: 'password',
+                consent_source: 'protected_media_gate',
+                media_kind: null,
+                media_variant: null,
+                ip_hash: 'iphash',
+                user_agent_hash: 'uahash',
+                created_at: '2026-01-01T00:00:00.000Z',
+              },
+            ],
+          }),
+          { status: 200 }
+        )
+      }
       return new Response(JSON.stringify({}), { status: 200 })
     })
 
@@ -63,8 +83,13 @@ describe('DataExport', () => {
       expect(fetchMock).toHaveBeenCalledWith('/api/admin/memorials/page-1/photos', expect.anything())
     })
 
-    expect(URL.createObjectURL).toHaveBeenCalledTimes(2)
-    expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledTimes(2)
+    await user.click(screen.getByRole('button', { name: /Export Media Consent/i }))
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('/api/admin/memorials/page-1/media-consent', expect.anything())
+    })
+
+    expect(URL.createObjectURL).toHaveBeenCalledTimes(3)
+    expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledTimes(3)
   })
 
   it('exports a memorial json package with page, timeline, videos, guestbook, photos, and redirects', async () => {
@@ -101,6 +126,9 @@ describe('DataExport', () => {
       if (url === '/api/admin/memorials/page-1/redirects') {
         return new Response(JSON.stringify({ redirects: [{ id: 'r1', shortcode: 'jane', target_url: 'https://example.com/memorials/jane-doe', print_status: 'verified', last_verified_at: '2026-01-04T00:00:00.000Z', is_active: true, created_at: '2026-01-04T00:00:00.000Z' }] }), { status: 200 })
       }
+      if (url === '/api/admin/memorials/page-1/media-consent') {
+        return new Response(JSON.stringify({ logs: [{ id: 'c1', event_type: 'consent_granted', access_mode: 'password', consent_source: 'protected_media_gate', media_kind: null, media_variant: null, ip_hash: 'iphash', user_agent_hash: 'uahash', created_at: '2026-01-05T00:00:00.000Z' }] }), { status: 200 })
+      }
       return new Response(JSON.stringify({}), { status: 200 })
     })
 
@@ -116,6 +144,7 @@ describe('DataExport', () => {
       expect(fetchMock).toHaveBeenCalledWith('/api/admin/memorials/page-1/timeline', expect.anything())
       expect(fetchMock).toHaveBeenCalledWith('/api/admin/memorials/page-1/guestbook', expect.anything())
       expect(fetchMock).toHaveBeenCalledWith('/api/admin/memorials/page-1/redirects', expect.anything())
+      expect(fetchMock).toHaveBeenCalledWith('/api/admin/memorials/page-1/media-consent', expect.anything())
       expect(URL.createObjectURL).toHaveBeenCalled()
     })
 
@@ -127,6 +156,7 @@ describe('DataExport', () => {
     expect(packageText).toContain('"timeline"')
     expect(packageText).toContain('"videos"')
     expect(packageText).toContain('"redirects"')
+    expect(packageText).toContain('"mediaConsent"')
   })
 
   it('shows no-data notice for guestbook export', async () => {
@@ -205,6 +235,9 @@ describe('DataExport', () => {
       }
       if (url === '/api/admin/memorials/page-1/redirects') {
         return new Response(JSON.stringify({ redirects: [] }), { status: 200 })
+      }
+      if (url === '/api/admin/memorials/page-1/media-consent') {
+        return new Response(JSON.stringify({ logs: [] }), { status: 200 })
       }
       return new Response(JSON.stringify({}), { status: 200 })
     })

@@ -58,6 +58,9 @@ test('password memorial unlocks and guestbook submission succeeds', async ({ pag
   await page.getByLabel('Access Password').fill('EverlumeMemory!')
   await page.getByRole('button', { name: /unlock memorial/i }).click()
 
+  await expect(page.getByRole('heading', { name: /media viewing notice/i })).toBeVisible({ timeout: 15_000 })
+  await page.getByRole('button', { name: /continue to protected media/i }).click()
+
   await expect(page.getByRole('heading', { name: /in loving memory of mateo rivera/i })).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText(/This memorial is shared quietly with those who knew Mateo best\./i)).toBeVisible()
   await expect(page.getByText(/Thank you for protecting this space for the family/i)).toBeVisible()

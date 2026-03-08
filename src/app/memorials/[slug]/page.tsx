@@ -1,8 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
+import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
 import { MemorialPageView } from '@/components/pages/public/MemorialPageView'
 import { canAccessMemorial, memorialRequiresProtectedMedia } from '@/lib/server/page-access'
+import { getMemorialMediaConsentCookieName, verifyMemorialMediaConsentToken } from '@/lib/server/media-consent'
 import { toMemorialRecord } from '@/lib/server/memorials'
 import { createSignedMediaToken } from '@/lib/server/private-media'
 import { MemorialUnlockForm } from '@/components/public/MemorialUnlockForm'
@@ -142,9 +144,19 @@ export default async function PublicTributePage({ params }: PageProps) {
     (await supabase!.from('videos').select('*').eq('page_id', memorial.id).order('created_at', { ascending: true })).data ||
     []
 
+  const protectedMediaEnabled = memorialRequiresProtectedMedia(memorial)
+  const cookieStore = protectedMediaEnabled ? await cookies() : null
+  const mediaConsentToken = protectedMediaEnabled ? cookieStore?.get(getMemorialMediaConsentCookieName(memorial.id))?.value : undefined
+  const hasMediaConsent = protectedMediaEnabled
+    ? verifyMemorialMediaConsentToken(mediaConsentToken, memorial.id, memorial.password_updated_at || null)
+    : true
+  const requiresMediaConsent = protectedMediaEnabled && !hasMediaConsent && (Boolean(memorial.hero_image_url) || photos.length > 0 || videos.length > 0)
+
   const resolvedPhotos =
-    memorialRequiresProtectedMedia(memorial)
-      ? photos.map((photo) => {
+    requiresMediaConsent
+      ? []
+      : protectedMediaEnabled
+        ? photos.map((photo) => {
           const imageToken = createSignedMediaToken(photo.id, 'image')
           const thumbToken = createSignedMediaToken(photo.id, 'thumb')
           return {
@@ -153,10 +165,11 @@ export default async function PublicTributePage({ params }: PageProps) {
             thumb_url: `/api/public/media/${photo.id}?variant=thumb&token=${encodeURIComponent(thumbToken)}`,
           }
         })
-      : photos
+        : photos
 
   const resolvedMemorial = {
     ...toMemorialRecord(memorial),
+    hero_image_url: requiresMediaConsent ? null : memorial.hero_image_url,
     memorial_slideshow_enabled:
       memorial.memorial_slideshow_enabled ?? (siteSettings?.memorial_slideshow_enabled !== false),
     memorial_slideshow_interval_ms: memorial.memorial_slideshow_interval_ms ?? (Number(siteSettings?.memorial_slideshow_interval_ms) || 4500),
@@ -168,10 +181,12 @@ export default async function PublicTributePage({ params }: PageProps) {
     <MemorialPageView
       memorial={resolvedMemorial}
       photos={resolvedPhotos}
-      videos={videos}
+      videos={requiresMediaConsent ? [] : videos}
       timeline={timeline}
       guestbook={guestbook}
       accessMode={resolveMemorialAccessMode(memorial)}
+      requiresMediaConsent={requiresMediaConsent}
+      mediaConsentSlug={requiresMediaConsent ? slug : undefined}
     />
   )
 }

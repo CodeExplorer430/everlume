@@ -7,6 +7,7 @@ const mockTributeVideos = vi.fn()
 const mockTributeTimeline = vi.fn()
 const mockTributeGuestbook = vi.fn()
 const mockTributeHero = vi.fn()
+const mockProtectedMediaConsentGate = vi.fn()
 
 vi.mock('@/components/public/MemorialActionBar', () => ({
   MemorialActionBar: (props: unknown) => {
@@ -50,6 +51,13 @@ vi.mock('@/components/public/TributeHero', () => ({
   },
 }))
 
+vi.mock('@/components/public/ProtectedMediaConsentGate', () => ({
+  ProtectedMediaConsentGate: (props: unknown) => {
+    mockProtectedMediaConsentGate(props)
+    return <div data-testid="protected-media-consent-gate" />
+  },
+}))
+
 describe('MemorialPageView', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
@@ -59,6 +67,7 @@ describe('MemorialPageView', () => {
     mockTributeTimeline.mockReset()
     mockTributeGuestbook.mockReset()
     mockTributeHero.mockReset()
+    mockProtectedMediaConsentGate.mockReset()
   })
 
   it('renders empty gallery state when no photos are available', () => {
@@ -130,5 +139,37 @@ describe('MemorialPageView', () => {
       captionStyle: 'classic',
     })
     expect(screen.getByText(/Welcome to the memorial for our loved one\./)).toBeInTheDocument()
+  })
+
+  it('shows the consent gate instead of protected media until consent is granted', () => {
+    render(
+      <MemorialPageView
+        memorial={{
+          id: 'page-1',
+          title: 'In Loving Memory',
+          full_name: 'Jane Doe',
+          dedicationText: null,
+          hero_image_url: null,
+          dob: null,
+          dod: null,
+          memorial_theme: 'classic',
+          memorial_slideshow_enabled: true,
+          memorial_slideshow_interval_ms: 4500,
+          memorial_video_layout: 'featured',
+        }}
+        photos={[]}
+        videos={[]}
+        timeline={[]}
+        guestbook={[]}
+        accessMode="password"
+        requiresMediaConsent
+        mediaConsentSlug="jane-doe"
+      />
+    )
+
+    expect(screen.getByTestId('protected-media-consent-gate')).toBeInTheDocument()
+    expect(mockProtectedMediaConsentGate).toHaveBeenCalledWith({ slug: 'jane-doe' })
+    expect(mockPublicGallery).not.toHaveBeenCalled()
+    expect(mockTributeVideos).not.toHaveBeenCalled()
   })
 })

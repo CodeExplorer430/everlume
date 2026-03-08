@@ -1,7 +1,9 @@
+import { NextRequest } from 'next/server'
 import { GET } from '@/app/api/public/memorials/[slug]/media/route'
 
 const mockCanAccessMemorial = vi.fn()
 const mockCreateSignedMediaToken = vi.fn((...args: unknown[]) => `${args[0] as string}-${args[1] as string}-token`)
+const mockVerifyConsent = vi.fn()
 const mockPageSingle = vi.fn()
 const mockPageEq = vi.fn(() => ({ single: mockPageSingle }))
 const mockPageSelect = vi.fn(() => ({ eq: mockPageEq }))
@@ -19,6 +21,11 @@ vi.mock('@/lib/server/private-media', () => ({
   createSignedMediaToken: (...args: unknown[]) => mockCreateSignedMediaToken(...args),
 }))
 
+vi.mock('@/lib/server/media-consent', () => ({
+  getMemorialMediaConsentCookieName: (memorialId: string) => `everlume_memorial_media_consent_${memorialId}`,
+  verifyMemorialMediaConsentToken: (...args: unknown[]) => mockVerifyConsent(...args),
+}))
+
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
     from: (table: string) => {
@@ -32,8 +39,10 @@ describe('GET /api/public/memorials/[slug]/media', () => {
   beforeEach(() => {
     mockCanAccessMemorial.mockReset()
     mockCreateSignedMediaToken.mockClear()
+    mockVerifyConsent.mockReset()
     mockPageSingle.mockReset()
     mockPhotosOrder.mockReset()
+    mockVerifyConsent.mockReturnValue(true)
   })
 
   afterEach(() => {
@@ -50,8 +59,8 @@ describe('GET /api/public/memorials/[slug]/media', () => {
       error: null,
     })
 
-    const req = new Request('http://localhost/api/public/memorials/legacy/media')
-    const res = await GET(req as never, { params: Promise.resolve({ slug: 'legacy' }) })
+    const req = new NextRequest('http://localhost/api/public/memorials/legacy/media')
+    const res = await GET(req, { params: Promise.resolve({ slug: 'legacy' }) })
 
     expect(res.status).toBe(200)
     const json = await res.json()
@@ -69,8 +78,10 @@ describe('GET /api/public/memorials/[slug]/media', () => {
       error: null,
     })
 
-    const req = new Request('http://localhost/api/public/memorials/private/media')
-    const res = await GET(req as never, { params: Promise.resolve({ slug: 'private' }) })
+    const req = new NextRequest('http://localhost/api/public/memorials/private/media', {
+      headers: { cookie: 'everlume_memorial_media_consent_page-1=valid' },
+    })
+    const res = await GET(req, { params: Promise.resolve({ slug: 'private' }) })
 
     expect(res.status).toBe(200)
     const json = await res.json()
@@ -78,12 +89,28 @@ describe('GET /api/public/memorials/[slug]/media', () => {
     expect(mockCreateSignedMediaToken).toHaveBeenCalledTimes(2)
   })
 
+  it('returns 403 when protected media consent has not been confirmed', async () => {
+    mockPageSingle.mockResolvedValue({ data: { id: 'page-1', owner_id: 'owner-1', privacy: 'private', access_mode: 'password', password_updated_at: '2026-03-01T00:00:00.000Z' } })
+    mockCanAccessMemorial.mockResolvedValue({ allowed: true, requiresPassword: false })
+    mockVerifyConsent.mockReturnValue(false)
+
+    const req = new NextRequest('http://localhost/api/public/memorials/private/media')
+    const res = await GET(req, { params: Promise.resolve({ slug: 'private' }) })
+
+    expect(res.status).toBe(403)
+    await expect(res.json()).resolves.toMatchObject({
+      code: 'CONSENT_REQUIRED',
+      message: 'Confirm the protected media notice before viewing photos.',
+    })
+    expect(mockCreateSignedMediaToken).not.toHaveBeenCalled()
+  })
+
   it('returns 403 when a password memorial has not been unlocked', async () => {
     mockPageSingle.mockResolvedValue({ data: { id: 'page-1', owner_id: 'owner-1', privacy: 'private', access_mode: 'password', password_updated_at: null } })
     mockCanAccessMemorial.mockResolvedValue({ allowed: false, requiresPassword: true })
 
-    const req = new Request('http://localhost/api/public/memorials/protected/media')
-    const res = await GET(req as never, { params: Promise.resolve({ slug: 'protected' }) })
+    const req = new NextRequest('http://localhost/api/public/memorials/protected/media')
+    const res = await GET(req, { params: Promise.resolve({ slug: 'protected' }) })
 
     expect(res.status).toBe(403)
     await expect(res.json()).resolves.toMatchObject({
@@ -96,8 +123,8 @@ describe('GET /api/public/memorials/[slug]/media', () => {
     mockPageSingle.mockResolvedValue({ data: { id: 'page-1', owner_id: 'owner-1', privacy: 'private', access_mode: 'private', password_updated_at: null } })
     mockCanAccessMemorial.mockResolvedValue({ allowed: false, requiresPassword: false })
 
-    const req = new Request('http://localhost/api/public/memorials/private/media')
-    const res = await GET(req as never, { params: Promise.resolve({ slug: 'private' }) })
+    const req = new NextRequest('http://localhost/api/public/memorials/private/media')
+    const res = await GET(req, { params: Promise.resolve({ slug: 'private' }) })
 
     expect(res.status).toBe(403)
     await expect(res.json()).resolves.toMatchObject({
@@ -116,8 +143,10 @@ describe('GET /api/public/memorials/[slug]/media', () => {
       error: null,
     })
 
-    const req = new Request('http://localhost/api/public/memorials/legacy-private/media')
-    const res = await GET(req as never, { params: Promise.resolve({ slug: 'legacy-private' }) })
+    const req = new NextRequest('http://localhost/api/public/memorials/legacy-private/media', {
+      headers: { cookie: 'everlume_memorial_media_consent_page-1=valid' },
+    })
+    const res = await GET(req, { params: Promise.resolve({ slug: 'legacy-private' }) })
 
     expect(res.status).toBe(200)
     const json = await res.json()
@@ -128,8 +157,8 @@ describe('GET /api/public/memorials/[slug]/media', () => {
     vi.stubEnv('E2E_PUBLIC_FIXTURES', '1')
     mockCanAccessMemorial.mockResolvedValue({ allowed: true, requiresPassword: false })
 
-    const req = new Request('http://localhost/api/public/memorials/e2e-public-memorial/media')
-    const res = await GET(req as never, { params: Promise.resolve({ slug: 'e2e-public-memorial' }) })
+    const req = new NextRequest('http://localhost/api/public/memorials/e2e-public-memorial/media')
+    const res = await GET(req, { params: Promise.resolve({ slug: 'e2e-public-memorial' }) })
 
     expect(res.status).toBe(200)
     const json = await res.json()
@@ -143,8 +172,8 @@ describe('GET /api/public/memorials/[slug]/media', () => {
     vi.stubEnv('E2E_PUBLIC_FIXTURES', '1')
     mockCanAccessMemorial.mockResolvedValue({ allowed: false, requiresPassword: true })
 
-    const req = new Request('http://localhost/api/public/memorials/e2e-password-memorial/media')
-    const res = await GET(req as never, { params: Promise.resolve({ slug: 'e2e-password-memorial' }) })
+    const req = new NextRequest('http://localhost/api/public/memorials/e2e-password-memorial/media')
+    const res = await GET(req, { params: Promise.resolve({ slug: 'e2e-password-memorial' }) })
 
     expect(res.status).toBe(403)
     await expect(res.json()).resolves.toMatchObject({
@@ -152,5 +181,19 @@ describe('GET /api/public/memorials/[slug]/media', () => {
       message: 'This memorial must be unlocked before media can be viewed.',
     })
     expect(mockPageSingle).not.toHaveBeenCalled()
+  })
+
+  it('returns fixture consent requirement before password memorial media can load', async () => {
+    vi.stubEnv('E2E_PUBLIC_FIXTURES', '1')
+    mockCanAccessMemorial.mockResolvedValue({ allowed: true, requiresPassword: false })
+    mockVerifyConsent.mockReturnValue(false)
+
+    const req = new NextRequest('http://localhost/api/public/memorials/e2e-password-memorial/media')
+    const res = await GET(req, { params: Promise.resolve({ slug: 'e2e-password-memorial' }) })
+
+    expect(res.status).toBe(403)
+    await expect(res.json()).resolves.toMatchObject({
+      code: 'CONSENT_REQUIRED',
+    })
   })
 })

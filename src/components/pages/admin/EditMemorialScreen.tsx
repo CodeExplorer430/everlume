@@ -9,6 +9,7 @@ import { DataExport } from '@/components/admin/DataExport'
 import { AdminMemorialInfo } from '@/components/admin/AdminMemorialInfo'
 import { AdminPhotoGallery } from '@/components/admin/AdminPhotoGallery'
 import { AdminQRCodeSection } from '@/components/admin/AdminQRCodeSection'
+import { MemorialConsentLog } from '@/components/admin/MemorialConsentLog'
 import { ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 
@@ -172,6 +173,8 @@ export function EditMemorialScreen({ memorialId }: EditMemorialScreenProps) {
             </div>
             <DataExport memorialId={memorialId} memorialTitle={memorial.title} />
           </section>
+
+          <MemorialConsentLog memorialId={memorialId} />
 
           <section className="space-y-4">
             <h3 className="px-1 text-base font-semibold">Upload Photos</h3>
