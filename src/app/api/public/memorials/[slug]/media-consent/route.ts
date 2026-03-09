@@ -34,7 +34,12 @@ export async function POST(request: NextRequest, context: { params: Promise<{ sl
     const response = NextResponse.json({ ok: true }, { status: 200 })
     response.cookies.set(
       getMemorialMediaConsentCookieName(fixture.memorial.id),
-      createMemorialMediaConsentToken(fixture.memorial.id, fixture.memorial.password_updated_at || null),
+      createMemorialMediaConsentToken({
+        memorialId: fixture.memorial.id,
+        passwordUpdatedAt: fixture.memorial.password_updated_at || null,
+        consentVersion: fixture.siteSettings?.protected_media_consent_version || 1,
+        consentRevokedAt: fixture.memorial.media_consent_revoked_at || null,
+      }),
       {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -49,8 +54,14 @@ export async function POST(request: NextRequest, context: { params: Promise<{ sl
   const supabase = await createClient()
   const { data: memorial } = await supabase
     .from('pages')
-    .select('id, owner_id, slug, privacy, access_mode, password_updated_at')
+    .select('id, owner_id, slug, privacy, access_mode, password_updated_at, media_consent_revoked_at')
     .eq('slug', parsedParams.data.slug)
+    .single()
+
+  const { data: siteSettings } = await supabase
+    .from('site_settings')
+    .select('protected_media_consent_version')
+    .eq('id', 1)
     .single()
 
   if (!memorial) {
@@ -72,6 +83,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ sl
       request,
       memorialId: memorial.id,
       accessMode,
+      consentVersion: Number(siteSettings?.protected_media_consent_version) || 1,
       eventType: 'consent_granted',
     })
   } catch (error) {
@@ -82,7 +94,12 @@ export async function POST(request: NextRequest, context: { params: Promise<{ sl
   const response = NextResponse.json({ ok: true }, { status: 200 })
   response.cookies.set(
     getMemorialMediaConsentCookieName(memorial.id),
-    createMemorialMediaConsentToken(memorial.id, memorial.password_updated_at || null),
+    createMemorialMediaConsentToken({
+      memorialId: memorial.id,
+      passwordUpdatedAt: memorial.password_updated_at || null,
+      consentVersion: Number(siteSettings?.protected_media_consent_version) || 1,
+      consentRevokedAt: memorial.media_consent_revoked_at || null,
+    }),
     {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

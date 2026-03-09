@@ -8,6 +8,7 @@ const mockTryInsertMediaAccess = vi.fn()
 const mockPhotoSingle = vi.fn()
 const mockPhotoEq = vi.fn(() => ({ single: mockPhotoSingle }))
 const mockPhotoSelect = vi.fn(() => ({ eq: mockPhotoEq }))
+const mockSiteSettingsSingle = vi.fn()
 const fetchMock = vi.fn()
 
 vi.stubGlobal('fetch', fetchMock)
@@ -30,9 +31,21 @@ vi.mock('@/lib/server/page-access', () => ({
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
-    from: () => ({
-      select: mockPhotoSelect,
-    }),
+    from: (table: string) => {
+      if (table === 'site_settings') {
+        return {
+          select: () => ({
+            eq: () => ({
+              single: mockSiteSettingsSingle,
+            }),
+          }),
+        }
+      }
+
+      return {
+        select: mockPhotoSelect,
+      }
+    },
   }),
 }))
 
@@ -43,8 +56,10 @@ describe('GET /api/public/media/[photoId]', () => {
     mockVerifyConsent.mockReset()
     mockTryInsertMediaAccess.mockReset()
     mockPhotoSingle.mockReset()
+    mockSiteSettingsSingle.mockReset()
     fetchMock.mockReset()
     mockVerifyConsent.mockReturnValue(true)
+    mockSiteSettingsSingle.mockResolvedValue({ data: { protected_media_consent_version: 2 } })
   })
 
   afterEach(() => {
@@ -77,7 +92,7 @@ describe('GET /api/public/media/[photoId]', () => {
         id: 'photo-1',
         image_url: 'https://example.com/photo.jpg',
         thumb_url: null,
-        pages: { id: 'page-1', owner_id: 'owner-1', privacy: 'public', access_mode: 'public', password_updated_at: null },
+        pages: { id: 'page-1', owner_id: 'owner-1', privacy: 'public', access_mode: 'public', password_updated_at: null, media_consent_revoked_at: null },
       },
     })
 
@@ -94,7 +109,7 @@ describe('GET /api/public/media/[photoId]', () => {
         id: 'photo-1',
         image_url: 'https://example.com/photo.jpg',
         thumb_url: null,
-        pages: { id: 'page-1', owner_id: 'owner-1', privacy: 'private', access_mode: 'private', password_updated_at: null },
+        pages: { id: 'page-1', owner_id: 'owner-1', privacy: 'private', access_mode: 'private', password_updated_at: null, media_consent_revoked_at: null },
       },
     })
     mockCanAccessMemorial.mockResolvedValue({ allowed: false, requiresPassword: false })
@@ -112,7 +127,7 @@ describe('GET /api/public/media/[photoId]', () => {
         id: 'photo-1',
         image_url: null,
         thumb_url: null,
-        pages: { id: 'page-1', owner_id: 'owner-1', privacy: 'private', access_mode: 'private', password_updated_at: null },
+        pages: { id: 'page-1', owner_id: 'owner-1', privacy: 'private', access_mode: 'private', password_updated_at: null, media_consent_revoked_at: null },
       },
     })
     mockCanAccessMemorial.mockResolvedValue({ allowed: true, requiresPassword: false })
@@ -130,7 +145,7 @@ describe('GET /api/public/media/[photoId]', () => {
         id: 'photo-1',
         image_url: 'https://example.com/photo.jpg',
         thumb_url: null,
-        pages: { id: 'page-1', owner_id: 'owner-1', privacy: 'private', access_mode: 'password', password_updated_at: '2026-03-01T00:00:00.000Z' },
+        pages: { id: 'page-1', owner_id: 'owner-1', privacy: 'private', access_mode: 'password', password_updated_at: '2026-03-01T00:00:00.000Z', media_consent_revoked_at: null },
       },
     })
     mockCanAccessMemorial.mockResolvedValue({ allowed: true, requiresPassword: false })
@@ -153,7 +168,7 @@ describe('GET /api/public/media/[photoId]', () => {
         id: 'photo-1',
         image_url: 'https://example.com/photo.jpg',
         thumb_url: null,
-        pages: { id: 'page-1', owner_id: 'owner-1', privacy: 'private', access_mode: 'private', password_updated_at: null },
+        pages: { id: 'page-1', owner_id: 'owner-1', privacy: 'private', access_mode: 'private', password_updated_at: null, media_consent_revoked_at: null },
       },
     })
     mockCanAccessMemorial.mockResolvedValue({ allowed: true, requiresPassword: false })
@@ -172,7 +187,7 @@ describe('GET /api/public/media/[photoId]', () => {
         id: 'photo-1',
         image_url: 'https://example.com/photo.jpg',
         thumb_url: 'https://example.com/photo-thumb.jpg',
-        pages: { id: 'page-1', owner_id: 'owner-1', privacy: 'private', access_mode: 'private', password_updated_at: null },
+        pages: { id: 'page-1', owner_id: 'owner-1', privacy: 'private', access_mode: 'private', password_updated_at: null, media_consent_revoked_at: null },
       },
     })
     mockCanAccessMemorial.mockResolvedValue({ allowed: true, requiresPassword: false })
@@ -193,6 +208,7 @@ describe('GET /api/public/media/[photoId]', () => {
       expect.objectContaining({
         memorialId: 'page-1',
         photoId: 'photo-1',
+        consentVersion: 2,
         eventType: 'media_accessed',
         mediaKind: 'gallery_thumb',
       })
@@ -206,7 +222,7 @@ describe('GET /api/public/media/[photoId]', () => {
         id: 'photo-1',
         image_url: 'https://example.com/photo.jpg',
         thumb_url: null,
-        pages: { id: 'page-1', owner_id: 'owner-1', privacy: 'private', access_mode: 'password', password_updated_at: '2026-03-01T00:00:00.000Z' },
+        pages: { id: 'page-1', owner_id: 'owner-1', privacy: 'private', access_mode: 'password', password_updated_at: '2026-03-01T00:00:00.000Z', media_consent_revoked_at: null },
       },
     })
     mockCanAccessMemorial.mockResolvedValue({ allowed: true, requiresPassword: false })

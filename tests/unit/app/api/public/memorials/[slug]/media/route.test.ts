@@ -7,6 +7,7 @@ const mockVerifyConsent = vi.fn()
 const mockPageSingle = vi.fn()
 const mockPageEq = vi.fn(() => ({ single: mockPageSingle }))
 const mockPageSelect = vi.fn(() => ({ eq: mockPageEq }))
+const mockSiteSettingsSingle = vi.fn()
 const mockPhotosOrder = vi.fn()
 const mockPhotosEq = vi.fn(() => ({ order: mockPhotosOrder }))
 const mockPhotosSelect = vi.fn(() => ({ eq: mockPhotosEq }))
@@ -29,6 +30,15 @@ vi.mock('@/lib/server/media-consent', () => ({
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
     from: (table: string) => {
+      if (table === 'site_settings') {
+        return {
+          select: () => ({
+            eq: () => ({
+              single: mockSiteSettingsSingle,
+            }),
+          }),
+        }
+      }
       if (table === 'pages') return { select: mockPageSelect }
       return { select: mockPhotosSelect }
     },
@@ -41,8 +51,10 @@ describe('GET /api/public/memorials/[slug]/media', () => {
     mockCreateSignedMediaToken.mockClear()
     mockVerifyConsent.mockReset()
     mockPageSingle.mockReset()
+    mockSiteSettingsSingle.mockReset()
     mockPhotosOrder.mockReset()
     mockVerifyConsent.mockReturnValue(true)
+    mockSiteSettingsSingle.mockResolvedValue({ data: { protected_media_consent_version: 2 } })
   })
 
   afterEach(() => {

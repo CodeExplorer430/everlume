@@ -21,5 +21,6 @@ describe('AdminShell', () => {
     const toggle = screen.getByRole('button', { name: /toggle navigation menu/i })
     await user.click(toggle)
     expect(screen.getByText('Create Memorial')).toBeInTheDocument()
+    expect(screen.getByText('Reports')).toBeInTheDocument()
   })
 })

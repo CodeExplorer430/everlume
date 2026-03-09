@@ -2,9 +2,8 @@ import { POST } from '@/app/api/public/memorials/[slug]/media-consent/route'
 
 const mockCanAccessMemorial = vi.fn()
 const mockInsertMemorialMediaConsent = vi.fn()
-const mockSingle = vi.fn()
-const mockEq = vi.fn(() => ({ single: mockSingle }))
-const mockSelect = vi.fn(() => ({ eq: mockEq }))
+const mockPageSingle = vi.fn()
+const mockSiteSettingsSingle = vi.fn()
 
 vi.mock('@/lib/server/page-access', () => ({
   canAccessMemorial: (...args: unknown[]) => mockCanAccessMemorial(...args),
@@ -19,8 +18,12 @@ vi.mock('@/lib/server/media-consent', () => ({
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
-    from: () => ({
-      select: mockSelect,
+    from: (table: string) => ({
+      select: () => ({
+        eq: () => ({
+          single: table === 'site_settings' ? mockSiteSettingsSingle : mockPageSingle,
+        }),
+      }),
     }),
   }),
 }))
@@ -29,7 +32,9 @@ describe('POST /api/public/memorials/[slug]/media-consent', () => {
   beforeEach(() => {
     mockCanAccessMemorial.mockReset()
     mockInsertMemorialMediaConsent.mockReset()
-    mockSingle.mockReset()
+    mockPageSingle.mockReset()
+    mockSiteSettingsSingle.mockReset()
+    mockSiteSettingsSingle.mockResolvedValue({ data: { protected_media_consent_version: 2 } })
   })
 
   afterEach(() => {
@@ -37,7 +42,7 @@ describe('POST /api/public/memorials/[slug]/media-consent', () => {
   })
 
   it('sets a consent cookie and logs the event for protected memorials', async () => {
-    mockSingle.mockResolvedValue({
+    mockPageSingle.mockResolvedValue({
       data: {
         id: 'page-1',
         slug: 'jane',
@@ -57,6 +62,7 @@ describe('POST /api/public/memorials/[slug]/media-consent', () => {
       expect.objectContaining({
         memorialId: 'page-1',
         accessMode: 'password',
+        consentVersion: 2,
         eventType: 'consent_granted',
       })
     )
@@ -71,11 +77,11 @@ describe('POST /api/public/memorials/[slug]/media-consent', () => {
     await expect(res.json()).resolves.toMatchObject({
       code: 'VALIDATION_ERROR',
     })
-    expect(mockSingle).not.toHaveBeenCalled()
+    expect(mockPageSingle).not.toHaveBeenCalled()
   })
 
   it('rejects consent requests for public memorials', async () => {
-    mockSingle.mockResolvedValue({
+    mockPageSingle.mockResolvedValue({
       data: {
         id: 'page-1',
         slug: 'jane',
@@ -96,7 +102,7 @@ describe('POST /api/public/memorials/[slug]/media-consent', () => {
   })
 
   it('returns not found when the memorial does not exist', async () => {
-    mockSingle.mockResolvedValue({ data: null })
+    mockPageSingle.mockResolvedValue({ data: null })
 
     const req = new Request('http://localhost/api/public/memorials/missing/media-consent', { method: 'POST' })
     const res = await POST(req as never, { params: Promise.resolve({ slug: 'missing' }) })
@@ -115,12 +121,12 @@ describe('POST /api/public/memorials/[slug]/media-consent', () => {
     const res = await POST(req as never, { params: Promise.resolve({ slug: 'e2e-password-memorial' }) })
 
     expect(res.status).toBe(200)
-    expect(mockSingle).not.toHaveBeenCalled()
+    expect(mockPageSingle).not.toHaveBeenCalled()
     expect(mockInsertMemorialMediaConsent).not.toHaveBeenCalled()
   })
 
   it('rejects consent when the memorial is not yet unlocked', async () => {
-    mockSingle.mockResolvedValue({
+    mockPageSingle.mockResolvedValue({
       data: {
         id: 'page-1',
         slug: 'jane',
@@ -143,7 +149,7 @@ describe('POST /api/public/memorials/[slug]/media-consent', () => {
   })
 
   it('returns a logging error when the consent event cannot be recorded', async () => {
-    mockSingle.mockResolvedValue({
+    mockPageSingle.mockResolvedValue({
       data: {
         id: 'page-1',
         slug: 'jane',

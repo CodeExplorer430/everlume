@@ -20,6 +20,9 @@ type SiteSettings = {
   memorialSlideshowEnabled: boolean
   memorialSlideshowIntervalMs: number
   memorialVideoLayout: 'grid' | 'featured'
+  protectedMediaConsentTitle: string
+  protectedMediaConsentBody: string
+  protectedMediaConsentVersion: number
 }
 
 export function AdminSettingsScreen() {
@@ -35,6 +38,11 @@ export function AdminSettingsScreen() {
   const [memorialSlideshowEnabled, setMemorialSlideshowEnabled] = useState(true)
   const [memorialSlideshowIntervalMs, setMemorialSlideshowIntervalMs] = useState(4500)
   const [memorialVideoLayout, setMemorialVideoLayout] = useState<'grid' | 'featured'>('grid')
+  const [protectedMediaConsentTitle, setProtectedMediaConsentTitle] = useState('Media Viewing Notice')
+  const [protectedMediaConsentBody, setProtectedMediaConsentBody] = useState(
+    "The family has protected this memorial's photos and videos for respectful viewing. Continuing confirms that access to protected media is recorded for family oversight."
+  )
+  const [protectedMediaConsentVersion, setProtectedMediaConsentVersion] = useState(1)
   const [updatingSiteSettings, setUpdatingSiteSettings] = useState(false)
 
   const fetchRedirects = useCallback(async () => {
@@ -62,6 +70,12 @@ export function AdminSettingsScreen() {
     setMemorialSlideshowEnabled(payload.settings?.memorialSlideshowEnabled !== false)
     setMemorialSlideshowIntervalMs(payload.settings?.memorialSlideshowIntervalMs || 4500)
     setMemorialVideoLayout(payload.settings?.memorialVideoLayout === 'featured' ? 'featured' : 'grid')
+    setProtectedMediaConsentTitle(payload.settings?.protectedMediaConsentTitle || 'Media Viewing Notice')
+    setProtectedMediaConsentBody(
+      payload.settings?.protectedMediaConsentBody ||
+        "The family has protected this memorial's photos and videos for respectful viewing. Continuing confirms that access to protected media is recorded for family oversight."
+    )
+    setProtectedMediaConsentVersion(Number(payload.settings?.protectedMediaConsentVersion) || 1)
   }, [])
 
   useEffect(() => {
@@ -105,7 +119,7 @@ export function AdminSettingsScreen() {
     setCreating(false)
   }
 
-  const updateSiteSettings = async (updates: Partial<SiteSettings>, rollback: () => void) => {
+  const updateSiteSettings = async (updates: Partial<SiteSettings> & { bumpProtectedMediaConsentVersion?: boolean }, rollback: () => void) => {
     if (updatingSiteSettings) return
     setUpdatingSiteSettings(true)
 
@@ -119,9 +133,12 @@ export function AdminSettingsScreen() {
       rollback()
       const payload = (await response.json().catch(() => null)) as { message?: string } | null
       setErrorMessage(payload?.message || 'Unable to update site settings.')
+      setUpdatingSiteSettings(false)
+      return false
     }
 
     setUpdatingSiteSettings(false)
+    return true
   }
 
   const toggleHomeDirectory = async () => {
@@ -159,6 +176,39 @@ export function AdminSettingsScreen() {
         setMemorialVideoLayout(previous.memorialVideoLayout)
       }
     )
+  }
+
+  const saveProtectedMediaConsent = async (republishOnly = false) => {
+    if (updatingSiteSettings) return
+    const previous = {
+      protectedMediaConsentTitle,
+      protectedMediaConsentBody,
+      protectedMediaConsentVersion,
+    }
+
+    if (republishOnly) {
+      setProtectedMediaConsentVersion((current) => current + 1)
+    }
+
+    const ok = await updateSiteSettings(
+      {
+        ...(republishOnly
+          ? { bumpProtectedMediaConsentVersion: true }
+          : {
+              protectedMediaConsentTitle: protectedMediaConsentTitle.trim(),
+              protectedMediaConsentBody: protectedMediaConsentBody.trim(),
+            }),
+      },
+      () => {
+        setProtectedMediaConsentTitle(previous.protectedMediaConsentTitle)
+        setProtectedMediaConsentBody(previous.protectedMediaConsentBody)
+        setProtectedMediaConsentVersion(previous.protectedMediaConsentVersion)
+      }
+    )
+
+    if (ok) {
+      setProtectedMediaConsentVersion((current) => current + 1)
+    }
   }
 
   const updateRedirect = async (
@@ -297,6 +347,54 @@ export function AdminSettingsScreen() {
         <div>
           <Button variant="outline" onClick={saveMemorialPresentation} disabled={updatingSiteSettings}>
             {updatingSiteSettings ? 'Saving...' : 'Save Memorial Presentation'}
+          </Button>
+        </div>
+      </section>
+
+      <section className="surface-card space-y-4 p-6">
+        <div className="space-y-1">
+          <h3 className="text-base font-semibold">Protected Media Consent Notice</h3>
+          <p className="text-sm text-muted-foreground">
+            Visitors must accept this notice before protected memorial media is shown. Saving new copy republishes the notice and invalidates
+            existing protected-media consent cookies.
+          </p>
+          <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Current version {protectedMediaConsentVersion}</p>
+        </div>
+        <div className="grid gap-4">
+          <div>
+            <label htmlFor="protected-media-consent-title" className="mb-1.5 block text-sm font-medium">
+              Notice Title
+            </label>
+            <Input
+              id="protected-media-consent-title"
+              value={protectedMediaConsentTitle}
+              onChange={(e) => setProtectedMediaConsentTitle(e.target.value)}
+              maxLength={120}
+            />
+          </div>
+          <div>
+            <label htmlFor="protected-media-consent-body" className="mb-1.5 block text-sm font-medium">
+              Notice Body
+            </label>
+            <textarea
+              id="protected-media-consent-body"
+              className="form-textarea min-h-32 w-full"
+              value={protectedMediaConsentBody}
+              onChange={(e) => setProtectedMediaConsentBody(e.target.value)}
+              maxLength={800}
+            />
+          </div>
+        </div>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Button
+            variant="outline"
+            onClick={() => void saveProtectedMediaConsent(false)}
+            disabled={updatingSiteSettings || protectedMediaConsentTitle.trim().length < 8 || protectedMediaConsentBody.trim().length < 20}
+          >
+            {updatingSiteSettings ? 'Saving...' : 'Save and Publish New Version'}
+          </Button>
+          <Button variant="ghost" onClick={() => void saveProtectedMediaConsent(true)} disabled={updatingSiteSettings}>
+            {updatingSiteSettings ? 'Saving...' : 'Republish Current Notice'}
           </Button>
         </div>
       </section>

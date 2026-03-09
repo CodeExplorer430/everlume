@@ -15,6 +15,10 @@ interface PageProps {
   params: Promise<{ slug: string }>
 }
 
+const DEFAULT_CONSENT_TITLE = 'Media Viewing Notice'
+const DEFAULT_CONSENT_BODY =
+  "The family has protected this memorial's photos and videos for respectful viewing. Continuing confirms that access to protected media is recorded for family oversight."
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params
   const fixture = getE2EMemorialFixtureBySlug(slug)
@@ -97,7 +101,9 @@ export default async function PublicTributePage({ params }: PageProps) {
     (
       await supabase!
         .from('site_settings')
-        .select('memorial_slideshow_enabled, memorial_slideshow_interval_ms, memorial_video_layout')
+        .select(
+          'memorial_slideshow_enabled, memorial_slideshow_interval_ms, memorial_video_layout, protected_media_consent_title, protected_media_consent_body, protected_media_consent_version'
+        )
         .eq('id', 1)
         .single()
     ).data
@@ -148,7 +154,13 @@ export default async function PublicTributePage({ params }: PageProps) {
   const cookieStore = protectedMediaEnabled ? await cookies() : null
   const mediaConsentToken = protectedMediaEnabled ? cookieStore?.get(getMemorialMediaConsentCookieName(memorial.id))?.value : undefined
   const hasMediaConsent = protectedMediaEnabled
-    ? verifyMemorialMediaConsentToken(mediaConsentToken, memorial.id, memorial.password_updated_at || null)
+    ? verifyMemorialMediaConsentToken(
+        mediaConsentToken,
+        memorial.id,
+        memorial.password_updated_at || null,
+        Number(siteSettings?.protected_media_consent_version) || 1,
+        memorial.media_consent_revoked_at || null
+      )
     : true
   const requiresMediaConsent = protectedMediaEnabled && !hasMediaConsent && (Boolean(memorial.hero_image_url) || photos.length > 0 || videos.length > 0)
 
@@ -187,6 +199,9 @@ export default async function PublicTributePage({ params }: PageProps) {
       accessMode={resolveMemorialAccessMode(memorial)}
       requiresMediaConsent={requiresMediaConsent}
       mediaConsentSlug={requiresMediaConsent ? slug : undefined}
+      mediaConsentTitle={siteSettings?.protected_media_consent_title || DEFAULT_CONSENT_TITLE}
+      mediaConsentBody={siteSettings?.protected_media_consent_body || DEFAULT_CONSENT_BODY}
+      mediaConsentVersion={Number(siteSettings?.protected_media_consent_version) || 1}
     />
   )
 }

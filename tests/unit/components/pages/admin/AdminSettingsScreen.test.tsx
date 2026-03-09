@@ -419,4 +419,82 @@ describe('AdminSettingsScreen', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/admin/redirects', expect.objectContaining({ method: 'POST' }))
     expect(await screen.findByText('/legacy')).toBeInTheDocument()
   })
+
+  it('loads protected media consent settings and saves a new notice version', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url === '/api/admin/redirects') {
+        return new Response(JSON.stringify({ redirects: [] }), { status: 200 })
+      }
+      if (url === '/api/admin/site-settings' && (!init || !init.method)) {
+        return new Response(
+          JSON.stringify({
+            settings: {
+              homeDirectoryEnabled: false,
+              protectedMediaConsentTitle: 'Family Media Notice',
+              protectedMediaConsentBody: 'Original protected media consent body for the memorial family.',
+              protectedMediaConsentVersion: 4,
+            },
+          }),
+          { status: 200 }
+        )
+      }
+      if (url === '/api/admin/site-settings' && init?.method === 'PATCH') {
+        return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      }
+      return new Response(JSON.stringify({}), { status: 200 })
+    })
+
+    const user = userEvent.setup()
+    render(<AdminSettingsScreen />)
+
+    expect(await screen.findByText('Current version 4')).toBeInTheDocument()
+    await user.clear(screen.getByLabelText('Notice Title'))
+    await user.type(screen.getByLabelText('Notice Title'), 'Updated Family Notice')
+    await user.clear(screen.getByLabelText('Notice Body'))
+    await user.type(screen.getByLabelText('Notice Body'), 'Updated protected media consent body for family memorial visitors and invited guests.')
+    await user.click(screen.getByRole('button', { name: 'Save and Publish New Version' }))
+
+    const patchCall = fetchMock.mock.calls.find(([url, init]) => url === '/api/admin/site-settings' && init?.method === 'PATCH')
+    expect(patchCall).toBeTruthy()
+    expect(JSON.parse(String(patchCall?.[1]?.body))).toMatchObject({
+      protectedMediaConsentTitle: 'Updated Family Notice',
+    })
+  })
+
+  it('republishes the current protected media notice without changing the copy', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url === '/api/admin/redirects') {
+        return new Response(JSON.stringify({ redirects: [] }), { status: 200 })
+      }
+      if (url === '/api/admin/site-settings' && (!init || !init.method)) {
+        return new Response(
+          JSON.stringify({
+            settings: {
+              homeDirectoryEnabled: false,
+              protectedMediaConsentTitle: 'Media Viewing Notice',
+              protectedMediaConsentBody: 'Protected media consent body for the memorial family and invited visitors.',
+              protectedMediaConsentVersion: 2,
+            },
+          }),
+          { status: 200 }
+        )
+      }
+      if (url === '/api/admin/site-settings' && init?.method === 'PATCH') {
+        return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      }
+      return new Response(JSON.stringify({}), { status: 200 })
+    })
+
+    const user = userEvent.setup()
+    render(<AdminSettingsScreen />)
+
+    await screen.findByText('Current version 2')
+    await user.click(screen.getByRole('button', { name: 'Republish Current Notice' }))
+
+    const patchCall = fetchMock.mock.calls.find(([url, init]) => url === '/api/admin/site-settings' && init?.method === 'PATCH')
+    expect(patchCall).toBeTruthy()
+    expect(JSON.parse(String(patchCall?.[1]?.body))).toEqual({ bumpProtectedMediaConsentVersion: true })
+  })
 })

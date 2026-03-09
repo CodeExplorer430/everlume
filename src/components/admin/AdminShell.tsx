@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { Menu, LayoutGrid, BookOpenText, Link2, MessageCircle, Users, X, Sparkles } from 'lucide-react'
+import { Menu, LayoutGrid, BookOpenText, Link2, MessageCircle, Users, X, Sparkles, ChartColumn } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils/cn'
 
@@ -12,6 +12,7 @@ const navItems = [
   { href: '/admin/memorials/new', label: 'Create Memorial', icon: BookOpenText },
   { href: '/admin/guestbook', label: 'Guestbook', icon: MessageCircle },
   { href: '/admin/settings', label: 'Short Links', icon: Link2 },
+  { href: '/admin/reports', label: 'Reports', icon: ChartColumn },
   { href: '/admin/users', label: 'Users', icon: Users },
 ]
 

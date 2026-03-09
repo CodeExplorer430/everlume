@@ -34,7 +34,15 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pho
     }
 
     const consentToken = request.cookies.get(getMemorialMediaConsentCookieName(fixture.memorial.id))?.value
-    if (!verifyMemorialMediaConsentToken(consentToken, fixture.memorial.id, fixture.memorial.password_updated_at || null)) {
+    if (
+      !verifyMemorialMediaConsentToken(
+        consentToken,
+        fixture.memorial.id,
+        fixture.memorial.password_updated_at || null,
+        fixture.siteSettings?.protected_media_consent_version || 1,
+        fixture.memorial.media_consent_revoked_at || null
+      )
+    ) {
       return NextResponse.json({ code: 'CONSENT_REQUIRED', message: 'Confirm the protected media notice before viewing photos.' }, { status: 403 })
     }
 
@@ -49,9 +57,14 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pho
   }
 
   const supabase = await createClient()
+  const { data: siteSettings } = await supabase
+    .from('site_settings')
+    .select('protected_media_consent_version')
+    .eq('id', 1)
+    .single()
   const { data: photo } = await supabase
     .from('photos')
-    .select('id, image_url, thumb_url, page_id, pages!inner(id, owner_id, privacy, access_mode, password_updated_at)')
+    .select('id, image_url, thumb_url, page_id, pages!inner(id, owner_id, privacy, access_mode, password_updated_at, media_consent_revoked_at)')
     .eq('id', photoId)
     .single()
 
@@ -70,7 +83,15 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pho
   }
 
   const consentToken = request.cookies.get(getMemorialMediaConsentCookieName(page.id))?.value
-  if (!verifyMemorialMediaConsentToken(consentToken, page.id, page.password_updated_at || null)) {
+  if (
+    !verifyMemorialMediaConsentToken(
+      consentToken,
+      page.id,
+      page.password_updated_at || null,
+      Number(siteSettings?.protected_media_consent_version) || 1,
+      page.media_consent_revoked_at || null
+    )
+  ) {
     return NextResponse.json({ code: 'CONSENT_REQUIRED', message: 'Confirm the protected media notice before viewing photos.' }, { status: 403 })
   }
 
@@ -89,6 +110,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pho
     memorialId: page.id,
     photoId: photo.id,
     accessMode: resolveMemorialAccessMode(page),
+    consentVersion: Number(siteSettings?.protected_media_consent_version) || 1,
     eventType: 'media_accessed',
     mediaKind: variant === 'thumb' ? 'gallery_thumb' : 'gallery_image',
     mediaVariant: variant,

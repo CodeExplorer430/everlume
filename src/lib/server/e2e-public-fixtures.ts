@@ -16,6 +16,7 @@ type FixtureMemorial = {
   access_mode: FixtureAccessMode
   password_hash: string | null
   password_updated_at: string | null
+  media_consent_revoked_at?: string | null
   memorial_theme: 'classic' | 'serene' | 'editorial'
   memorial_slideshow_enabled: boolean
   memorial_slideshow_interval_ms: number
@@ -62,6 +63,9 @@ type FixtureSiteSettings = {
   memorial_slideshow_enabled: boolean
   memorial_slideshow_interval_ms: number
   memorial_video_layout: 'grid' | 'featured'
+  protected_media_consent_title?: string
+  protected_media_consent_body?: string
+  protected_media_consent_version?: number
 }
 
 export type E2EMemorialFixture = {
@@ -100,6 +104,7 @@ const memorialFixtures: E2EMemorialFixture[] = [
       access_mode: 'public',
       password_hash: null,
       password_updated_at: null,
+      media_consent_revoked_at: null,
       memorial_theme: 'serene',
       memorial_slideshow_enabled: true,
       memorial_slideshow_interval_ms: 4200,
@@ -163,6 +168,10 @@ const memorialFixtures: E2EMemorialFixture[] = [
       memorial_slideshow_enabled: true,
       memorial_slideshow_interval_ms: 4200,
       memorial_video_layout: 'featured',
+      protected_media_consent_title: 'Media Viewing Notice',
+      protected_media_consent_body:
+        "The family has protected this memorial's photos and videos for respectful viewing. Continuing confirms that access to protected media is recorded for family oversight.",
+      protected_media_consent_version: 1,
     },
   },
   {
@@ -180,6 +189,7 @@ const memorialFixtures: E2EMemorialFixture[] = [
       access_mode: 'password',
       password_hash: PASSWORD_HASH,
       password_updated_at: PASSWORD_UPDATED_AT,
+      media_consent_revoked_at: null,
       memorial_theme: 'editorial',
       memorial_slideshow_enabled: true,
       memorial_slideshow_interval_ms: 3600,
@@ -228,6 +238,10 @@ const memorialFixtures: E2EMemorialFixture[] = [
       memorial_slideshow_enabled: true,
       memorial_slideshow_interval_ms: 3600,
       memorial_video_layout: 'grid',
+      protected_media_consent_title: 'Media Viewing Notice',
+      protected_media_consent_body:
+        "The family has protected this memorial's photos and videos for respectful viewing. Continuing confirms that access to protected media is recorded for family oversight.",
+      protected_media_consent_version: 1,
     },
     unlockPassword: PASSWORD_MEMORIAL_PASSWORD,
   },
@@ -246,6 +260,7 @@ const memorialFixtures: E2EMemorialFixture[] = [
       access_mode: 'private',
       password_hash: null,
       password_updated_at: null,
+      media_consent_revoked_at: null,
       memorial_theme: 'classic',
       memorial_slideshow_enabled: false,
       memorial_slideshow_interval_ms: 4500,
@@ -261,6 +276,10 @@ const memorialFixtures: E2EMemorialFixture[] = [
       memorial_slideshow_enabled: false,
       memorial_slideshow_interval_ms: 4500,
       memorial_video_layout: 'grid',
+      protected_media_consent_title: 'Media Viewing Notice',
+      protected_media_consent_body:
+        "The family has protected this memorial's photos and videos for respectful viewing. Continuing confirms that access to protected media is recorded for family oversight.",
+      protected_media_consent_version: 1,
     },
   },
 ]
@@ -298,7 +317,7 @@ export function getE2EPhotoFixtureById(photoId: string) {
   for (const fixture of memorialFixtures) {
     const photo = fixture.photos.find((candidate) => candidate.id === photoId)
     if (photo) {
-      return { photo, memorial: fixture.memorial }
+      return { photo, memorial: fixture.memorial, siteSettings: fixture.siteSettings }
     }
   }
 

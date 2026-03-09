@@ -9,23 +9,35 @@ import {
 
 describe('media consent helpers', () => {
   it('creates and verifies a memorial media consent token', () => {
-    const token = createMemorialMediaConsentToken('memorial-1', '2026-03-09T00:00:00.000Z')
+    const token = createMemorialMediaConsentToken({
+      memorialId: 'memorial-1',
+      passwordUpdatedAt: '2026-03-09T00:00:00.000Z',
+      consentVersion: 3,
+      consentRevokedAt: null,
+    })
 
-    expect(verifyMemorialMediaConsentToken(token, 'memorial-1', '2026-03-09T00:00:00.000Z')).toBe(true)
-    expect(verifyMemorialMediaConsentToken(token, 'memorial-1', '2026-03-10T00:00:00.000Z')).toBe(false)
-    expect(verifyMemorialMediaConsentToken(token, 'memorial-2', '2026-03-09T00:00:00.000Z')).toBe(false)
-    expect(verifyMemorialMediaConsentToken('bad-token', 'memorial-1', '2026-03-09T00:00:00.000Z')).toBe(false)
-    expect(verifyMemorialMediaConsentToken(undefined, 'memorial-1', '2026-03-09T00:00:00.000Z')).toBe(false)
+    expect(verifyMemorialMediaConsentToken(token, 'memorial-1', '2026-03-09T00:00:00.000Z', 3, null)).toBe(true)
+    expect(verifyMemorialMediaConsentToken(token, 'memorial-1', '2026-03-10T00:00:00.000Z', 3, null)).toBe(false)
+    expect(verifyMemorialMediaConsentToken(token, 'memorial-2', '2026-03-09T00:00:00.000Z', 3, null)).toBe(false)
+    expect(verifyMemorialMediaConsentToken(token, 'memorial-1', '2026-03-09T00:00:00.000Z', 4, null)).toBe(false)
+    expect(verifyMemorialMediaConsentToken(token, 'memorial-1', '2026-03-09T00:00:00.000Z', 3, '2026-03-09T12:00:00.000Z')).toBe(false)
+    expect(verifyMemorialMediaConsentToken('bad-token', 'memorial-1', '2026-03-09T00:00:00.000Z', 3, null)).toBe(false)
+    expect(verifyMemorialMediaConsentToken(undefined, 'memorial-1', '2026-03-09T00:00:00.000Z', 3, null)).toBe(false)
   })
 
   it('rejects consent tokens outside the valid time window', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-03-09T00:00:00.000Z'))
 
-    const token = createMemorialMediaConsentToken('memorial-1', '2026-03-09T00:00:00.000Z')
+    const token = createMemorialMediaConsentToken({
+      memorialId: 'memorial-1',
+      passwordUpdatedAt: '2026-03-09T00:00:00.000Z',
+      consentVersion: 1,
+      consentRevokedAt: null,
+    })
 
     vi.setSystemTime(new Date('2026-03-09T12:00:01.000Z'))
-    expect(verifyMemorialMediaConsentToken(token, 'memorial-1', '2026-03-09T00:00:00.000Z')).toBe(false)
+    expect(verifyMemorialMediaConsentToken(token, 'memorial-1', '2026-03-09T00:00:00.000Z', 1, null)).toBe(false)
 
     vi.useRealTimers()
   })
@@ -42,6 +54,7 @@ describe('media consent helpers', () => {
       request,
       memorialId: 'memorial-1',
       accessMode: 'password',
+      consentVersion: 2,
       eventType: 'consent_granted',
     })
 
@@ -66,6 +79,7 @@ describe('media consent helpers', () => {
       request,
       memorialId: 'memorial-1',
       accessMode: 'password',
+      consentVersion: 2,
       eventType: 'media_accessed',
       mediaKind: 'gallery_image',
       mediaVariant: 'image',

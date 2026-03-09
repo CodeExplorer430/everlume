@@ -58,6 +58,9 @@ interface MemorialPageViewProps {
   accessMode?: 'public' | 'password' | 'private'
   requiresMediaConsent?: boolean
   mediaConsentSlug?: string
+  mediaConsentTitle?: string
+  mediaConsentBody?: string
+  mediaConsentVersion?: number
 }
 
 export function MemorialPageView({
@@ -69,6 +72,9 @@ export function MemorialPageView({
   accessMode = 'public',
   requiresMediaConsent = false,
   mediaConsentSlug,
+  mediaConsentTitle,
+  mediaConsentBody,
+  mediaConsentVersion,
 }: MemorialPageViewProps) {
   const slideshowEnabled = memorial.memorial_slideshow_enabled !== false
   const slideshowIntervalMs = Number(memorial.memorial_slideshow_interval_ms) || 4500
@@ -102,7 +108,12 @@ export function MemorialPageView({
 
         <section id="photos" className="space-y-6 print-avoid-break">
           {requiresMediaConsent && mediaConsentSlug ? (
-            <ProtectedMediaConsentGate slug={mediaConsentSlug} />
+            <ProtectedMediaConsentGate
+              slug={mediaConsentSlug}
+              title={mediaConsentTitle}
+              body={mediaConsentBody}
+              version={mediaConsentVersion}
+            />
           ) : photos.length > 0 ? (
             <PublicGallery
               photos={photos.map((photo) => ({ ...photo, caption: photo.caption ?? undefined }))}

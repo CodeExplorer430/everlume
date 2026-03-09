@@ -19,6 +19,7 @@ type AuditAction =
   | 'redirect.create'
   | 'redirect.update'
   | 'redirect.delete'
+  | 'media_consent.revoke'
   | 'user.create'
   | 'user.update'
   | 'user.deactivate'

@@ -13,10 +13,18 @@ type MediaConsentRecordInput = {
   request: NextRequest
   memorialId: string
   accessMode: MemorialAccessMode
+  consentVersion: number
   eventType: MediaConsentEventType
   mediaKind?: MediaConsentKind | null
   mediaVariant?: 'image' | 'thumb' | null
   photoId?: string | null
+}
+
+type MediaConsentTokenInput = {
+  memorialId: string
+  passwordUpdatedAt: string | null
+  consentVersion: number
+  consentRevokedAt: string | null
 }
 
 function getConsentSecret() {
@@ -40,20 +48,32 @@ function hashVisitorValue(value: string) {
   return createHmac('sha256', getConsentSecret()).update(value).digest('base64url')
 }
 
-export function createMemorialMediaConsentToken(memorialId: string, passwordUpdatedAt: string | null) {
+export function createMemorialMediaConsentToken({
+  memorialId,
+  passwordUpdatedAt,
+  consentVersion,
+  consentRevokedAt,
+}: MediaConsentTokenInput) {
   const issuedAt = Math.floor(Date.now() / 1000)
   const passwordVersion = Buffer.from(passwordUpdatedAt || 'unset').toString('base64url')
-  const payload = `${COOKIE_VERSION}.${memorialId}.${issuedAt}.${passwordVersion}`
+  const consentRevocationVersion = Buffer.from(consentRevokedAt || 'unset').toString('base64url')
+  const payload = `${COOKIE_VERSION}.${memorialId}.${issuedAt}.${passwordVersion}.${consentVersion}.${consentRevocationVersion}`
   return `${payload}.${signPayload(payload)}`
 }
 
-export function verifyMemorialMediaConsentToken(token: string | undefined, memorialId: string, passwordUpdatedAt: string | null) {
+export function verifyMemorialMediaConsentToken(
+  token: string | undefined,
+  memorialId: string,
+  passwordUpdatedAt: string | null,
+  consentVersion: number,
+  consentRevokedAt: string | null
+) {
   if (!token) return false
 
   const segments = token.split('.')
-  if (segments.length !== 5) return false
+  if (segments.length !== 7) return false
 
-  const [version, tokenMemorialId, issuedAtString, passwordVersionEncoded, signature] = segments
+  const [version, tokenMemorialId, issuedAtString, passwordVersionEncoded, tokenConsentVersionString, consentRevocationVersionEncoded, signature] = segments
   if (version !== COOKIE_VERSION || tokenMemorialId !== memorialId) return false
 
   const issuedAt = Number(issuedAtString)
@@ -66,7 +86,14 @@ export function verifyMemorialMediaConsentToken(token: string | undefined, memor
   const tokenPasswordVersion = Buffer.from(passwordVersionEncoded, 'base64url').toString('utf8')
   if (tokenPasswordVersion !== expectedPasswordVersion) return false
 
-  const payload = `${version}.${tokenMemorialId}.${issuedAtString}.${passwordVersionEncoded}`
+  const tokenConsentVersion = Number(tokenConsentVersionString)
+  if (!Number.isFinite(tokenConsentVersion) || tokenConsentVersion !== consentVersion) return false
+
+  const expectedConsentRevocationVersion = consentRevokedAt || 'unset'
+  const tokenConsentRevocationVersion = Buffer.from(consentRevocationVersionEncoded, 'base64url').toString('utf8')
+  if (tokenConsentRevocationVersion !== expectedConsentRevocationVersion) return false
+
+  const payload = `${version}.${tokenMemorialId}.${issuedAtString}.${passwordVersionEncoded}.${tokenConsentVersionString}.${consentRevocationVersionEncoded}`
   const expectedSignature = signPayload(payload)
   const actualBuffer = Buffer.from(signature)
   const expectedBuffer = Buffer.from(expectedSignature)
@@ -83,11 +110,21 @@ export function getMemorialMediaConsentCookieMaxAge() {
   return COOKIE_MAX_AGE_SECONDS
 }
 
-export function buildMemorialMediaConsentRecord({ request, memorialId, accessMode, eventType, mediaKind = null, mediaVariant = null, photoId = null }: MediaConsentRecordInput) {
+export function buildMemorialMediaConsentRecord({
+  request,
+  memorialId,
+  accessMode,
+  consentVersion,
+  eventType,
+  mediaKind = null,
+  mediaVariant = null,
+  photoId = null,
+}: MediaConsentRecordInput) {
   return {
     page_id: memorialId,
     photo_id: photoId,
     access_mode: accessMode,
+    consent_version: consentVersion,
     event_type: eventType,
     consent_source: 'protected_media_gate',
     media_kind: mediaKind,

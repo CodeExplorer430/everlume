@@ -29,7 +29,15 @@ describe('/api/admin/site-settings', () => {
   })
 
   it('returns settings for authorized viewer', async () => {
-    mockSingle.mockResolvedValue({ data: { home_directory_enabled: true }, error: null })
+    mockSingle.mockResolvedValue({
+      data: {
+        home_directory_enabled: true,
+        protected_media_consent_title: 'Media Viewing Notice',
+        protected_media_consent_body: 'Protected media consent copy for the family memorial.',
+        protected_media_consent_version: 2,
+      },
+      error: null,
+    })
     mockRequireAdminUser.mockResolvedValue({
       ok: true,
       supabase: {
@@ -41,10 +49,24 @@ describe('/api/admin/site-settings', () => {
 
     const res = await GET()
     expect(res.status).toBe(200)
+    await expect(res.json()).resolves.toMatchObject({
+      settings: expect.objectContaining({
+        protectedMediaConsentTitle: 'Media Viewing Notice',
+        protectedMediaConsentVersion: 2,
+      }),
+    })
   })
 
   it('updates settings for authorized admin', async () => {
-    mockSingle.mockResolvedValue({ data: { home_directory_enabled: false }, error: null })
+    mockSingle.mockResolvedValue({
+      data: {
+        home_directory_enabled: false,
+        protected_media_consent_title: 'Media Viewing Notice',
+        protected_media_consent_body: 'Original protected media consent copy for the memorial.',
+        protected_media_consent_version: 1,
+      },
+      error: null,
+    })
     mockUpdateEq.mockResolvedValue({ error: null })
     mockRequireAdminUser.mockResolvedValue({
       ok: true,
@@ -60,7 +82,11 @@ describe('/api/admin/site-settings', () => {
     const req = new Request('http://localhost/api/admin/site-settings', {
       method: 'PATCH',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ homeDirectoryEnabled: true }),
+      body: JSON.stringify({
+        homeDirectoryEnabled: true,
+        protectedMediaConsentTitle: 'Updated Notice',
+        protectedMediaConsentBody: 'Updated protected media consent copy for the memorial family viewers.',
+      }),
     })
 
     const res = await PATCH(req as never)
@@ -73,7 +99,11 @@ describe('/api/admin/site-settings', () => {
         entity: 'site_settings',
         metadata: expect.objectContaining({
           before: expect.objectContaining({ homeDirectoryEnabled: false }),
-          after: expect.objectContaining({ homeDirectoryEnabled: true }),
+          after: expect.objectContaining({
+            homeDirectoryEnabled: true,
+            protectedMediaConsentTitle: 'Updated Notice',
+            protectedMediaConsentVersion: 2,
+          }),
         }),
       })
     )

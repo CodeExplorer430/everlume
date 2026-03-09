@@ -58,6 +58,7 @@ type MediaConsentRow = {
   event_type: 'consent_granted' | 'media_accessed'
   access_mode: 'public' | 'private' | 'password'
   consent_source: string
+  consent_version?: number
   media_kind: string | null
   media_variant: string | null
   ip_hash: string
@@ -312,12 +313,13 @@ export function DataExport({ memorialId, memorialTitle }: DataExportProps) {
         return
       }
 
-      const headers = ['Event', 'Media Kind', 'Media Variant', 'Access Mode', 'Consent Source', 'IP Hash', 'User Agent Hash', 'Recorded At']
+      const headers = ['Event', 'Media Kind', 'Media Variant', 'Access Mode', 'Consent Version', 'Consent Source', 'IP Hash', 'User Agent Hash', 'Recorded At']
       const rows = data.map((entry) => [
         entry.event_type,
         entry.media_kind || '',
         entry.media_variant || '',
         entry.access_mode,
+        String(entry.consent_version || 1),
         entry.consent_source,
         entry.ip_hash,
         entry.user_agent_hash,
