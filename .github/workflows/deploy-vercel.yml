@@ -23,11 +23,19 @@ jobs:
           node-version: '20.x'
           cache: 'npm'
       - run: npm ci
+      - name: Skip preview deploy for Dependabot PRs
+        if: github.actor == 'dependabot[bot]'
+        run: >
+          echo "Skipping Vercel preview for Dependabot pull_request runs because
+          GitHub does not expose VERCEL_* secrets in that context."
       - name: Pull Vercel preview environment
+        if: github.actor != 'dependabot[bot]'
         run: npx vercel@latest pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
       - name: Build preview artifacts
+        if: github.actor != 'dependabot[bot]'
         run: npx vercel@latest build --token=${{ secrets.VERCEL_TOKEN }}
       - name: Deploy preview artifacts
+        if: github.actor != 'dependabot[bot]'
         run: npx vercel@latest deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}

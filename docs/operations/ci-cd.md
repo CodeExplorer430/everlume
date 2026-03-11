@@ -39,6 +39,9 @@ Automated via GitHub Actions + Vercel CLI:
 
 - Pull requests (same-repo branches) -> Preview deployment
 - Pushes to `main`/`master` -> Production deployment
+- Dependabot pull requests skip the live Vercel preview deploy step because
+  GitHub does not expose `VERCEL_*` secrets to Dependabot `pull_request` runs.
+  The preview job should pass with an explicit skip message in that case.
 
 Required GitHub secrets:
 
