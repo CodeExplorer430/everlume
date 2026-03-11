@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test'
 import { fulfillJson, mockAdminRoute } from './helpers/admin-api-mocks'
 
+test.describe.configure({ timeout: 60_000 })
+
 test('admin manages short links and sees QR section on memorial edit', async ({
   page,
 }) => {

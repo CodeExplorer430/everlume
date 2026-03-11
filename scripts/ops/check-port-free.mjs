@@ -4,6 +4,7 @@ import { createServer } from 'node:net'
 
 const portArg = process.argv[2]
 const port = Number(portArg)
+const reuseExistingServer = process.env.PLAYWRIGHT_REUSE_EXISTING_SERVER === '1'
 
 if (!Number.isInteger(port) || port <= 0 || port > 65535) {
   console.error('Usage: node scripts/ops/check-port-free.mjs <port>')
@@ -20,6 +21,13 @@ server.once('error', (err) => {
     'code' in err &&
     err.code === 'EADDRINUSE'
   ) {
+    if (reuseExistingServer) {
+      console.warn(
+        `Port ${port} is already in use on ${host}. Reusing the existing server because PLAYWRIGHT_REUSE_EXISTING_SERVER=1.`
+      )
+      process.exit(0)
+    }
+
     console.error(
       `Port ${port} is already in use on ${host}. Stop the existing process and rerun test:e2e.`
     )

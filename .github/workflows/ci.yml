@@ -107,6 +107,7 @@ jobs:
   e2e_turbopack:
     runs-on: ubuntu-latest
     timeout-minutes: 35
+    continue-on-error: true
     env:
       NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: test_publishable_key
@@ -163,9 +164,9 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [e2e_webpack, e2e_turbopack, e2e_auth]
+    needs: [e2e_webpack, e2e_auth]
     steps:
-      - run: 'echo "e2e alias passed: webpack, turbopack, and auth-path e2e checks succeeded."'
+      - run: 'echo "e2e alias passed: webpack baseline and auth-path e2e checks succeeded."'
 
   a11y:
     runs-on: ubuntu-latest

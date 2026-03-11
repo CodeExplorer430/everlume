@@ -18,15 +18,16 @@ This repository uses a layered strategy:
 - `npm run test:launch-readiness`: run redirect health + short-link QR launch smoke checks
 - `npm run test:a11y`: run Playwright accessibility smoke suite
 - `npm run test:perf`: run Lighthouse CI performance/accessibility budget checks
-- `npm run test:e2e:turbopack`: run e2e against Turbopack dev server (diagnostic mode)
-- `npm run test:all`: run coverage + e2e
+- `npm run test:e2e:turbopack`: run e2e against Turbopack dev server (diagnostic compatibility lane)
+- `npm run test:all`: run the main unit coverage + webpack e2e + auth e2e smoke aggregate
 
 ## E2E Runtime Mode
 
 - Default e2e runner uses webpack-backed Next dev for stability.
 - Default e2e smoke coverage still uses `E2E_BYPASS_ADMIN_AUTH=1` for deterministic admin UI coverage.
 - The dedicated auth lane uses `E2E_FAKE_AUTH=1` and `NEXT_PUBLIC_E2E_FAKE_AUTH=1` to exercise login, deactivated-account rejection, and password reset/setup without depending on hosted Supabase.
-- Turbopack e2e can fail on some environments with LightningCSS/Tailwind module resolution. Keep Turbopack runs as diagnostic mode until upstream/toolchain behavior stabilizes.
+- Turbopack e2e remains non-blocking diagnostic coverage until upstream/toolchain behavior stabilizes.
+- For local debugging, `PLAYWRIGHT_REUSE_EXISTING_SERVER=1` allows the test scripts to reuse an already-running app server instead of failing port preflight.
 
 ## Coverage Policy
 
@@ -88,3 +89,4 @@ Short-link routing behavior is also covered (`GET /r/[code]` active, missing, di
 
 - Unit coverage report uploaded from `coverage/unit`
 - Playwright report and traces uploaded on each CI run
+- Turbopack Playwright reports are still uploaded when the diagnostic lane fails
