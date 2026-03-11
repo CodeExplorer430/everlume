@@ -12,6 +12,20 @@ const redirectSchema = z.object({
   targetUrl: z.string().trim().url(),
 })
 
+function isSchemaMismatch(error: { code?: string } | null) {
+  return error?.code === '42703' || error?.code === '42P01'
+}
+
+type RedirectPayload = {
+  id: string
+  shortcode: string
+  target_url: string
+  print_status: 'unverified' | 'verified'
+  last_verified_at: string | null
+  is_active: boolean
+  created_at: string
+}
+
 export async function GET() {
   const auth = await requireAdminUser({ minRole: 'viewer' })
   if (!auth.ok) return auth.response
@@ -28,10 +42,33 @@ export async function GET() {
   const { data, error } = await query.order('created_at', { ascending: false })
 
   if (error) {
+    if (isSchemaMismatch(error)) {
+      return NextResponse.json(
+        {
+          code: 'SCHEMA_MISMATCH',
+          message:
+            'Database schema is outdated. Run the latest Supabase migrations.',
+        },
+        { status: 500 }
+      )
+    }
     return databaseError('Unable to load redirects.')
   }
 
-  return NextResponse.json({ redirects: data ?? [] }, { status: 200 })
+  const rows = (data ?? []) as Array<Record<string, unknown>>
+  const redirects: RedirectPayload[] = rows.map((item) => ({
+    id: String(item.id),
+    shortcode: String(item.shortcode),
+    target_url: String(item.target_url),
+    print_status:
+      (item.print_status as 'unverified' | 'verified') ?? 'unverified',
+    last_verified_at:
+      typeof item.last_verified_at === 'string' ? item.last_verified_at : null,
+    is_active: item.is_active !== false,
+    created_at: String(item.created_at),
+  }))
+
+  return NextResponse.json({ redirects }, { status: 200 })
 }
 
 export async function POST(request: NextRequest) {
@@ -61,7 +98,7 @@ export async function POST(request: NextRequest) {
   const { supabase, userId } = auth
 
   const { shortcode, targetUrl } = parsed.data
-  const { data, error } = await supabase
+  const primaryInsert = await supabase
     .from('redirects')
     .insert({
       shortcode,
@@ -76,8 +113,36 @@ export async function POST(request: NextRequest) {
     )
     .single()
 
-  if (error) {
-    if (error.code === '23505') {
+  let insertData = primaryInsert.data as Record<string, unknown> | null
+  let insertError = primaryInsert.error
+
+  if (isSchemaMismatch(insertError)) {
+    const fallback = await supabase
+      .from('redirects')
+      .insert({
+        shortcode,
+        target_url: targetUrl,
+        created_by: userId,
+      })
+      .select('id, shortcode, target_url, created_at')
+      .single()
+
+    insertData = fallback.data as Record<string, unknown> | null
+    insertError = fallback.error
+  }
+
+  if (insertError || !insertData) {
+    if (isSchemaMismatch(insertError)) {
+      return NextResponse.json(
+        {
+          code: 'SCHEMA_MISMATCH',
+          message:
+            'Database schema is outdated. Run the latest Supabase migrations.',
+        },
+        { status: 500 }
+      )
+    }
+    if (insertError?.code === '23505') {
       return NextResponse.json(
         {
           code: 'SHORTCODE_EXISTS',
@@ -89,13 +154,27 @@ export async function POST(request: NextRequest) {
     return databaseError('Unable to create redirect right now.')
   }
 
+  const redirectPayload: RedirectPayload = {
+    id: String(insertData.id),
+    shortcode: String(insertData.shortcode),
+    target_url: String(insertData.target_url),
+    print_status:
+      (insertData.print_status as 'unverified' | 'verified') ?? 'unverified',
+    last_verified_at:
+      typeof insertData.last_verified_at === 'string'
+        ? insertData.last_verified_at
+        : null,
+    is_active: insertData.is_active !== false,
+    created_at: String(insertData.created_at),
+  }
+
   await logAdminAudit(supabase, {
     actorId: userId,
     action: 'redirect.create',
     entity: 'redirect',
-    entityId: data.id,
-    metadata: { shortcode: data.shortcode },
+    entityId: redirectPayload.id,
+    metadata: { shortcode: redirectPayload.shortcode },
   })
 
-  return NextResponse.json({ redirect: data }, { status: 201 })
+  return NextResponse.json({ redirect: redirectPayload }, { status: 201 })
 }

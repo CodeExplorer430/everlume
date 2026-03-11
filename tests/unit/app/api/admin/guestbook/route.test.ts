@@ -87,4 +87,41 @@ describe('GET /api/admin/guestbook', () => {
     expect(res.status).toBe(200)
     expect(payload.entries).toEqual([])
   })
+
+  it('returns schema mismatch when pages query uses an outdated schema', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    mockPagesEq.mockResolvedValue({ data: null, error: { code: '42703' } })
+
+    const res = await GET()
+    const payload = await res.json()
+
+    expect(res.status).toBe(500)
+    expect(payload).toEqual({
+      code: 'SCHEMA_MISMATCH',
+      message:
+        'Database schema is outdated. Run the latest Supabase migrations.',
+    })
+  })
+
+  it('returns schema mismatch when guestbook query uses an outdated schema', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    mockPagesEq.mockResolvedValue({
+      data: [{ id: 'page-1', title: 'My Page' }],
+      error: null,
+    })
+    mockGuestbookOrder.mockResolvedValue({
+      data: null,
+      error: { code: '42P01' },
+    })
+
+    const res = await GET()
+    const payload = await res.json()
+
+    expect(res.status).toBe(500)
+    expect(payload).toEqual({
+      code: 'SCHEMA_MISMATCH',
+      message:
+        'Database schema is outdated. Run the latest Supabase migrations.',
+    })
+  })
 })

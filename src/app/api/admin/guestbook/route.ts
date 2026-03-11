@@ -10,6 +10,10 @@ type GuestbookRow = {
   page_id: string
 }
 
+function isSchemaMismatch(error: { code?: string } | null) {
+  return error?.code === '42703' || error?.code === '42P01'
+}
+
 export async function GET() {
   const auth = await requireAdminUser({ minRole: 'viewer' })
   if (!auth.ok) return auth.response
@@ -22,6 +26,16 @@ export async function GET() {
   const { data: ownedPages, error: pagesError } = await pagesQuery
 
   if (pagesError) {
+    if (isSchemaMismatch(pagesError)) {
+      return NextResponse.json(
+        {
+          code: 'SCHEMA_MISMATCH',
+          message:
+            'Database schema is outdated. Run the latest Supabase migrations.',
+        },
+        { status: 500 }
+      )
+    }
     return databaseError('Unable to load guestbook entries.')
   }
 
@@ -39,6 +53,16 @@ export async function GET() {
     .order('created_at', { ascending: false })
 
   if (entriesError) {
+    if (isSchemaMismatch(entriesError)) {
+      return NextResponse.json(
+        {
+          code: 'SCHEMA_MISMATCH',
+          message:
+            'Database schema is outdated. Run the latest Supabase migrations.',
+        },
+        { status: 500 }
+      )
+    }
     return databaseError('Unable to load guestbook entries.')
   }
 
