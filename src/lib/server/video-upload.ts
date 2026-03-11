@@ -27,13 +27,15 @@ export function getVideoTranscodeApiTokenOrThrow() {
 export function getVideoTranscodeCallbackTokenOrThrow() {
   const value = process.env.VIDEO_TRANSCODE_CALLBACK_TOKEN
   if (value && value.trim() !== '') return value
-  throw new Error('[video:transcode-callback] Missing VIDEO_TRANSCODE_CALLBACK_TOKEN')
+  throw new Error(
+    '[video:transcode-callback] Missing VIDEO_TRANSCODE_CALLBACK_TOKEN'
+  )
 }
 
 export function isVideoTranscodeConfigured() {
   return Boolean(
     process.env.VIDEO_TRANSCODE_API_BASE &&
-      process.env.VIDEO_TRANSCODE_API_TOKEN &&
-      process.env.VIDEO_TRANSCODE_CALLBACK_TOKEN
+    process.env.VIDEO_TRANSCODE_API_TOKEN &&
+    process.env.VIDEO_TRANSCODE_CALLBACK_TOKEN
   )
 }

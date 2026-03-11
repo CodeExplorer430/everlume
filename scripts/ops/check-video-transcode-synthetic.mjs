@@ -24,13 +24,17 @@ const callbackUrl = `${appBase}/api/internal/video-transcode/callback`
 function assertStatus(label, actual, expected) {
   const accepted = Array.isArray(expected) ? expected : [expected]
   if (!accepted.includes(actual)) {
-    throw new Error(`${label} expected status ${accepted.join(' or ')}, received ${actual}.`)
+    throw new Error(
+      `${label} expected status ${accepted.join(' or ')}, received ${actual}.`
+    )
   }
 }
 
 async function request(url, options) {
   const response = await fetch(url, options).catch((error) => {
-    throw new Error(`Request failed: ${url} (${error instanceof Error ? error.message : 'unknown error'})`)
+    throw new Error(
+      `Request failed: ${url} (${error instanceof Error ? error.message : 'unknown error'})`
+    )
   })
   return response
 }
@@ -120,10 +124,14 @@ async function main() {
   })
   assertStatus('Callback authorized check', callbackAuthorized.status, 200)
 
-  console.log('Synthetic transcode check passed: health, auth guards, init/start, and callback token validation are working.')
+  console.log(
+    'Synthetic transcode check passed: health, auth guards, init/start, and callback token validation are working.'
+  )
 }
 
 await main().catch((error) => {
-  console.error(error instanceof Error ? error.message : 'Synthetic transcode check failed.')
+  console.error(
+    error instanceof Error ? error.message : 'Synthetic transcode check failed.'
+  )
   process.exit(1)
 })

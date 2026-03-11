@@ -2,10 +2,10 @@ name: Deploy Cloudflare Worker
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: ['main', 'master']
     paths:
-      - "workers/redirector/**"
-      - ".github/workflows/deploy-worker.yml"
+      - 'workers/redirector/**'
+      - '.github/workflows/deploy-worker.yml'
   workflow_dispatch:
 
 concurrency:
