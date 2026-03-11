@@ -92,4 +92,89 @@ describe('ResetPasswordScreen', () => {
     expect(mockUpdateUser).not.toHaveBeenCalled()
     expect(await screen.findByText(/password updated/i)).toBeInTheDocument()
   })
+
+  it('shows the incomplete reset-link warning and disables submission in fake auth mode without email', () => {
+    process.env.NEXT_PUBLIC_E2E_FAKE_AUTH = '1'
+
+    render(<ResetPasswordScreen />)
+
+    expect(
+      screen.getByText(
+        'Reset link is incomplete. Start from the forgot-password screen.'
+      )
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /update password/i })
+    ).toBeDisabled()
+  })
+
+  it('shows the returned auth error when supabase password update fails', async () => {
+    mockUpdateUser.mockResolvedValue({
+      error: { message: 'Password update failed.' },
+    })
+
+    render(<ResetPasswordScreen />)
+
+    fireEvent.change(screen.getByLabelText('New Password'), {
+      target: { value: 'password123' },
+    })
+    fireEvent.change(screen.getByLabelText('Confirm Password'), {
+      target: { value: 'password123' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /update password/i }))
+
+    expect(
+      await screen.findByText('Password update failed.')
+    ).toBeInTheDocument()
+  })
+
+  it('shows the fake auth api error when reset completion fails', async () => {
+    process.env.NEXT_PUBLIC_E2E_FAKE_AUTH = '1'
+    mockSearchParams.set('email', 'pending-admin@everlume.local')
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ message: 'Reset token expired.' }), {
+        status: 400,
+      })
+    )
+
+    render(<ResetPasswordScreen />)
+
+    fireEvent.change(screen.getByLabelText('New Password'), {
+      target: { value: 'ChangedPass1!' },
+    })
+    fireEvent.change(screen.getByLabelText('Confirm Password'), {
+      target: { value: 'ChangedPass1!' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /update password/i }))
+
+    expect(await screen.findByText('Reset token expired.')).toBeInTheDocument()
+  })
+
+  it('shows the saving state while the password update is pending', async () => {
+    let resolveUpdate: ((value: { error: null }) => void) | undefined
+
+    mockUpdateUser.mockReturnValue(
+      new Promise((resolve) => {
+        resolveUpdate = resolve
+      })
+    )
+
+    render(<ResetPasswordScreen />)
+
+    fireEvent.change(screen.getByLabelText('New Password'), {
+      target: { value: 'password123' },
+    })
+    fireEvent.change(screen.getByLabelText('Confirm Password'), {
+      target: { value: 'password123' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /update password/i }))
+
+    expect(
+      screen.getByRole('button', { name: /saving password/i })
+    ).toBeDisabled()
+
+    resolveUpdate?.({ error: null })
+
+    expect(await screen.findByText(/password updated/i)).toBeInTheDocument()
+  })
 })

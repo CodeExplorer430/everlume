@@ -70,14 +70,101 @@ describe('AdminPhotoGallery', () => {
     expect(onRefresh).toHaveBeenCalled()
   })
 
-  it('respects delete confirmation and shows delete API error', async () => {
+  it('renders hero badge for the selected hero image', () => {
+    render(
+      <AdminPhotoGallery
+        photos={[
+          {
+            id: 'photo-1',
+            caption: 'Hero photo',
+            sort_index: 0,
+            image_url: 'https://cdn.example.com/full.jpg',
+            thumb_url: 'https://cdn.example.com/thumb.jpg',
+          },
+        ]}
+        heroImageUrl="https://cdn.example.com/full.jpg"
+        onRefresh={vi.fn()}
+        onSetHero={vi.fn()}
+      />
+    )
+
+    expect(screen.getByText('HERO')).toBeInTheDocument()
+  })
+
+  it('renders the missing-image fallback, disables hero action, and starts editing from the placeholder', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <AdminPhotoGallery
+        photos={[
+          {
+            id: 'photo-1',
+            caption: '',
+            sort_index: 0,
+            image_url: null,
+            thumb_url: null,
+          },
+        ]}
+        heroImageUrl={null}
+        onRefresh={vi.fn()}
+        onSetHero={vi.fn()}
+      />
+    )
+
+    expect(screen.getByText('Missing image URL')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Set as Hero' })).toBeDisabled()
+
+    await user.click(screen.getByText('Add caption...'))
+    expect(screen.getByRole('textbox')).toHaveValue('')
+  })
+
+  it('keeps caption editing open and shows the fallback error when save fails with non-json', async () => {
+    const onRefresh = vi.fn()
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('nope', { status: 500 })
+    )
+
+    const user = userEvent.setup()
+    render(
+      <AdminPhotoGallery
+        photos={[
+          {
+            id: 'photo-1',
+            caption: 'Old caption',
+            sort_index: 0,
+            image_url: 'https://cdn.example.com/full.jpg',
+            thumb_url: 'https://cdn.example.com/thumb.jpg',
+          },
+        ]}
+        heroImageUrl={null}
+        onRefresh={onRefresh}
+        onSetHero={vi.fn()}
+      />
+    )
+
+    await user.click(screen.getByText('Old caption'))
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    expect(
+      await screen.findByText('Unable to update caption.')
+    ).toBeInTheDocument()
+    expect(screen.getByRole('textbox')).toBeInTheDocument()
+    expect(onRefresh).not.toHaveBeenCalled()
+  })
+
+  it('respects delete confirmation, shows delete API error, then clears it after a successful retry', async () => {
     const onRefresh = vi.fn()
     const confirmMock = vi.spyOn(window, 'confirm')
-    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ message: 'Delete failed' }), {
-        status: 500,
-      })
-    )
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ message: 'Delete failed' }), {
+          status: 500,
+        })
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true }), { status: 200 })
+      )
 
     const user = userEvent.setup()
     render(
@@ -108,5 +195,14 @@ describe('AdminPhotoGallery', () => {
     await user.click(screen.getByRole('button', { name: 'Delete' }))
     expect(await screen.findByText('Delete failed')).toBeInTheDocument()
     expect(onRefresh).not.toHaveBeenCalled()
+
+    confirmMock.mockReturnValueOnce(true)
+    await user.click(screen.getByRole('button', { name: 'Delete' }))
+    await waitFor(() => {
+      expect(onRefresh).toHaveBeenCalledTimes(1)
+    })
+    await waitFor(() => {
+      expect(screen.queryByText('Delete failed')).not.toBeInTheDocument()
+    })
   })
 })
