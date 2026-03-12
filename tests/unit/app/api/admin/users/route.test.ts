@@ -113,6 +113,51 @@ describe('admin users route', () => {
         },
       ],
     })
+    expect(mockListUsers).toHaveBeenCalledTimes(1)
+  })
+
+  it('GET derives active and deactivated account states from auth users and profile flags', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'admin-1' } } })
+    mockProfileSingle.mockResolvedValue({
+      data: { role: 'admin', is_active: true },
+      error: null,
+    })
+    mockServiceProfilesOrder.mockResolvedValue({
+      data: [
+        { id: 'u1', email: 'active@test.dev', is_active: true },
+        { id: 'u2', email: 'inactive@test.dev', is_active: false },
+      ],
+      error: null,
+    })
+    mockListUsers.mockResolvedValue({
+      data: {
+        users: [
+          { id: 'u1', last_sign_in_at: '2026-03-01T00:00:00.000Z' },
+          { id: 'u2', last_sign_in_at: '2026-03-01T00:00:00.000Z' },
+        ],
+      },
+      error: null,
+    })
+
+    const res = await GET()
+
+    expect(res.status).toBe(200)
+    await expect(res.json()).resolves.toEqual({
+      users: [
+        {
+          id: 'u1',
+          email: 'active@test.dev',
+          is_active: true,
+          account_state: 'active',
+        },
+        {
+          id: 'u2',
+          email: 'inactive@test.dev',
+          is_active: false,
+          account_state: 'deactivated',
+        },
+      ],
+    })
   })
 
   it('GET returns a configuration error when service-role auth is unavailable', async () => {

@@ -75,6 +75,9 @@ describe('GET /api/admin/audit-logs', () => {
     const payload = await response.json()
 
     expect(response.status).toBe(200)
+    expect(mockSelect).toHaveBeenCalledWith(
+      'id, actor_id, action, entity, entity_id, metadata, created_at'
+    )
     expect(mockOrder).toHaveBeenCalledWith('created_at', { ascending: false })
     expect(mockLimit).toHaveBeenCalledWith(200)
     expect(payload.logs).toHaveLength(2)
@@ -99,6 +102,22 @@ describe('GET /api/admin/audit-logs', () => {
     })
 
     const response = await GET()
+    await expect(response.json()).resolves.toEqual({ logs: [] })
+    expect(response.status).toBe(200)
+  })
+
+  it('treats a null audit log payload as an empty list', async () => {
+    mockRequireAdminUser.mockResolvedValue({
+      ok: true,
+      supabase: { from: mockFrom },
+    })
+    mockLimit.mockResolvedValue({
+      data: null,
+      error: null,
+    })
+
+    const response = await GET()
+
     await expect(response.json()).resolves.toEqual({ logs: [] })
     expect(response.status).toBe(200)
   })
