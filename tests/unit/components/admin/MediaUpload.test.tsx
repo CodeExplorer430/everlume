@@ -436,4 +436,150 @@ describe('MediaUpload', () => {
     expect(await screen.findByText('Metadata save failed')).toBeInTheDocument()
     expect(onUploadComplete).toHaveBeenCalledTimes(1)
   })
+
+  it('builds the image url from public_id when secure_url is missing', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(
+        new Response(JSON.stringify({ ok: true }), { status: 201 })
+      )
+    let widgetCallback:
+      | ((
+          error: Error | null,
+          result: { event?: string; info?: { [key: string]: unknown } }
+        ) => void)
+      | null = null
+
+    Object.defineProperty(window, 'cloudinary', {
+      value: {
+        createUploadWidget: vi.fn(
+          (_options: Record<string, unknown>, cb: typeof widgetCallback) => {
+            widgetCallback = cb
+            return { open: vi.fn() }
+          }
+        ),
+      },
+      configurable: true,
+    })
+
+    const user = userEvent.setup()
+    render(<MediaUpload memorialId="page-1" onUploadComplete={vi.fn()} />)
+
+    await user.click(
+      screen.getByRole('button', { name: 'Open Cloudinary Uploader' })
+    )
+
+    await act(async () => {
+      await widgetCallback?.(null, {
+        event: 'success',
+        info: {
+          original_filename: 'public-id-only',
+          public_id: 'everlume/page-1/public-id-only',
+        },
+      })
+    })
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/admin/photos',
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.stringContaining(
+          '"imageUrl":"https://res.cloudinary.com/demo-cloud/image/upload/everlume/page-1/public-id-only"'
+        ),
+      })
+    )
+  })
+
+  it('falls back to an empty normalized public id when widget metadata omits both public_id and secure_url', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(
+        new Response(JSON.stringify({ ok: true }), { status: 201 })
+      )
+    let widgetCallback:
+      | ((
+          error: Error | null,
+          result: { event?: string; info?: { [key: string]: unknown } }
+        ) => void)
+      | null = null
+
+    Object.defineProperty(window, 'cloudinary', {
+      value: {
+        createUploadWidget: vi.fn(
+          (_options: Record<string, unknown>, cb: typeof widgetCallback) => {
+            widgetCallback = cb
+            return { open: vi.fn() }
+          }
+        ),
+      },
+      configurable: true,
+    })
+
+    const user = userEvent.setup()
+    render(<MediaUpload memorialId="page-1" onUploadComplete={vi.fn()} />)
+
+    await user.click(
+      screen.getByRole('button', { name: 'Open Cloudinary Uploader' })
+    )
+
+    await act(async () => {
+      await widgetCallback?.(null, {
+        event: 'success',
+        info: {
+          original_filename: 'missing-ids',
+        },
+      })
+    })
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/admin/photos',
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.stringContaining('"cloudinaryPublicId":""'),
+      })
+    )
+  })
+
+  it('shows the generic metadata error when photo registration throws a non-error value', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue('metadata boom')
+    let widgetCallback:
+      | ((
+          error: Error | null,
+          result: { event?: string; info?: { [key: string]: unknown } }
+        ) => void)
+      | null = null
+
+    Object.defineProperty(window, 'cloudinary', {
+      value: {
+        createUploadWidget: vi.fn(
+          (_options: Record<string, unknown>, cb: typeof widgetCallback) => {
+            widgetCallback = cb
+            return { open: vi.fn() }
+          }
+        ),
+      },
+      configurable: true,
+    })
+
+    const user = userEvent.setup()
+    render(<MediaUpload memorialId="page-1" onUploadComplete={vi.fn()} />)
+
+    await user.click(
+      screen.getByRole('button', { name: 'Open Cloudinary Uploader' })
+    )
+
+    await act(async () => {
+      await widgetCallback?.(null, {
+        event: 'success',
+        info: {
+          original_filename: 'memory-photo',
+          public_id: 'everlume/page-1/photo-3',
+        },
+      })
+    })
+
+    expect(
+      await screen.findByText('Failed to save uploaded image metadata.')
+    ).toBeInTheDocument()
+  })
 })

@@ -218,6 +218,42 @@ describe('AdminSettingsScreen', () => {
     expect(await screen.findByText('No redirects created.')).toBeInTheDocument()
   })
 
+  it('falls back to the default redirect load error when the response is not json', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input)
+      if (url === '/api/admin/site-settings') {
+        return new Response(
+          JSON.stringify({ settings: { homeDirectoryEnabled: false } }),
+          { status: 200 }
+        )
+      }
+      return new Response('broken', { status: 503 })
+    })
+
+    render(<AdminSettingsScreen />)
+
+    expect(
+      await screen.findByText('Unable to load redirects.')
+    ).toBeInTheDocument()
+  })
+
+  it('treats a missing redirects payload as an empty list', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input)
+      if (url === '/api/admin/site-settings') {
+        return new Response(
+          JSON.stringify({ settings: { homeDirectoryEnabled: false } }),
+          { status: 200 }
+        )
+      }
+      return new Response(JSON.stringify({}), { status: 200 })
+    })
+
+    render(<AdminSettingsScreen />)
+
+    expect(await screen.findByText('No redirects created.')).toBeInTheDocument()
+  })
+
   it('rolls back homepage directory toggle when API update fails', async () => {
     const fetchMock = vi
       .spyOn(globalThis, 'fetch')
@@ -256,6 +292,37 @@ describe('AdminSettingsScreen', () => {
     )
     expect(await screen.findByText('Update failed')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Disabled' })).toBeInTheDocument()
+  })
+
+  it('falls back to the default site-settings update error when a patch response is not json', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url === '/api/admin/redirects') {
+        return new Response(JSON.stringify({ redirects: [] }), {
+          status: 200,
+        })
+      }
+      if (url === '/api/admin/site-settings' && (!init || !init.method)) {
+        return new Response(
+          JSON.stringify({ settings: { homeDirectoryEnabled: false } }),
+          { status: 200 }
+        )
+      }
+      if (url === '/api/admin/site-settings' && init?.method === 'PATCH') {
+        return new Response('bad upstream', { status: 500 })
+      }
+      return new Response(JSON.stringify({}), { status: 200 })
+    })
+
+    const user = userEvent.setup()
+    render(<AdminSettingsScreen />)
+
+    await screen.findByRole('button', { name: 'Disabled' })
+    await user.click(screen.getByRole('button', { name: 'Disabled' }))
+
+    expect(
+      await screen.findByText('Unable to update site settings.')
+    ).toBeInTheDocument()
   })
 
   it('rolls back memorial slideshow toggle when API update fails', async () => {
@@ -930,6 +997,48 @@ describe('AdminSettingsScreen', () => {
       expect.objectContaining({
         method: 'PATCH',
         body: expect.stringContaining('"memorialSlideshowIntervalMs":2000'),
+      })
+    )
+  })
+
+  it('falls back to the default slideshow interval when the input is cleared before saving', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async (input, init) => {
+        const url = String(input)
+        if (url === '/api/admin/site-settings' && (!init || !init.method)) {
+          return new Response(
+            JSON.stringify({
+              settings: {
+                homeDirectoryEnabled: false,
+                memorialSlideshowEnabled: true,
+                memorialSlideshowIntervalMs: 4500,
+                memorialVideoLayout: 'grid',
+              },
+            }),
+            { status: 200 }
+          )
+        }
+        if (url === '/api/admin/site-settings' && init?.method === 'PATCH') {
+          return new Response(JSON.stringify({ ok: true }), { status: 200 })
+        }
+        return new Response(JSON.stringify({ redirects: [] }), { status: 200 })
+      })
+
+    const user = userEvent.setup()
+    render(<AdminSettingsScreen />)
+
+    await screen.findByText('Memorial Presentation Defaults')
+    await user.clear(screen.getByLabelText('Slideshow Interval (milliseconds)'))
+    await user.click(
+      screen.getByRole('button', { name: 'Save Memorial Presentation' })
+    )
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/admin/site-settings',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: expect.stringContaining('"memorialSlideshowIntervalMs":4500'),
       })
     )
   })

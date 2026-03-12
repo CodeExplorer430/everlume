@@ -154,8 +154,8 @@ describe('UserManagementScreen', () => {
           users: [
             makeUser({
               id: 'u1',
-              email: '',
-              full_name: '',
+              email: null,
+              full_name: null,
               role: 'viewer',
             }),
             makeUser({
@@ -856,6 +856,45 @@ describe('UserManagementScreen', () => {
     expect(
       screen.getByRole('button', { name: 'Reactivate Alex Santos' })
     ).toBeInTheDocument()
+  })
+
+  it('preserves unrelated users when the local deactivate fallback is used', async () => {
+    const confirmMock = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url === '/api/admin/users' && (!init || !init.method)) {
+        return new Response(
+          JSON.stringify({
+            users: [
+              makeUser(),
+              makeUser({
+                id: 'u2',
+                email: 'maria@example.com',
+                full_name: 'Maria Reyes',
+              }),
+            ],
+          }),
+          { status: 200 }
+        )
+      }
+      if (url === '/api/admin/users/u1' && init?.method === 'DELETE') {
+        return new Response(JSON.stringify({}), { status: 200 })
+      }
+      return new Response(JSON.stringify({}), { status: 200 })
+    })
+
+    const user = userEvent.setup()
+    render(<UserManagementScreen />)
+    await screen.findByText('Maria Reyes')
+
+    await user.click(
+      screen.getByRole('button', { name: 'Deactivate Alex Santos' })
+    )
+
+    expect(confirmMock).toHaveBeenCalled()
+    expect(await screen.findByText('User deactivated.')).toBeInTheDocument()
+    expect(screen.getByText('Maria Reyes')).toBeInTheDocument()
+    expect(screen.getByText('maria@example.com')).toBeInTheDocument()
   })
 
   it('preserves unrelated users when deactivation returns an updated user payload', async () => {
