@@ -332,6 +332,67 @@ describe('QRCodeGenerator', () => {
     expect(fillText).toHaveBeenCalledWith('Scan here', 900, 2260)
   })
 
+  it('renders a classic line-frame png export without logo decorations', async () => {
+    mockToString.mockImplementation(
+      (
+        _: string,
+        __: unknown,
+        callback: (err: Error | null, svg: string) => void
+      ) => {
+        callback(null, '<svg><rect /></svg>')
+      }
+    )
+
+    const fillRect = vi.fn()
+    const strokeRect = vi.fn()
+    const drawImage = vi.fn()
+    const fillText = vi.fn()
+    const exportContext = {
+      fillStyle: '',
+      strokeStyle: '',
+      lineWidth: 0,
+      textAlign: '',
+      font: '',
+      fillRect,
+      strokeRect,
+      drawImage,
+      fillText,
+      beginPath: vi.fn(),
+      arc: vi.fn(),
+      fill: vi.fn(),
+      stroke: vi.fn(),
+    }
+
+    const originalGetContext = HTMLCanvasElement.prototype.getContext
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+      function (this: HTMLCanvasElement) {
+        if (this.width === 1800 && this.height === 2400)
+          return exportContext as unknown as CanvasRenderingContext2D
+        return originalGetContext.call(this, '2d')
+      }
+    )
+
+    const user = userEvent.setup()
+    render(
+      <QRCodeGenerator
+        url="https://example.com/r/classic"
+        template="classic"
+        caption="Classic tribute"
+        frameStyle="line"
+      />
+    )
+
+    await waitFor(() => {
+      expect(mockToString).toHaveBeenCalled()
+    })
+
+    await user.click(screen.getByRole('button', { name: /Download PNG/i }))
+    expect(fillRect).toHaveBeenCalled()
+    expect(strokeRect).toHaveBeenCalledTimes(1)
+    expect(drawImage).toHaveBeenCalled()
+    expect(fillText).toHaveBeenCalledWith('Classic tribute', 900, 2260)
+  })
+
   it('does not try to download an svg before qr markup is available', async () => {
     mockToString.mockImplementation(
       (

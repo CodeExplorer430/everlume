@@ -208,6 +208,34 @@ describe('TimelineEditor', () => {
     expect(screen.getByText('Born')).toBeInTheDocument()
   })
 
+  it('removes an event after a successful delete', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/api/admin/memorials/page-8/timeline')) {
+        return new Response(
+          JSON.stringify({
+            events: [{ id: 't1', year: 1990, text: 'Born' }],
+          }),
+          { status: 200 }
+        )
+      }
+      if (url === '/api/admin/timeline/t1' && init?.method === 'DELETE') {
+        return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      }
+      return new Response('{}', { status: 200 })
+    })
+
+    const user = userEvent.setup()
+    render(<TimelineEditor memorialId="page-8" />)
+
+    await screen.findByText('Born')
+    await user.click(
+      screen.getByRole('button', { name: /delete timeline event/i })
+    )
+
+    expect(screen.queryByText('Born')).not.toBeInTheDocument()
+  })
+
   it('shows the fallback delete error for non-json failures and ignores a second delete while pending', async () => {
     const deleteRequest = deferredResponse()
     const fetchMock = vi

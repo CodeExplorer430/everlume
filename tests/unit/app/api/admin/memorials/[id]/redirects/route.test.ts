@@ -262,6 +262,59 @@ describe('GET /api/admin/memorials/[id]/redirects', () => {
     ])
   })
 
+  it('falls back to legacy columns even when ilike and order are unavailable on the fallback query', async () => {
+    const primaryQuery = createOrderedRedirectQuery()
+    primaryQuery.order = vi.fn().mockResolvedValueOnce({
+      data: null,
+      error: { code: '42703' },
+    })
+    mockRedirectsQuery = primaryQuery
+
+    const fallbackQuery = {
+      eq: vi.fn(),
+      data: [
+        {
+          id: 'r2',
+          shortcode: 'legacy',
+          target_url: 'https://example.com/memorials/jane-doe',
+          created_at: '2026-01-02T00:00:00Z',
+        },
+      ],
+      error: null,
+    }
+    fallbackQuery.eq.mockReturnValue(fallbackQuery)
+    mockSelect
+      .mockImplementationOnce(() => mockRedirectsQuery)
+      .mockImplementationOnce(() => fallbackQuery)
+
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    mockPageSingle.mockResolvedValue({
+      data: { id: 'page-1', slug: 'jane-doe' },
+    })
+
+    const req = new Request(
+      'http://localhost/api/admin/memorials/550e8400-e29b-41d4-a716-446655440000/redirects'
+    )
+    const res = await GET(req as never, {
+      params: Promise.resolve({ id: '550e8400-e29b-41d4-a716-446655440000' }),
+    })
+    const payload = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(fallbackQuery.eq).toHaveBeenCalledWith('created_by', 'user-1')
+    expect(payload.redirects).toEqual([
+      {
+        id: 'r2',
+        shortcode: 'legacy',
+        target_url: 'https://example.com/memorials/jane-doe',
+        print_status: 'unverified',
+        last_verified_at: null,
+        is_active: true,
+        created_at: '2026-01-02T00:00:00Z',
+      },
+    ])
+  })
+
   it('returns schema mismatch when the legacy fallback query still fails', async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
     mockPageSingle.mockResolvedValue({

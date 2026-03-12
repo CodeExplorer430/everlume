@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MediaConsentReportScreen } from '@/components/pages/admin/MediaConsentReportScreen'
 
@@ -202,6 +202,45 @@ describe('MediaConsentReportScreen', () => {
     ).toBeInTheDocument()
   })
 
+  it('treats an omitted logs payload as an empty report', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({}), { status: 200 })
+    )
+
+    render(<MediaConsentReportScreen />)
+
+    expect(
+      await screen.findByText(
+        'No protected-media consent events match the current filters.'
+      )
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Export CSV' })).toBeDisabled()
+  })
+
+  it('does not update state after the report request resolves post-unmount', async () => {
+    let resolveResponse: ((value: Response) => void) | undefined
+    vi.spyOn(globalThis, 'fetch').mockImplementation(
+      async () =>
+        await new Promise<Response>((resolve) => {
+          resolveResponse = resolve
+        })
+    )
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
+
+    const { unmount } = render(<MediaConsentReportScreen />)
+    unmount()
+
+    resolveResponse?.(
+      new Response(JSON.stringify({ logs: [] }), { status: 200 })
+    )
+
+    await waitFor(() => {
+      expect(consoleError).not.toHaveBeenCalled()
+    })
+  })
+
   it('shows the filtered empty state after loading rows', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
       new Response(
@@ -244,5 +283,40 @@ describe('MediaConsentReportScreen', () => {
       )
     ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Export CSV' })).toBeDisabled()
+  })
+
+  it('renders media labels without a variant suffix when only media kind is present', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          logs: [
+            {
+              id: 'log-1',
+              memorialId: 'memorial-1',
+              memorialTitle: 'Mateo Rivera',
+              memorialSlug: 'mateo-rivera',
+              eventType: 'media_accessed',
+              accessMode: 'private',
+              consentSource: 'protected_media_gate',
+              consentVersion: 3,
+              mediaKind: 'hero_image',
+              mediaVariant: null,
+              ipHash: 'ip-hash-1',
+              userAgentHash: 'ua-hash-1',
+              createdAt: '2026-03-09T00:00:00.000Z',
+            },
+          ],
+        }),
+        { status: 200 }
+      )
+    )
+
+    render(<MediaConsentReportScreen />)
+
+    expect(
+      await screen.findByText('Media accessed', { selector: 'td' })
+    ).toBeInTheDocument()
+    expect(screen.getByText('hero_image')).toBeInTheDocument()
+    expect(screen.queryByText('hero_image ()')).not.toBeInTheDocument()
   })
 })

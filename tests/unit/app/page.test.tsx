@@ -192,4 +192,24 @@ describe('Home page data loading', () => {
       expect.objectContaining({ directoryEnabled: true, memorials: [] })
     )
   })
+
+  it('falls back to an empty directory when the memorial query returns no rows without an error', async () => {
+    mockSingle.mockResolvedValue({
+      data: { home_directory_enabled: true },
+      error: null,
+    })
+    mockLimit.mockResolvedValue({
+      data: null,
+      error: null,
+    })
+
+    const mod = await import('@/app/page')
+    const node = await mod.default()
+    render(node)
+
+    expect(mockPagesSelect).toHaveBeenCalled()
+    expect(mockLandingContent).toHaveBeenCalledWith(
+      expect.objectContaining({ directoryEnabled: true, memorials: [] })
+    )
+  })
 })
