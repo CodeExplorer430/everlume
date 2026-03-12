@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemorialActionBar } from '@/components/public/MemorialActionBar'
 
@@ -109,14 +109,15 @@ describe('MemorialActionBar', () => {
       value: shareMock,
     })
 
-    const user = userEvent.setup()
     render(<MemorialActionBar memorialTitle="In Loving Memory of Jane Doe" />)
 
-    await user.click(screen.getByRole('button', { name: /^share$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^share$/i }))
 
-    expect(
-      screen.getByText('Sharing was canceled before anything was sent.')
-    ).toBeInTheDocument()
+    await waitFor(() => {
+      expect(
+        screen.getByText('Sharing was canceled before anything was sent.')
+      ).toBeInTheDocument()
+    })
   })
 
   it('surfaces clipboard failure with fallback guidance', async () => {
@@ -181,5 +182,43 @@ describe('MemorialActionBar', () => {
         'Sharing is unavailable right now. Please copy the address from your browser.'
       )
     ).toBeInTheDocument()
+  })
+
+  it('shows the device fallback when share and clipboard are both unavailable', async () => {
+    Object.defineProperty(navigator, 'share', {
+      configurable: true,
+      value: undefined,
+    })
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      get: () => undefined,
+    })
+
+    render(<MemorialActionBar memorialTitle="In Loving Memory of Jane Doe" />)
+
+    fireEvent.click(screen.getByRole('button', { name: /^share$/i }))
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Sharing is unavailable on this device.')
+      ).toBeInTheDocument()
+    })
+  })
+
+  it('shows the copy-link unavailable message when clipboard access is missing', async () => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      get: () => undefined,
+    })
+
+    render(<MemorialActionBar memorialTitle="In Loving Memory of Jane Doe" />)
+
+    fireEvent.click(screen.getByRole('button', { name: /copy link/i }))
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Copy link is unavailable on this device.')
+      ).toBeInTheDocument()
+    })
   })
 })

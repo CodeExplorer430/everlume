@@ -60,4 +60,39 @@ describe('TributeHero', () => {
     expect(screen.getByTestId('hero-fallback')).toBeInTheDocument()
     expect(screen.queryByText(/Present/)).not.toBeInTheDocument()
   })
+
+  it('falls back to the title for image alt text and renders partial life dates', () => {
+    render(
+      <TributeHero
+        memorial={{
+          title: 'Beloved Parent',
+          full_name: null,
+          dob: '1950-01-01',
+          dod: null,
+          hero_image_url: 'https://cdn.example.com/hero.jpg',
+        }}
+      />
+    )
+
+    expect(mockNextImage).toHaveBeenCalledWith(
+      expect.objectContaining({ alt: 'Beloved Parent' })
+    )
+    expect(screen.getByText('January 1, 1950 - Present')).toBeInTheDocument()
+  })
+
+  it('renders an unknown birth date when only the death date is present', () => {
+    render(
+      <TributeHero
+        memorial={{
+          title: 'Beloved Parent',
+          full_name: 'Jane Doe',
+          dob: null,
+          dod: '2025-03-07',
+          hero_image_url: null,
+        }}
+      />
+    )
+
+    expect(screen.getByText('... - March 7, 2025')).toBeInTheDocument()
+  })
 })

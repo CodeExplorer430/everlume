@@ -1,13 +1,30 @@
 import { NextRequest } from 'next/server'
+const mockInsert = vi.fn()
+const mockFrom = vi.fn(() => ({ insert: mockInsert }))
+const mockCreateServiceRoleClient = vi.fn(() => ({ from: mockFrom }))
+
+vi.mock('@/lib/supabase/service', () => ({
+  createServiceRoleClient: () => mockCreateServiceRoleClient(),
+}))
+
 import {
   buildMemorialMediaConsentRecord,
   createMemorialMediaConsentToken,
   getMemorialMediaConsentCookieName,
   getMemorialMediaConsentCookieMaxAge,
+  insertMemorialMediaConsent,
+  tryInsertMemorialMediaAccess,
   verifyMemorialMediaConsentToken,
 } from '@/lib/server/media-consent'
 
 describe('media consent helpers', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    mockInsert.mockReset()
+    mockFrom.mockClear()
+    mockCreateServiceRoleClient.mockClear()
+  })
+
   it('creates and verifies a memorial media consent token', () => {
     const token = createMemorialMediaConsentToken({
       memorialId: 'memorial-1',
@@ -106,6 +123,80 @@ describe('media consent helpers', () => {
     vi.useRealTimers()
   })
 
+  it('rejects malformed, future-dated, and signature-mismatched consent tokens', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-03-09T00:00:00.000Z'))
+
+    const validToken = createMemorialMediaConsentToken({
+      memorialId: 'memorial-1',
+      passwordUpdatedAt: '2026-03-09T00:00:00.000Z',
+      consentVersion: 2,
+      consentRevokedAt: null,
+    })
+
+    const segments = validToken.split('.')
+    const futureToken = [
+      segments[0],
+      segments[1],
+      String(Number(segments[2]) + 60),
+      segments[3],
+      segments[4],
+      segments[5],
+      segments[6],
+    ].join('.')
+    const badSignatureToken = [...segments.slice(0, 6), 'bad-signature'].join(
+      '.'
+    )
+    const invalidVersionToken = [
+      segments[0],
+      segments[1],
+      segments[2],
+      segments[3],
+      'not-a-number',
+      segments[5],
+      segments[6],
+    ].join('.')
+
+    expect(
+      verifyMemorialMediaConsentToken(
+        'too-short.token',
+        'memorial-1',
+        '2026-03-09T00:00:00.000Z',
+        2,
+        null
+      )
+    ).toBe(false)
+    expect(
+      verifyMemorialMediaConsentToken(
+        futureToken,
+        'memorial-1',
+        '2026-03-09T00:00:00.000Z',
+        2,
+        null
+      )
+    ).toBe(false)
+    expect(
+      verifyMemorialMediaConsentToken(
+        invalidVersionToken,
+        'memorial-1',
+        '2026-03-09T00:00:00.000Z',
+        2,
+        null
+      )
+    ).toBe(false)
+    expect(
+      verifyMemorialMediaConsentToken(
+        badSignatureToken,
+        'memorial-1',
+        '2026-03-09T00:00:00.000Z',
+        2,
+        null
+      )
+    ).toBe(false)
+
+    vi.useRealTimers()
+  })
+
   it('builds hashed visitor metadata for consent records', () => {
     const request = new NextRequest(
       'http://localhost/api/public/memorials/jane/media-consent',
@@ -165,6 +256,70 @@ describe('media consent helpers', () => {
     })
     expect(record.ip_hash).not.toContain('198.51.100.20')
     expect(record.user_agent_hash).toBeTruthy()
+  })
+
+  it('records media consent through the service-role client', async () => {
+    mockInsert.mockResolvedValue({ error: null })
+    const request = new NextRequest('http://localhost/api/public/media')
+
+    await insertMemorialMediaConsent({
+      request,
+      memorialId: 'memorial-1',
+      accessMode: 'password',
+      consentVersion: 2,
+      eventType: 'media_accessed',
+      mediaKind: 'gallery_thumb',
+      mediaVariant: 'thumb',
+      photoId: 'photo-1',
+    })
+
+    expect(mockCreateServiceRoleClient).toHaveBeenCalled()
+    expect(mockFrom).toHaveBeenCalledWith('media_access_consents')
+    expect(mockInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        page_id: 'memorial-1',
+        photo_id: 'photo-1',
+        media_kind: 'gallery_thumb',
+        media_variant: 'thumb',
+        event_type: 'media_accessed',
+      })
+    )
+  })
+
+  it('throws insert errors and swallows them in tryInsertMemorialMediaAccess', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const request = new NextRequest('http://localhost/api/public/media')
+
+    mockInsert.mockResolvedValueOnce({
+      error: { message: 'db failed' },
+    })
+    await expect(
+      insertMemorialMediaConsent({
+        request,
+        memorialId: 'memorial-1',
+        accessMode: 'password',
+        consentVersion: 2,
+        eventType: 'consent_granted',
+      })
+    ).rejects.toThrow('db failed')
+
+    mockInsert.mockResolvedValueOnce({
+      error: { message: 'db failed again' },
+    })
+    await expect(
+      tryInsertMemorialMediaAccess({
+        request,
+        memorialId: 'memorial-1',
+        accessMode: 'password',
+        consentVersion: 2,
+        eventType: 'media_accessed',
+      })
+    ).resolves.toBeUndefined()
+
+    expect(consoleError).toHaveBeenCalledWith(
+      'Protected media access logging failed.',
+      expect.any(Error)
+    )
   })
 
   it('exposes stable cookie helpers', () => {
