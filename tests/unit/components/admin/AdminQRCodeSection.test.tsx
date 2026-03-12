@@ -40,7 +40,9 @@ describe('AdminQRCodeSection', () => {
       />
     )
 
-    expect(screen.getByTestId('qr-url').textContent).toContain('/grandma')
+    expect(screen.getByTestId('qr-url')).toHaveTextContent(
+      'http://localhost:3000/grandma'
+    )
   })
 
   it('allows selecting another active redirect url', async () => {
@@ -214,6 +216,38 @@ describe('AdminQRCodeSection', () => {
         url: 'https://go.example.com/family-jane',
         template: 'warm',
         caption: 'Remember always',
+        showLogo: true,
+      })
+    )
+  })
+
+  it('forwards explicit qr styling props while using the window origin fallback', () => {
+    render(
+      <AdminQRCodeSection
+        memorial={{
+          slug: 'jane',
+          qr_template: 'minimal',
+          qr_caption: 'Remember softly',
+          qr_foreground_color: '#14532d',
+          qr_background_color: '#fffaf2',
+          qr_frame_style: 'rounded',
+          qr_caption_font: 'sans',
+          qr_show_logo: true,
+        }}
+        redirects={[{ id: 'r1', shortcode: 'garden-path', is_active: true }]}
+      />
+    )
+
+    expect(screen.queryByLabelText('Select URL for QR')).not.toBeInTheDocument()
+    expect(qrCodeGeneratorMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        url: 'http://localhost:3000/garden-path',
+        template: 'minimal',
+        caption: 'Remember softly',
+        foregroundColor: '#14532d',
+        backgroundColor: '#fffaf2',
+        frameStyle: 'rounded',
+        captionFont: 'sans',
         showLogo: true,
       })
     )

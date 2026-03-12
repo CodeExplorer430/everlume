@@ -189,6 +189,24 @@ describe('PublicGallery', () => {
     expect(within(dialog).getByText('Styled memory')).toHaveClass('uppercase')
   })
 
+  it('opens a missing-image photo and uses empty-source fallbacks in the lightbox', async () => {
+    const user = userEvent.setup()
+    render(
+      <PublicGallery
+        photos={[{ id: 'missing', caption: 'No source yet', image_url: null }]}
+      />
+    )
+
+    await user.click(screen.getByRole('button', { name: /open photo 1/i }))
+
+    const dialog = screen.getByRole('dialog', { name: /photo lightbox/i })
+    expect(
+      within(dialog).queryByAltText('No source yet')
+    ).not.toBeInTheDocument()
+    expect(within(dialog).getByText('Missing image URL')).toBeInTheDocument()
+    expect(within(dialog).getByText('No source yet')).toBeInTheDocument()
+  })
+
   it('marks protected-media thumbnails as unoptimized and falls back to generated labels when captions are missing', async () => {
     const user = userEvent.setup()
     render(

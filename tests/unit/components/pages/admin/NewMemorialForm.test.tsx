@@ -140,6 +140,29 @@ describe('NewMemorialForm', () => {
     expect(mockBack).toHaveBeenCalled()
   })
 
+  it('serializes populated date fields in the create payload', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ memorial: { id: 'p1' } }), {
+        status: 200,
+      })
+    )
+
+    const user = userEvent.setup()
+    render(<NewMemorialForm />)
+
+    await user.type(screen.getByLabelText('Memorial Title'), 'Jane Doe')
+    await user.type(screen.getByLabelText('URL Slug'), 'jane-doe')
+    await user.type(screen.getByLabelText('Date of Birth'), '1980-01-02')
+    await user.type(screen.getByLabelText('Date of Death'), '2020-03-04')
+    await user.click(screen.getByRole('button', { name: 'Create Memorial' }))
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(JSON.parse(String(init.body))).toMatchObject({
+      dob: '1980-01-02',
+      dod: '2020-03-04',
+    })
+  })
+
   it('falls back to the default create error when the response is not json', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response('server unavailable', { status: 500 })

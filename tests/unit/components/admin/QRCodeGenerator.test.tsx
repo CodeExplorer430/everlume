@@ -165,6 +165,41 @@ describe('QRCodeGenerator', () => {
     expect(svgText).toContain('<circle')
   })
 
+  it('renders a minimal svg plaque with sans caption styling and no logo markup', async () => {
+    mockToString.mockImplementation(
+      (
+        _: string,
+        __: unknown,
+        callback: (err: Error | null, svg: string) => void
+      ) => {
+        callback(null, '<svg><rect /></svg>')
+      }
+    )
+
+    const user = userEvent.setup()
+    render(
+      <QRCodeGenerator
+        url="https://example.com/r/soft"
+        template="minimal"
+        caption="Quiet memory"
+        captionFont="sans"
+      />
+    )
+
+    await waitFor(() => {
+      expect(mockToString).toHaveBeenCalled()
+    })
+
+    await user.click(screen.getByRole('button', { name: /Download SVG/i }))
+    const svgBlob = vi
+      .mocked(URL.createObjectURL)
+      .mock.calls.at(-1)?.[0] as Blob
+    const svgText = await svgBlob.text()
+    expect(svgText).toContain("Helvetica Neue', Arial, sans-serif")
+    expect(svgText).toContain('Quiet memory')
+    expect(svgText).not.toContain('<circle')
+  })
+
   it('renders the png export with logo and sans caption when canvas context is available', async () => {
     mockToString.mockImplementation(
       (
