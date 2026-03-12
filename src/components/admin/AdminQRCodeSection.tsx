@@ -90,7 +90,7 @@ export function AdminQRCodeSection({
                   ? memorial.qr_template
                   : 'classic'
               }
-              caption={(memorial.qr_caption || 'Scan me!').trim()}
+              caption={(memorial.qr_caption || '').trim() || 'Scan me!'}
               foregroundColor={memorial.qr_foreground_color}
               backgroundColor={memorial.qr_background_color}
               frameStyle={memorial.qr_frame_style}
