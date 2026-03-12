@@ -353,6 +353,111 @@ describe('GuestbookModerationScreen', () => {
     ).toBeInTheDocument()
   })
 
+  it('disables unapprove and delete while an unapprove request is in flight', async () => {
+    const unapproveRequest = deferredResponse()
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url === '/api/admin/guestbook' && (!init || !init.method)) {
+        return new Response(
+          JSON.stringify({
+            entries: [{ ...sampleEntry, is_approved: true }],
+          }),
+          { status: 200 }
+        )
+      }
+      if (
+        url === '/api/admin/guestbook/entry-1/unapprove' &&
+        init?.method === 'POST'
+      ) {
+        return unapproveRequest.promise
+      }
+      return new Response(JSON.stringify({}), { status: 200 })
+    })
+
+    const user = userEvent.setup()
+    render(<GuestbookModerationScreen />)
+    await screen.findByRole('button', {
+      name: 'Unapprove guestbook entry from Ana',
+    })
+
+    await user.click(
+      screen.getByRole('button', { name: 'Unapprove guestbook entry from Ana' })
+    )
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', {
+          name: 'Approve guestbook entry from Ana',
+        })
+      ).toBeDisabled()
+      expect(
+        screen.getByRole('button', { name: 'Delete guestbook entry from Ana' })
+      ).toBeDisabled()
+    })
+
+    unapproveRequest.resolve(
+      new Response(JSON.stringify({ ok: true }), { status: 200 })
+    )
+
+    expect(
+      await screen.findByText('Moved Ana back to pending review.')
+    ).toBeInTheDocument()
+  })
+
+  it('clears a prior success banner when a new moderation action starts', async () => {
+    const unapproveRequest = deferredResponse()
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url === '/api/admin/guestbook' && (!init || !init.method)) {
+        return new Response(JSON.stringify({ entries: [sampleEntry] }), {
+          status: 200,
+        })
+      }
+      if (
+        url === '/api/admin/guestbook/entry-1/approve' &&
+        init?.method === 'POST'
+      ) {
+        return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      }
+      if (
+        url === '/api/admin/guestbook/entry-1/unapprove' &&
+        init?.method === 'POST'
+      ) {
+        return unapproveRequest.promise
+      }
+      return new Response(JSON.stringify({}), { status: 200 })
+    })
+
+    const user = userEvent.setup()
+    render(<GuestbookModerationScreen />)
+    await screen.findByRole('button', {
+      name: 'Approve guestbook entry from Ana',
+    })
+
+    await user.click(
+      screen.getByRole('button', { name: 'Approve guestbook entry from Ana' })
+    )
+    expect(
+      await screen.findByText('Approved Ana for public display.')
+    ).toBeInTheDocument()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Unapprove guestbook entry from Ana' })
+    )
+
+    expect(
+      screen.queryByText('Approved Ana for public display.')
+    ).not.toBeInTheDocument()
+
+    unapproveRequest.resolve(
+      new Response(JSON.stringify({ ok: true }), { status: 200 })
+    )
+
+    expect(
+      await screen.findByText('Moved Ana back to pending review.')
+    ).toBeInTheDocument()
+  })
+
   it('shows the delete fallback error for non-json failures, then clears it after a successful retry', async () => {
     const confirmMock = vi.spyOn(window, 'confirm').mockReturnValue(true)
     let deleteAttempts = 0

@@ -151,6 +151,99 @@ describe('DataExport', () => {
     expect(csvText).toContain('No')
   })
 
+  it('downloads guestbook, media-consent, and photo metadata exports with the expected filenames', async () => {
+    const setAttributeSpy = vi.spyOn(
+      HTMLAnchorElement.prototype,
+      'setAttribute'
+    )
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input)
+      if (url === '/api/admin/memorials/page-1/guestbook') {
+        return new Response(
+          JSON.stringify({
+            entries: [
+              {
+                id: 'g1',
+                name: 'Ana',
+                email: 'ana@example.com',
+                message: 'Forever loved',
+                is_approved: true,
+                created_at: '2026-01-01T00:00:00.000Z',
+              },
+            ],
+          }),
+          { status: 200 }
+        )
+      }
+      if (url === '/api/admin/memorials/page-1/media-consent') {
+        return new Response(
+          JSON.stringify({
+            logs: [
+              {
+                id: 'c1',
+                event_type: 'consent_granted',
+                access_mode: 'password',
+                consent_source: 'protected_media_gate',
+                consent_version: 2,
+                media_kind: 'photo',
+                media_variant: 'thumb',
+                ip_hash: 'iphash',
+                user_agent_hash: 'uahash',
+                created_at: '2026-01-01T00:00:00.000Z',
+              },
+            ],
+          }),
+          { status: 200 }
+        )
+      }
+      if (url === '/api/admin/memorials/page-1/photos') {
+        return new Response(
+          JSON.stringify({
+            photos: [
+              {
+                id: 'p1',
+                caption: 'Photo 1',
+                image_url: 'https://cdn.example.com/full.jpg',
+                thumb_url: 'https://cdn.example.com/thumb.jpg',
+                cloudinary_public_id: 'memorial/p1',
+                created_at: '2026-01-01T00:00:00.000Z',
+                taken_at: null,
+              },
+            ],
+          }),
+          { status: 200 }
+        )
+      }
+      return new Response(JSON.stringify({}), { status: 200 })
+    })
+
+    const user = userEvent.setup()
+    render(<DataExport memorialId="page-1" memorialTitle="Jane Doe" />)
+
+    await user.click(screen.getByRole('button', { name: /Export Guestbook/i }))
+    await user.click(
+      screen.getByRole('button', { name: /Export Media Consent/i })
+    )
+    await user.click(
+      screen.getByRole('button', { name: /Export Photo Metadata/i })
+    )
+
+    await waitFor(() => {
+      expect(setAttributeSpy).toHaveBeenCalledWith(
+        'download',
+        'jane_doe_guestbook.csv'
+      )
+      expect(setAttributeSpy).toHaveBeenCalledWith(
+        'download',
+        'jane_doe_media_consent.csv'
+      )
+      expect(setAttributeSpy).toHaveBeenCalledWith(
+        'download',
+        'jane_doe_photo_metadata.csv'
+      )
+    })
+  })
+
   it('exports a memorial json package with page, timeline, videos, guestbook, photos, and redirects', async () => {
     const fetchMock = vi
       .spyOn(globalThis, 'fetch')

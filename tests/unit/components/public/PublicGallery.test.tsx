@@ -207,6 +207,48 @@ describe('PublicGallery', () => {
     expect(within(dialog).queryByText('Open photo 1')).not.toBeInTheDocument()
   })
 
+  it('falls back to the thumbnail in the lightbox and omits the caption block when no caption exists', async () => {
+    const user = userEvent.setup()
+    render(
+      <PublicGallery
+        photos={[
+          {
+            id: 'p1',
+            thumb_url: 'https://example.com/thumb-only.jpg',
+            image_url: null,
+          },
+        ]}
+      />
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Open photo 1' }))
+    const dialog = screen.getByRole('dialog', { name: /photo lightbox/i })
+    const image = within(dialog).getByAltText('Memorial photo 1')
+
+    expect(image).toHaveAttribute('src', 'https://example.com/thumb-only.jpg')
+    expect(within(dialog).queryByText('Open photo 1')).not.toBeInTheDocument()
+  })
+
+  it('does not show slideshow controls when only one photo is available', async () => {
+    const user = userEvent.setup()
+    render(
+      <PublicGallery
+        photos={[photos[0]]}
+        slideshowEnabled
+        slideshowIntervalMs={3000}
+      />
+    )
+
+    await user.click(screen.getByRole('button', { name: /open photo 1/i }))
+
+    expect(
+      screen.queryByRole('button', { name: /pause slideshow/i })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /resume slideshow/i })
+    ).not.toBeInTheDocument()
+  })
+
   it('clamps slideshow intervals to the minimum supported value', async () => {
     vi.useFakeTimers()
 

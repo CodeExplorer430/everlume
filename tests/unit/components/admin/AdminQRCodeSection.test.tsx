@@ -84,6 +84,27 @@ describe('AdminQRCodeSection', () => {
     ).toBeInTheDocument()
   })
 
+  it('shows setup guidance when every configured redirect is inactive', () => {
+    render(
+      <AdminQRCodeSection
+        memorial={{
+          slug: 'jane',
+          qr_template: 'classic',
+          qr_caption: 'Scan me!',
+        }}
+        redirects={[
+          { id: 'r1', shortcode: 'legacy-1', is_active: false },
+          { id: 'r2', shortcode: 'legacy-2', is_active: false },
+        ]}
+      />
+    )
+
+    expect(screen.queryByTestId('qr-url')).not.toBeInTheDocument()
+    expect(
+      screen.getByText(/create and activate a short link/i)
+    ).toBeInTheDocument()
+  })
+
   it('excludes inactive redirects from qr selector options', () => {
     render(
       <AdminQRCodeSection
@@ -162,6 +183,38 @@ describe('AdminQRCodeSection', () => {
         template: 'classic',
         caption: 'Scan me!',
         showLogo: false,
+      })
+    )
+  })
+
+  it('uses the single active redirect without showing a selector and preserves enabled logo and warm template props', () => {
+    process.env.NEXT_PUBLIC_SHORT_DOMAIN = 'https://go.example.com'
+
+    render(
+      <AdminQRCodeSection
+        memorial={{
+          slug: 'jane',
+          qr_template: 'warm',
+          qr_caption: 'Remember always',
+          qr_show_logo: true,
+        }}
+        redirects={[
+          { id: 'r1', shortcode: 'family-jane', is_active: true },
+          { id: 'r2', shortcode: 'old-link', is_active: false },
+        ]}
+      />
+    )
+
+    expect(screen.queryByLabelText('Select URL for QR')).not.toBeInTheDocument()
+    expect(screen.getByTestId('qr-url')).toHaveTextContent(
+      'https://go.example.com/family-jane'
+    )
+    expect(qrCodeGeneratorMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        url: 'https://go.example.com/family-jane',
+        template: 'warm',
+        caption: 'Remember always',
+        showLogo: true,
       })
     )
   })

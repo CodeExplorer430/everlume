@@ -221,4 +221,137 @@ describe('MemorialPageView', () => {
     expect(mockPublicGallery).not.toHaveBeenCalled()
     expect(mockTributeVideos).not.toHaveBeenCalled()
   })
+
+  it('passes protected-media notice details to the consent gate and keeps memorial access attributes', () => {
+    const { container } = render(
+      <MemorialPageView
+        memorial={{
+          id: 'page-1',
+          title: 'In Loving Memory',
+          full_name: 'Jane Doe',
+          dedicationText: null,
+          hero_image_url: null,
+          dob: null,
+          dod: null,
+          memorial_theme: 'editorial',
+          memorial_slideshow_enabled: true,
+          memorial_slideshow_interval_ms: 4500,
+          memorial_video_layout: 'featured',
+        }}
+        photos={[
+          {
+            id: 'photo-1',
+            image_url: '/image.jpg',
+            thumb_url: '/thumb.jpg',
+            caption: 'Hidden until consent',
+          },
+        ]}
+        videos={[
+          {
+            id: 'v1',
+            provider: 'youtube',
+            provider_id: 'abcdefghijk',
+            title: 'Tribute',
+          },
+        ]}
+        timeline={[]}
+        guestbook={[]}
+        accessMode="password"
+        requiresMediaConsent
+        mediaConsentSlug="jane-doe"
+        mediaConsentTitle="Family photo notice"
+        mediaConsentBody="Please confirm before viewing media."
+        mediaConsentVersion={3}
+      />
+    )
+
+    expect(container.firstChild).toHaveAttribute(
+      'data-memorial-theme',
+      'editorial'
+    )
+    expect(container.firstChild).toHaveAttribute(
+      'data-memorial-access',
+      'password'
+    )
+    expect(
+      screen.getByText(/Welcome to the memorial for Jane Doe\./)
+    ).toBeInTheDocument()
+    expect(mockProtectedMediaConsentGate).toHaveBeenCalledWith({
+      slug: 'jane-doe',
+      title: 'Family photo notice',
+      body: 'Please confirm before viewing media.',
+      version: 3,
+    })
+    expect(mockPublicGallery).not.toHaveBeenCalled()
+    expect(mockTributeVideos).not.toHaveBeenCalled()
+  })
+
+  it('renders the public gallery when consent is not required, even for password memorial access', () => {
+    render(
+      <MemorialPageView
+        memorial={{
+          id: 'page-1',
+          title: 'In Loving Memory',
+          full_name: 'Jane Doe',
+          dedicationText: 'Cherished every day.',
+          hero_image_url: null,
+          dob: null,
+          dod: null,
+          memorial_theme: 'editorial',
+          memorial_slideshow_enabled: false,
+          memorial_slideshow_interval_ms: 3200,
+          memorial_video_layout: 'featured',
+          memorial_photo_fit: 'contain',
+          memorial_caption_style: 'minimal',
+        }}
+        photos={[
+          {
+            id: 'photo-1',
+            image_url: '/image.jpg',
+            thumb_url: '/thumb.jpg',
+            caption: 'A quiet afternoon',
+          },
+        ]}
+        videos={[
+          {
+            id: 'v1',
+            provider: 'youtube',
+            provider_id: 'abcdefghijk',
+            title: 'Tribute',
+          },
+        ]}
+        timeline={[]}
+        guestbook={[]}
+        accessMode="password"
+      />
+    )
+
+    expect(screen.getByText('Cherished every day.')).toBeInTheDocument()
+    expect(mockPublicGallery).toHaveBeenCalledWith({
+      photos: [
+        {
+          id: 'photo-1',
+          image_url: '/image.jpg',
+          thumb_url: '/thumb.jpg',
+          caption: 'A quiet afternoon',
+        },
+      ],
+      slideshowEnabled: false,
+      slideshowIntervalMs: 3200,
+      fit: 'contain',
+      captionStyle: 'minimal',
+    })
+    expect(mockTributeVideos).toHaveBeenCalledWith({
+      videos: [
+        {
+          id: 'v1',
+          provider: 'youtube',
+          provider_id: 'abcdefghijk',
+          title: 'Tribute',
+        },
+      ],
+      layout: 'featured',
+    })
+    expect(mockProtectedMediaConsentGate).not.toHaveBeenCalled()
+  })
 })
