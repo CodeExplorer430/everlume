@@ -66,6 +66,39 @@ describe('GuestbookModerationScreen', () => {
     ).toBeInTheDocument()
   })
 
+  it('uses the generic success label when approving an entry without a display name', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url === '/api/admin/guestbook' && (!init || !init.method)) {
+        return new Response(
+          JSON.stringify({
+            entries: [{ ...sampleEntry, name: '' }],
+          }),
+          { status: 200 }
+        )
+      }
+      if (
+        url === '/api/admin/guestbook/entry-1/approve' &&
+        init?.method === 'POST'
+      ) {
+        return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      }
+      return new Response(JSON.stringify({}), { status: 200 })
+    })
+
+    const user = userEvent.setup()
+    render(<GuestbookModerationScreen />)
+    await screen.findByText('Forever remembered')
+
+    await user.click(
+      screen.getByRole('button', { name: 'Approve guestbook entry from' })
+    )
+
+    expect(
+      await screen.findByText('Approved guestbook entry for public display.')
+    ).toBeInTheDocument()
+  })
+
   it('shows load error and retries successfully', async () => {
     const fetchMock = vi
       .spyOn(globalThis, 'fetch')
@@ -353,6 +386,41 @@ describe('GuestbookModerationScreen', () => {
     ).toBeInTheDocument()
   })
 
+  it('uses the generic success label when unapproving an entry without a display name', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url === '/api/admin/guestbook' && (!init || !init.method)) {
+        return new Response(
+          JSON.stringify({
+            entries: [{ ...sampleEntry, name: '', is_approved: true }],
+          }),
+          { status: 200 }
+        )
+      }
+      if (
+        url === '/api/admin/guestbook/entry-1/unapprove' &&
+        init?.method === 'POST'
+      ) {
+        return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      }
+      return new Response(JSON.stringify({}), { status: 200 })
+    })
+
+    const user = userEvent.setup()
+    render(<GuestbookModerationScreen />)
+    await screen.findByRole('button', {
+      name: 'Unapprove guestbook entry from',
+    })
+
+    await user.click(
+      screen.getByRole('button', { name: 'Unapprove guestbook entry from' })
+    )
+
+    expect(
+      await screen.findByText('Moved guestbook entry back to pending review.')
+    ).toBeInTheDocument()
+  })
+
   it('disables unapprove and delete while an unapprove request is in flight', async () => {
     const unapproveRequest = deferredResponse()
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
@@ -503,6 +571,39 @@ describe('GuestbookModerationScreen', () => {
     expect(confirmMock).toHaveBeenCalledTimes(2)
     expect(
       screen.getByText('Deleted Ana from the moderation queue.')
+    ).toBeInTheDocument()
+  })
+
+  it('uses the generic success label when deleting an entry without a display name', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url === '/api/admin/guestbook' && (!init || !init.method)) {
+        return new Response(
+          JSON.stringify({
+            entries: [{ ...sampleEntry, name: '' }],
+          }),
+          { status: 200 }
+        )
+      }
+      if (url === '/api/admin/guestbook/entry-1' && init?.method === 'DELETE') {
+        return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      }
+      return new Response(JSON.stringify({}), { status: 200 })
+    })
+
+    const user = userEvent.setup()
+    render(<GuestbookModerationScreen />)
+    await screen.findByText('Forever remembered')
+
+    await user.click(
+      screen.getByRole('button', { name: 'Delete guestbook entry from' })
+    )
+
+    expect(
+      await screen.findByText(
+        'Deleted guestbook entry from the moderation queue.'
+      )
     ).toBeInTheDocument()
   })
 

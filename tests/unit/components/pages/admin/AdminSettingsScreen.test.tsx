@@ -75,6 +75,26 @@ describe('AdminSettingsScreen', () => {
     ).toBeGreaterThanOrEqual(1)
   })
 
+  it('keeps default site-setting values when the site-settings fetch is unavailable', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input)
+      if (url === '/api/admin/site-settings') {
+        return new Response('unavailable', { status: 503 })
+      }
+      return new Response(JSON.stringify({ redirects: [] }), { status: 200 })
+    })
+
+    render(<AdminSettingsScreen />)
+
+    await screen.findByText('Short URL Management')
+    expect(screen.getByText('Protected media v1')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Enabled' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Video Layout')).toHaveValue('grid')
+    expect(screen.getByLabelText('Notice Title')).toHaveValue(
+      'Media Viewing Notice'
+    )
+  })
+
   it('shows error when creating redirect fails', async () => {
     const fetchMock = vi
       .spyOn(globalThis, 'fetch')
@@ -725,6 +745,53 @@ describe('AdminSettingsScreen', () => {
       expect.objectContaining({
         method: 'PATCH',
         body: expect.stringContaining('"memorialVideoLayout":"featured"'),
+      })
+    )
+  })
+
+  it('normalizes unexpected video layout values back to grid before saving', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async (input, init) => {
+        const url = String(input)
+        if (url === '/api/admin/site-settings' && (!init || !init.method)) {
+          return new Response(
+            JSON.stringify({
+              settings: {
+                homeDirectoryEnabled: false,
+                memorialSlideshowEnabled: true,
+                memorialSlideshowIntervalMs: 4500,
+                memorialVideoLayout: 'featured',
+              },
+            }),
+            { status: 200 }
+          )
+        }
+        if (url === '/api/admin/site-settings' && init?.method === 'PATCH') {
+          return new Response(JSON.stringify({ ok: true }), { status: 200 })
+        }
+        return new Response(JSON.stringify({ redirects: [] }), { status: 200 })
+      })
+
+    const user = userEvent.setup()
+    render(<AdminSettingsScreen />)
+
+    await screen.findByText('Memorial Presentation Defaults')
+    const videoLayoutSelect = screen.getByLabelText('Video Layout')
+
+    await user.selectOptions(videoLayoutSelect, 'grid')
+    await waitFor(() => {
+      expect(videoLayoutSelect).toHaveValue('grid')
+    })
+    await user.click(
+      screen.getByRole('button', { name: 'Save Memorial Presentation' })
+    )
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/admin/site-settings',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: expect.stringContaining('"memorialVideoLayout":"grid"'),
       })
     )
   })

@@ -98,6 +98,28 @@ describe('media consent helpers', () => {
     ).toBe(false)
   })
 
+  it('creates and verifies tokens when password and revocation versions are unset', () => {
+    const token = createMemorialMediaConsentToken({
+      memorialId: 'memorial-2',
+      passwordUpdatedAt: null,
+      consentVersion: 1,
+      consentRevokedAt: null,
+    })
+
+    expect(
+      verifyMemorialMediaConsentToken(token, 'memorial-2', null, 1, null)
+    ).toBe(true)
+    expect(
+      verifyMemorialMediaConsentToken(
+        token,
+        'memorial-2',
+        '2026-03-09',
+        1,
+        null
+      )
+    ).toBe(false)
+  })
+
   it('rejects consent tokens outside the valid time window', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-03-09T00:00:00.000Z'))
@@ -156,10 +178,28 @@ describe('media consent helpers', () => {
       segments[5],
       segments[6],
     ].join('.')
+    const invalidIssuedAtToken = [
+      segments[0],
+      segments[1],
+      'not-a-number',
+      segments[3],
+      segments[4],
+      segments[5],
+      segments[6],
+    ].join('.')
 
     expect(
       verifyMemorialMediaConsentToken(
         'too-short.token',
+        'memorial-1',
+        '2026-03-09T00:00:00.000Z',
+        2,
+        null
+      )
+    ).toBe(false)
+    expect(
+      verifyMemorialMediaConsentToken(
+        invalidIssuedAtToken,
         'memorial-1',
         '2026-03-09T00:00:00.000Z',
         2,
@@ -258,6 +298,37 @@ describe('media consent helpers', () => {
     expect(record.user_agent_hash).toBeTruthy()
   })
 
+  it('falls back to unknown when the forwarded-for header is blank after trimming', () => {
+    const blankForwardedRequest = new NextRequest(
+      'http://localhost/api/public/memorials/jane/media-consent',
+      {
+        headers: {
+          'x-forwarded-for': '   ',
+        },
+      }
+    )
+    const unknownRequest = new NextRequest(
+      'http://localhost/api/public/memorials/jane/media-consent'
+    )
+
+    const blankForwardedRecord = buildMemorialMediaConsentRecord({
+      request: blankForwardedRequest,
+      memorialId: 'memorial-1',
+      accessMode: 'password',
+      consentVersion: 2,
+      eventType: 'consent_granted',
+    })
+    const unknownRecord = buildMemorialMediaConsentRecord({
+      request: unknownRequest,
+      memorialId: 'memorial-1',
+      accessMode: 'password',
+      consentVersion: 2,
+      eventType: 'consent_granted',
+    })
+
+    expect(blankForwardedRecord.ip_hash).toBe(unknownRecord.ip_hash)
+  })
+
   it('records media consent through the service-role client', async () => {
     mockInsert.mockResolvedValue({ error: null })
     const request = new NextRequest('http://localhost/api/public/media')
@@ -320,6 +391,23 @@ describe('media consent helpers', () => {
       'Protected media access logging failed.',
       expect.any(Error)
     )
+  })
+
+  it('uses the default insert error message when the database error is blank', async () => {
+    const request = new NextRequest('http://localhost/api/public/media')
+    mockInsert.mockResolvedValue({
+      error: { message: '' },
+    })
+
+    await expect(
+      insertMemorialMediaConsent({
+        request,
+        memorialId: 'memorial-1',
+        accessMode: 'password',
+        consentVersion: 2,
+        eventType: 'consent_granted',
+      })
+    ).rejects.toThrow('Unable to record media consent.')
   })
 
   it('exposes stable cookie helpers', () => {
