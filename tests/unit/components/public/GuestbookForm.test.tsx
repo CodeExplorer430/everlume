@@ -394,6 +394,25 @@ describe('GuestbookForm', () => {
     expect(onSolved).toBeTypeOf('function')
   })
 
+  it('removes the turnstile widget on unmount when a widget was rendered', () => {
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = 'site-key'
+    const removeMock = vi.fn()
+
+    Object.defineProperty(window, 'turnstile', {
+      value: {
+        render: vi.fn(() => 'widget-1'),
+        reset: vi.fn(),
+        remove: removeMock,
+      },
+      configurable: true,
+    })
+
+    const { unmount } = render(<GuestbookForm memorialId="page-1" />)
+    unmount()
+
+    expect(removeMock).toHaveBeenCalledWith('widget-1')
+  })
+
   it('resets the form and captcha after a successful retry submission', async () => {
     process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = 'site-key'
     const fetchMock = vi

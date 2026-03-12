@@ -50,6 +50,25 @@ describe('private media tokens', () => {
     expect(verifySignedMediaToken(token, 'photo-2', 'thumb')).toBe(false)
   })
 
+  it('rejects tokens with missing payload or signature segments', () => {
+    expect(verifySignedMediaToken('.signature', 'photo-1', 'image')).toBe(false)
+    expect(verifySignedMediaToken('payload.', 'photo-1', 'image')).toBe(false)
+  })
+
+  it('rejects tokens when the signature length does not match', () => {
+    const encodedPayload = Buffer.from(
+      JSON.stringify({
+        photoId: 'photo-1',
+        variant: 'image',
+        exp: Math.floor(Date.now() / 1000) + 60,
+      })
+    ).toString('base64url')
+
+    expect(
+      verifySignedMediaToken(`${encodedPayload}.short`, 'photo-1', 'image')
+    ).toBe(false)
+  })
+
   it('throws when the private media signing secret is missing', () => {
     delete process.env.PRIVATE_MEDIA_TOKEN_SECRET
 

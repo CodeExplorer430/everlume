@@ -18,6 +18,40 @@ describe('DataExport', () => {
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
   })
 
+  it('creates, clicks, and removes hidden download links during exports', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          entries: [
+            {
+              id: 'g1',
+              name: 'Ana',
+              email: 'ana@example.com',
+              message: 'Forever loved',
+              is_approved: true,
+              created_at: '2026-01-01T00:00:00.000Z',
+            },
+          ],
+        }),
+        { status: 200 }
+      )
+    )
+    const appendChildSpy = vi.spyOn(document.body, 'appendChild')
+    const removeChildSpy = vi.spyOn(document.body, 'removeChild')
+
+    const user = userEvent.setup()
+    render(<DataExport memorialId="page-1" memorialTitle="Jane Doe" />)
+
+    await user.click(screen.getByRole('button', { name: /Export Guestbook/i }))
+
+    await waitFor(() => {
+      expect(URL.createObjectURL).toHaveBeenCalled()
+      expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled()
+      expect(appendChildSpy).toHaveBeenCalled()
+      expect(removeChildSpy).toHaveBeenCalled()
+    })
+  })
+
   it('exports guestbook CSV and photo metadata CSV', async () => {
     const fetchMock = vi
       .spyOn(globalThis, 'fetch')

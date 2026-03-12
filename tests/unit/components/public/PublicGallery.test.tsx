@@ -207,6 +207,34 @@ describe('PublicGallery', () => {
     expect(within(dialog).queryByText('Open photo 1')).not.toBeInTheDocument()
   })
 
+  it('uses the main image url for proxy thumbnails when no thumb url exists', async () => {
+    const user = userEvent.setup()
+    render(
+      <PublicGallery
+        photos={[
+          {
+            id: 'p1',
+            image_url: '/api/public/media/photo-1?variant=image',
+          },
+        ]}
+      />
+    )
+
+    const thumbnail = screen.getByAltText('Memorial photo 1')
+    expect(thumbnail).toHaveAttribute(
+      'src',
+      '/api/public/media/photo-1?variant=image'
+    )
+    expect(thumbnail).toHaveAttribute('data-unoptimized', 'true')
+
+    await user.click(screen.getByRole('button', { name: 'Open photo 1' }))
+    const dialog = screen.getByRole('dialog', { name: /photo lightbox/i })
+    expect(within(dialog).getByAltText('Memorial photo 1')).toHaveAttribute(
+      'src',
+      '/api/public/media/photo-1?variant=image'
+    )
+  })
+
   it('falls back to the thumbnail in the lightbox and omits the caption block when no caption exists', async () => {
     const user = userEvent.setup()
     render(
