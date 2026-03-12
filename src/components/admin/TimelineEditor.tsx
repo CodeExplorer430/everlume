@@ -170,13 +170,8 @@ export function TimelineEditor({ memorialId }: TimelineEditorProps) {
               size="sm"
               onClick={() => deleteEvent(event.id)}
               aria-label="Delete timeline event"
-              disabled={deletingId === event.id}
             >
-              {deletingId === event.id ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Trash2 className="h-4 w-4 text-destructive" />
-              )}
+              <Trash2 className="h-4 w-4 text-destructive" />
             </Button>
           </li>
         ))}

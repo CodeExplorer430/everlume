@@ -47,6 +47,17 @@ describe('TimelineEditor', () => {
     expect(await screen.findByText('Born')).toBeInTheDocument()
   })
 
+  it('treats an omitted events payload as an empty timeline', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({}), { status: 200 })
+    )
+
+    render(<TimelineEditor memorialId="page-empty" />)
+
+    await screen.findByPlaceholderText('Event description...')
+    expect(screen.queryByRole('listitem')).not.toBeInTheDocument()
+  })
+
   it('inserts event', async () => {
     const fetchMock = vi
       .spyOn(globalThis, 'fetch')
@@ -281,6 +292,50 @@ describe('TimelineEditor', () => {
     ).toBeInTheDocument()
     expect(screen.getByText('Born')).toBeInTheDocument()
     expect(screen.getByText('Started school')).toBeInTheDocument()
+  })
+
+  it('keeps other delete actions interactive while one event is being deleted', async () => {
+    const deleteRequest = deferredResponse()
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/api/admin/memorials/page-9/timeline')) {
+        return new Response(
+          JSON.stringify({
+            events: [
+              { id: 't1', year: 1990, text: 'Born' },
+              { id: 't2', year: 2001, text: 'Started school' },
+            ],
+          }),
+          { status: 200 }
+        )
+      }
+      if (url === '/api/admin/timeline/t1' && init?.method === 'DELETE') {
+        return deleteRequest.promise
+      }
+      return new Response('{}', { status: 200 })
+    })
+
+    const user = userEvent.setup()
+    render(<TimelineEditor memorialId="page-9" />)
+
+    await screen.findByText('Born')
+    const deleteButtons = screen.getAllByRole('button', {
+      name: /delete timeline event/i,
+    })
+    await user.click(deleteButtons[0]!)
+
+    const remainingButtons = screen.getAllByRole('button', {
+      name: /delete timeline event/i,
+    })
+    expect(remainingButtons).toHaveLength(1)
+    expect(remainingButtons[0]).toBeEnabled()
+
+    deleteRequest.resolve(
+      new Response(JSON.stringify({ ok: true }), { status: 200 })
+    )
+
+    await screen.findByText('Started school')
+    expect(screen.queryByText('Born')).not.toBeInTheDocument()
   })
 
   it('reloads list when add succeeds without event payload', async () => {

@@ -252,4 +252,18 @@ describe('AdminQRCodeSection', () => {
       })
     )
   })
+
+  it('falls back to no redirect options and a default caption when redirects and caption are omitted at runtime', () => {
+    render(
+      <AdminQRCodeSection
+        memorial={{ slug: 'jane' } as never}
+        redirects={undefined as never}
+      />
+    )
+
+    expect(screen.queryByTestId('qr-url')).not.toBeInTheDocument()
+    expect(
+      screen.getByText(/create and activate a short link/i)
+    ).toBeInTheDocument()
+  })
 })

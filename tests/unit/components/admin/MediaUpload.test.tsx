@@ -318,4 +318,122 @@ describe('MediaUpload', () => {
       await screen.findByText('Failed to save uploaded image metadata.')
     ).toBeInTheDocument()
   })
+
+  it('ignores empty widget callbacks and keeps uploading until queues-end closes the session', async () => {
+    const onUploadComplete = vi.fn()
+    let widgetCallback:
+      | ((
+          error: Error | null,
+          result: { event?: string; info?: { [key: string]: unknown } }
+        ) => void)
+      | null = null
+
+    Object.defineProperty(window, 'cloudinary', {
+      value: {
+        createUploadWidget: vi.fn(
+          (_options: Record<string, unknown>, cb: typeof widgetCallback) => {
+            widgetCallback = cb
+            return { open: vi.fn() }
+          }
+        ),
+      },
+      configurable: true,
+    })
+
+    const user = userEvent.setup()
+    render(
+      <MediaUpload memorialId="page-1" onUploadComplete={onUploadComplete} />
+    )
+
+    await user.click(
+      screen.getByRole('button', { name: 'Open Cloudinary Uploader' })
+    )
+
+    await act(async () => {
+      await widgetCallback?.(null, undefined as never)
+      await widgetCallback?.(null, { event: 'display-changed' })
+    })
+
+    expect(screen.getByRole('button', { name: 'Uploading...' })).toBeDisabled()
+    expect(onUploadComplete).not.toHaveBeenCalled()
+
+    await act(async () => {
+      await widgetCallback?.(null, { event: 'queues-end' })
+    })
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: 'Open Cloudinary Uploader' })
+      ).toBeEnabled()
+    })
+    expect(onUploadComplete).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the uploaded count after a later metadata failure and finishes on close', async () => {
+    const onUploadComplete = vi.fn()
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true }), { status: 201 })
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ message: 'Metadata save failed' }), {
+          status: 500,
+        })
+      )
+
+    let widgetCallback:
+      | ((
+          error: Error | null,
+          result: { event?: string; info?: { [key: string]: unknown } }
+        ) => void)
+      | null = null
+
+    Object.defineProperty(window, 'cloudinary', {
+      value: {
+        createUploadWidget: vi.fn(
+          (_options: Record<string, unknown>, cb: typeof widgetCallback) => {
+            widgetCallback = cb
+            return { open: vi.fn() }
+          }
+        ),
+      },
+      configurable: true,
+    })
+
+    const user = userEvent.setup()
+    render(
+      <MediaUpload memorialId="page-1" onUploadComplete={onUploadComplete} />
+    )
+
+    await user.click(
+      screen.getByRole('button', { name: 'Open Cloudinary Uploader' })
+    )
+
+    await act(async () => {
+      await widgetCallback?.(null, {
+        event: 'success',
+        info: {
+          original_filename: 'first-photo',
+          public_id: 'everlume/page-1/photo-1',
+          secure_url:
+            'https://res.cloudinary.com/demo/image/upload/v1/photo.jpg',
+        },
+      })
+      await widgetCallback?.(null, {
+        event: 'success',
+        info: {
+          public_id: 'everlume/page-1/photo-2',
+          secure_url:
+            'https://res.cloudinary.com/demo/image/upload/v2/photo.jpg',
+        },
+      })
+      await widgetCallback?.(null, { event: 'close' })
+    })
+
+    expect(
+      await screen.findByText('Uploaded images this session: 1')
+    ).toBeInTheDocument()
+    expect(await screen.findByText('Metadata save failed')).toBeInTheDocument()
+    expect(onUploadComplete).toHaveBeenCalledTimes(1)
+  })
 })

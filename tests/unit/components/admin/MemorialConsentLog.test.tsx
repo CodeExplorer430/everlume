@@ -178,6 +178,32 @@ describe('MemorialConsentLog', () => {
     ).toBeInTheDocument()
   })
 
+  it('treats an omitted logs payload as empty and does not update state after unmount', async () => {
+    const request = deferredResponse()
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
+    vi.spyOn(globalThis, 'fetch').mockImplementation(
+      async () => request.promise
+    )
+
+    const view = render(<MemorialConsentLog memorialId="page-1" />)
+    view.unmount()
+
+    request.resolve(
+      new Response(
+        JSON.stringify({
+          memorial: { mediaConsentRevokedAt: null },
+          consentNoticeVersion: 2,
+        }),
+        { status: 200 }
+      )
+    )
+
+    await Promise.resolve()
+    expect(consoleError).not.toHaveBeenCalled()
+  })
+
   it('revokes existing consent cookies for the memorial', async () => {
     const fetchMock = vi
       .spyOn(globalThis, 'fetch')
@@ -388,5 +414,37 @@ describe('MemorialConsentLog', () => {
     expect(
       await screen.findByText('Unable to revoke protected media consent.')
     ).toBeInTheDocument()
+  })
+
+  it('renders media rows without variants and access modes without consent badges', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          logs: [
+            {
+              id: 'c1',
+              event_type: 'media_accessed',
+              access_mode: 'private',
+              consent_source: 'protected_media_gate',
+              consent_version: 0,
+              media_kind: 'video',
+              media_variant: null,
+              ip_hash: '0123456789abcdefgh',
+              user_agent_hash: 'fedcba9876543210',
+              created_at: '2026-03-09T00:00:00.000Z',
+            },
+          ],
+          memorial: { mediaConsentRevokedAt: null },
+          consentNoticeVersion: 4,
+        }),
+        { status: 200 }
+      )
+    )
+
+    render(<MemorialConsentLog memorialId="page-1" />)
+
+    expect(await screen.findByText('video')).toBeInTheDocument()
+    expect(screen.getByText('private')).toBeInTheDocument()
+    expect(screen.queryByText('v0')).not.toBeInTheDocument()
   })
 })
