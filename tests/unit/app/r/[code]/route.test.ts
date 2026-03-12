@@ -29,6 +29,7 @@ describe('GET /r/[code]', () => {
     expect(res.status).toBe(302)
     expect(res.headers.get('location')).toContain('/r/not-found')
     expect(res.headers.get('location')).toContain('reason=invalid')
+    expect(res.headers.get('cache-control')).toBe('no-store')
   })
 
   it('redirects disabled short codes to fallback page', async () => {
@@ -53,6 +54,23 @@ describe('GET /r/[code]', () => {
 
     expect(res.status).toBe(302)
     expect(res.headers.get('location')).toBe('https://example.com/memorials/a')
+    expect(res.headers.get('cache-control')).toContain('max-age=60')
+    expect(mockEq).toHaveBeenCalledWith('shortcode', 'grandma')
+  })
+
+  it('normalizes trimmed short codes and redirects missing database rows to fallback', async () => {
+    mockSingle.mockResolvedValue({ data: null })
+
+    const req = new NextRequest('http://localhost/r/Grandma%20')
+    const res = await GET(req, {
+      params: Promise.resolve({ code: ' Grandma ' }),
+    })
+
+    expect(res.status).toBe(302)
+    expect(res.headers.get('location')).toContain('code=grandma')
+    expect(res.headers.get('location')).toContain('reason=missing')
+    expect(res.headers.get('cache-control')).toBe('no-store')
+    expect(mockEq).toHaveBeenCalledWith('shortcode', 'grandma')
   })
 
   it('uses fixture redirects in the e2e public lane and skips the database lookup', async () => {
@@ -82,5 +100,6 @@ describe('GET /r/[code]', () => {
     })
 
     expect(missingRes.headers.get('location')).toContain('reason=missing')
+    expect(activeRes.headers.get('cache-control')).toContain('max-age=60')
   })
 })
