@@ -137,6 +137,10 @@ describe('/memorials/[slug] page', () => {
     })
   })
 
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
   it('renders public memorial view with loaded resources', async () => {
     mockPageSingle.mockResolvedValue({ data: publicPage })
     mockPhotosOrder.mockResolvedValue({
@@ -263,6 +267,36 @@ describe('/memorials/[slug] page', () => {
         }),
       })
     )
+  })
+
+  it('generates private memorial metadata from fixtures without querying the database', async () => {
+    vi.stubEnv('E2E_PUBLIC_FIXTURES', '1')
+    mockCanAccessMemorial.mockResolvedValue({
+      allowed: false,
+      requiresPassword: false,
+    })
+
+    const mod = await import('@/app/memorials/[slug]/page')
+    const metadata = await mod.generateMetadata({
+      params: Promise.resolve({ slug: 'e2e-private-memorial' }),
+    })
+
+    expect(metadata).toEqual({
+      title: 'Private Memorial | Everlume',
+      robots: { index: false, follow: false },
+    })
+    expect(mockPageSingle).not.toHaveBeenCalled()
+  })
+
+  it('returns empty metadata when the memorial cannot be found', async () => {
+    mockPageSingle.mockResolvedValue({ data: null })
+
+    const mod = await import('@/app/memorials/[slug]/page')
+    const metadata = await mod.generateMetadata({
+      params: Promise.resolve({ slug: 'missing' }),
+    })
+
+    expect(metadata).toEqual({})
   })
 
   it('prefers canonical access_mode over conflicting legacy privacy when rendering a public memorial', async () => {
@@ -392,5 +426,128 @@ describe('/memorials/[slug] page', () => {
         videos: [],
       })
     )
+  })
+
+  it('falls back to default media consent copy and version when site settings are missing', async () => {
+    mockPageSingle.mockResolvedValue({
+      data: {
+        ...publicPage,
+        access_mode: 'password',
+        privacy: 'private',
+        password_updated_at: '2026-03-01T00:00:00.000Z',
+      },
+    })
+    mockCanAccessMemorial.mockResolvedValue({
+      allowed: true,
+      requiresPassword: false,
+    })
+    mockSiteSettingsSingle.mockResolvedValue({ data: null })
+    mockVerifyMediaConsent.mockReturnValue(false)
+    mockPhotosOrder.mockResolvedValue({
+      data: [
+        {
+          id: 'photo-1',
+          page_id: 'page-1',
+          image_url: '/img.jpg',
+          thumb_url: '/thumb.jpg',
+          caption: null,
+        },
+      ],
+    })
+    mockGuestbookOrder.mockResolvedValue({ data: [] })
+    mockTimelineOrder.mockResolvedValue({ data: [] })
+    mockVideosOrder.mockResolvedValue({ data: [] })
+
+    const mod = await import('@/app/memorials/[slug]/page')
+    const node = await mod.default({
+      params: Promise.resolve({ slug: 'jane' }),
+    })
+    render(node)
+
+    expect(mockMemorialPageView).toHaveBeenCalledWith(
+      expect.objectContaining({
+        requiresMediaConsent: true,
+        mediaConsentTitle: 'Media Viewing Notice',
+        mediaConsentBody:
+          "The family has protected this memorial's photos and videos for respectful viewing. Continuing confirms that access to protected media is recorded for family oversight.",
+        mediaConsentVersion: 1,
+      })
+    )
+  })
+
+  it('does not block rendering when a protected memorial has no media to gate', async () => {
+    mockPageSingle.mockResolvedValue({
+      data: {
+        ...publicPage,
+        hero_image_url: null,
+        access_mode: 'password',
+        privacy: 'private',
+        password_updated_at: '2026-03-01T00:00:00.000Z',
+      },
+    })
+    mockCanAccessMemorial.mockResolvedValue({
+      allowed: true,
+      requiresPassword: false,
+    })
+    mockVerifyMediaConsent.mockReturnValue(false)
+    mockPhotosOrder.mockResolvedValue({ data: [] })
+    mockGuestbookOrder.mockResolvedValue({ data: [] })
+    mockTimelineOrder.mockResolvedValue({ data: [] })
+    mockVideosOrder.mockResolvedValue({ data: [] })
+
+    const mod = await import('@/app/memorials/[slug]/page')
+    const node = await mod.default({
+      params: Promise.resolve({ slug: 'jane' }),
+    })
+    render(node)
+
+    expect(mockCreateSignedMediaToken).not.toHaveBeenCalled()
+    expect(mockMemorialPageView).toHaveBeenCalledWith(
+      expect.objectContaining({
+        requiresMediaConsent: false,
+        mediaConsentSlug: undefined,
+        memorial: expect.objectContaining({
+          hero_image_url: null,
+        }),
+        photos: [],
+        videos: [],
+      })
+    )
+  })
+
+  it('renders public memorial fixtures without database reads', async () => {
+    vi.stubEnv('E2E_PUBLIC_FIXTURES', '1')
+
+    const mod = await import('@/app/memorials/[slug]/page')
+    const node = await mod.default({
+      params: Promise.resolve({ slug: 'e2e-public-memorial' }),
+    })
+    render(node)
+
+    expect(screen.getByTestId('memorial-page-view')).toBeInTheDocument()
+    expect(mockPageSingle).not.toHaveBeenCalled()
+    expect(mockMemorialPageView).toHaveBeenCalledWith(
+      expect.objectContaining({
+        memorial: expect.objectContaining({
+          id: '11111111-1111-1111-1111-111111111111',
+          accessMode: 'public',
+        }),
+        guestbook: [
+          expect.objectContaining({
+            id: '51111111-1111-1111-1111-111111111111',
+          }),
+        ],
+      })
+    )
+  })
+
+  it('throws notFound when the memorial record does not exist', async () => {
+    mockPageSingle.mockResolvedValue({ data: null })
+
+    const mod = await import('@/app/memorials/[slug]/page')
+    await expect(
+      mod.default({ params: Promise.resolve({ slug: 'missing' }) })
+    ).rejects.toThrow('NEXT_NOT_FOUND')
+    expect(mockNotFound).toHaveBeenCalled()
   })
 })
