@@ -463,6 +463,63 @@ describe('DataExport', () => {
     ).toBeInTheDocument()
   })
 
+  it('treats missing guestbook entries as an empty export', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({}), { status: 200 })
+    )
+
+    const user = userEvent.setup()
+    render(<DataExport memorialId="page-1" memorialTitle="Jane Doe" />)
+
+    await user.click(screen.getByRole('button', { name: /Export Guestbook/i }))
+
+    expect(
+      await screen.findByText('No guestbook entries to export.')
+    ).toBeInTheDocument()
+  })
+
+  it('exports guestbook csv with blank fields and a fallback memorial filename stem', async () => {
+    const setAttributeSpy = vi.spyOn(
+      HTMLAnchorElement.prototype,
+      'setAttribute'
+    )
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          entries: [
+            {
+              id: 'g-empty',
+              name: '',
+              email: '',
+              message: '',
+              is_approved: true,
+              created_at: '2026-01-01T00:00:00.000Z',
+            },
+          ],
+        }),
+        { status: 200 }
+      )
+    )
+
+    const user = userEvent.setup()
+    render(<DataExport memorialId="page-1" memorialTitle="!!!" />)
+
+    await user.click(screen.getByRole('button', { name: /Export Guestbook/i }))
+
+    const csvBlob = vi.mocked(URL.createObjectURL).mock.calls.at(-1)?.[0]
+    expect(csvBlob).toBeInstanceOf(Blob)
+
+    const csvText = await (csvBlob as Blob).text()
+    expect(csvText).toContain('"","",""')
+
+    await waitFor(() => {
+      expect(setAttributeSpy).toHaveBeenCalledWith(
+        'download',
+        'memorial_guestbook.csv'
+      )
+    })
+  })
+
   it('shows no-data notice for photo metadata export', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ photos: [] }), { status: 200 })
@@ -474,6 +531,21 @@ describe('DataExport', () => {
     await user.click(
       screen.getByRole('button', { name: /Export Photo Metadata/i })
     )
+    expect(await screen.findByText('No photos to export.')).toBeInTheDocument()
+  })
+
+  it('treats missing photo metadata rows as an empty export', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({}), { status: 200 })
+    )
+
+    const user = userEvent.setup()
+    render(<DataExport memorialId="page-1" memorialTitle="Jane Doe" />)
+
+    await user.click(
+      screen.getByRole('button', { name: /Export Photo Metadata/i })
+    )
+
     expect(await screen.findByText('No photos to export.')).toBeInTheDocument()
   })
 
@@ -516,6 +588,51 @@ describe('DataExport', () => {
     expect(csvText).toContain('https://cdn.example.com/full.jpg')
     expect(csvText).toContain('https://cdn.example.com/thumb.jpg')
     expect(csvText).toContain('2025-12-31T12:34:56.000Z')
+  })
+
+  it('exports photo metadata csv with blank optional fields and a fallback filename stem', async () => {
+    const setAttributeSpy = vi.spyOn(
+      HTMLAnchorElement.prototype,
+      'setAttribute'
+    )
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          photos: [
+            {
+              id: 'p-empty',
+              caption: null,
+              image_url: null,
+              thumb_url: null,
+              cloudinary_public_id: null,
+              created_at: '2026-01-01T00:00:00.000Z',
+              taken_at: null,
+            },
+          ],
+        }),
+        { status: 200 }
+      )
+    )
+
+    const user = userEvent.setup()
+    render(<DataExport memorialId="page-1" memorialTitle="!!!" />)
+
+    await user.click(
+      screen.getByRole('button', { name: /Export Photo Metadata/i })
+    )
+
+    const csvBlob = vi.mocked(URL.createObjectURL).mock.calls.at(-1)?.[0]
+    expect(csvBlob).toBeInstanceOf(Blob)
+
+    const csvText = await (csvBlob as Blob).text()
+    expect(csvText).toContain('p-empty,"",,,,')
+
+    await waitFor(() => {
+      expect(setAttributeSpy).toHaveBeenCalledWith(
+        'download',
+        'memorial_photo_metadata.csv'
+      )
+    })
   })
 
   it('exports photos ZIP and surfaces API errors', async () => {

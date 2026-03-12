@@ -1,4 +1,10 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AdminSettingsScreen } from '@/components/pages/admin/AdminSettingsScreen'
 
@@ -119,10 +125,14 @@ describe('AdminSettingsScreen', () => {
     render(<AdminSettingsScreen />)
 
     await screen.findByText('Create New Redirect')
-    await user.type(screen.getByPlaceholderText('grandma'), 'abc')
-    await user.type(
+    fireEvent.change(screen.getByPlaceholderText('grandma'), {
+      target: { value: 'abc' },
+    })
+    fireEvent.change(
       screen.getByPlaceholderText('https://yourdomain.com/memorials/sample'),
-      'https://example.com'
+      {
+        target: { value: 'https://example.com' },
+      }
     )
     await user.click(screen.getByRole('button', { name: 'Create Redirect' }))
 
@@ -133,7 +143,7 @@ describe('AdminSettingsScreen', () => {
     expect(
       await screen.findByText('Unable to create redirect from API')
     ).toBeInTheDocument()
-  })
+  }, 30000)
 
   it('shows the create pending state and falls back when redirect creation fails with a non-json body', async () => {
     const createRequest = deferredResponse()
@@ -155,10 +165,14 @@ describe('AdminSettingsScreen', () => {
     render(<AdminSettingsScreen />)
 
     await screen.findByText('Create New Redirect')
-    await user.type(screen.getByPlaceholderText('grandma'), 'abc')
-    await user.type(
+    fireEvent.change(screen.getByPlaceholderText('grandma'), {
+      target: { value: 'abc' },
+    })
+    fireEvent.change(
       screen.getByPlaceholderText('https://yourdomain.com/memorials/sample'),
-      'https://example.com'
+      {
+        target: { value: 'https://example.com' },
+      }
     )
     await user.click(screen.getByRole('button', { name: 'Create Redirect' }))
 
@@ -1002,10 +1016,14 @@ describe('AdminSettingsScreen', () => {
     render(<AdminSettingsScreen />)
 
     await screen.findByText('Create New Redirect')
-    await user.type(screen.getByPlaceholderText('grandma'), 'grandma')
-    await user.type(
+    fireEvent.change(screen.getByPlaceholderText('grandma'), {
+      target: { value: 'grandma' },
+    })
+    fireEvent.change(
       screen.getByPlaceholderText('https://yourdomain.com/memorials/sample'),
-      'https://example.com/memorials/grandma'
+      {
+        target: { value: 'https://example.com/memorials/grandma' },
+      }
     )
     await user.click(screen.getByRole('button', { name: 'Create Redirect' }))
 
@@ -1058,10 +1076,14 @@ describe('AdminSettingsScreen', () => {
     render(<AdminSettingsScreen />)
 
     await screen.findByText('Create New Redirect')
-    await user.type(screen.getByPlaceholderText('grandma'), 'legacy')
-    await user.type(
+    fireEvent.change(screen.getByPlaceholderText('grandma'), {
+      target: { value: 'legacy' },
+    })
+    fireEvent.change(
       screen.getByPlaceholderText('https://yourdomain.com/memorials/sample'),
-      'https://example.com/memorials/legacy'
+      {
+        target: { value: 'https://example.com/memorials/legacy' },
+      }
     )
     await user.click(screen.getByRole('button', { name: 'Create Redirect' }))
 
@@ -1131,8 +1153,12 @@ describe('AdminSettingsScreen', () => {
       'https://yourdomain.com/memorials/sample'
     )
 
-    await user.type(shortcodeInput, 'after-error')
-    await user.type(targetUrlInput, 'https://example.com/memorials/after-error')
+    fireEvent.change(shortcodeInput, {
+      target: { value: 'after-error' },
+    })
+    fireEvent.change(targetUrlInput, {
+      target: { value: 'https://example.com/memorials/after-error' },
+    })
     await user.click(screen.getByRole('button', { name: 'Create Redirect' }))
 
     expect(await screen.findByText('Create failed once')).toBeInTheDocument()

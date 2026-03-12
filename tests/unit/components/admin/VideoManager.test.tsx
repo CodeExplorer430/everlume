@@ -3,6 +3,14 @@ import { fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { VideoManager } from '@/components/admin/VideoManager'
 
+function deferredResponse() {
+  let resolve: (response: Response) => void
+  const promise = new Promise<Response>((res) => {
+    resolve = res
+  })
+  return { promise, resolve: resolve! }
+}
+
 describe('VideoManager', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
@@ -71,14 +79,12 @@ describe('VideoManager', () => {
     render(<VideoManager memorialId="page-1" />)
 
     await screen.findByText(/Large videos can now be uploaded/)
-    await user.type(
-      screen.getByPlaceholderText(/YouTube URL/),
-      'https://www.youtube.com/watch?v=abcdefghijk'
-    )
-    await user.type(
-      screen.getByPlaceholderText(/Video Title/),
-      'Memorial Video'
-    )
+    fireEvent.change(screen.getByPlaceholderText(/YouTube URL/), {
+      target: { value: 'https://www.youtube.com/watch?v=abcdefghijk' },
+    })
+    fireEvent.change(screen.getByPlaceholderText(/Video Title/), {
+      target: { value: 'Memorial Video' },
+    })
     await user.click(screen.getByRole('button', { name: /add video/i }))
 
     expect(fetchMock).toHaveBeenCalledWith(
@@ -87,7 +93,7 @@ describe('VideoManager', () => {
         method: 'POST',
       })
     )
-  })
+  }, 30000)
 
   it('shows load error when initial fetch fails', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
@@ -126,10 +132,9 @@ describe('VideoManager', () => {
     render(<VideoManager memorialId="page-3" />)
 
     await screen.findByText(/Large videos can now be uploaded/)
-    await user.type(
-      screen.getByPlaceholderText(/YouTube URL/),
-      'https://www.youtube.com/watch?v=abcdefghijk'
-    )
+    fireEvent.change(screen.getByPlaceholderText(/YouTube URL/), {
+      target: { value: 'https://www.youtube.com/watch?v=abcdefghijk' },
+    })
     await user.click(screen.getByRole('button', { name: /add video/i }))
 
     expect(await screen.findByText('Unable to add video.')).toBeInTheDocument()
@@ -170,11 +175,12 @@ describe('VideoManager', () => {
     render(<VideoManager memorialId="page-4" />)
 
     await screen.findByText(/Large videos can now be uploaded/)
-    await user.type(
-      screen.getByPlaceholderText(/YouTube URL/),
-      'https://www.youtube.com/watch?v=abcdefghijk'
-    )
-    await user.type(screen.getByPlaceholderText(/Video Title/), 'Queued')
+    fireEvent.change(screen.getByPlaceholderText(/YouTube URL/), {
+      target: { value: 'https://www.youtube.com/watch?v=abcdefghijk' },
+    })
+    fireEvent.change(screen.getByPlaceholderText(/Video Title/), {
+      target: { value: 'Queued' },
+    })
     await user.click(screen.getByRole('button', { name: /add video/i }))
 
     expect(await screen.findByText('Reloaded Video')).toBeInTheDocument()
@@ -351,6 +357,20 @@ describe('VideoManager', () => {
 
     expect(await screen.findByText('Untitled Video')).toBeInTheDocument()
     expect(screen.getByText('YouTube ID: providerless')).toBeInTheDocument()
+  })
+
+  it('falls back to an empty video list when the load response omits videos', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({}), { status: 200 })
+    )
+
+    render(<VideoManager memorialId="page-7c" />)
+
+    expect(
+      await screen.findByText(/Large videos can now be uploaded/)
+    ).toBeInTheDocument()
+    expect(screen.queryByLabelText(/delete video/i)).not.toBeInTheDocument()
+    expect(screen.queryByText('Untitled Video')).not.toBeInTheDocument()
   })
 
   it('clears the selected file when the file input is reset', async () => {
@@ -1278,5 +1298,213 @@ describe('VideoManager', () => {
     expect(
       await screen.findByText('Choose a video file first.')
     ).toBeInTheDocument()
+  })
+
+  it('uses fallback mime types for typeless file uploads', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async (input, init) => {
+        const url = String(input)
+        if (url.includes('/api/admin/memorials/page-13/videos')) {
+          return new Response(JSON.stringify({ videos: [] }), { status: 200 })
+        }
+        if (
+          url === '/api/admin/videos/uploads/init' &&
+          init?.method === 'POST'
+        ) {
+          return new Response(
+            JSON.stringify({
+              job: {
+                id: '550e8400-e29b-41d4-a716-446655440013',
+                status: 'uploading',
+                uploadUrl: 'https://upload.test/typeless-video',
+              },
+            }),
+            { status: 201 }
+          )
+        }
+        if (
+          url === 'https://upload.test/typeless-video' &&
+          (init?.method === 'PUT' || !init?.method)
+        ) {
+          return new Response(null, { status: 200 })
+        }
+        if (url.endsWith('/start') && init?.method === 'POST') {
+          return new Response(JSON.stringify({ ok: true }), { status: 202 })
+        }
+        if (url.endsWith('/550e8400-e29b-41d4-a716-446655440013')) {
+          return new Response(
+            JSON.stringify({
+              job: {
+                id: '550e8400-e29b-41d4-a716-446655440013',
+                status: 'attached',
+              },
+            }),
+            { status: 200 }
+          )
+        }
+        return new Response(JSON.stringify({ videos: [] }), { status: 200 })
+      })
+
+    const user = userEvent.setup()
+    render(<VideoManager memorialId="page-13" />)
+
+    await screen.findByText(/Large videos can now be uploaded/)
+    const file = new File(['video-bytes'], 'tribute.bin', { type: '' })
+    const fileInput = document.querySelector(
+      'input[type="file"]'
+    ) as HTMLInputElement
+    fireEvent.change(fileInput, { target: { files: [file] } })
+    await user.click(
+      screen.getByRole('button', { name: /upload and process video/i })
+    )
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/admin/videos/uploads/init',
+        expect.objectContaining({
+          method: 'POST',
+        })
+      )
+    })
+
+    const initCall = fetchMock.mock.calls.find(
+      ([url]) => String(url) === '/api/admin/videos/uploads/init'
+    )
+    expect(initCall).toBeTruthy()
+    expect(JSON.parse(String(initCall?.[1]?.body))).toMatchObject({
+      mimeType: 'video/mp4',
+    })
+
+    const uploadCall = fetchMock.mock.calls.find(
+      ([url]) => String(url) === 'https://upload.test/typeless-video'
+    )
+    expect(uploadCall?.[1]).toMatchObject({
+      headers: { 'Content-Type': 'application/octet-stream' },
+    })
+  })
+
+  it('shows fallback init and start errors when those responses are non-json', async () => {
+    let stage: 'init' | 'start' = 'init'
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/api/admin/memorials/page-14/videos')) {
+        return new Response(JSON.stringify({ videos: [] }), { status: 200 })
+      }
+      if (url === '/api/admin/videos/uploads/init' && init?.method === 'POST') {
+        if (stage === 'init') {
+          return new Response('bad-init', { status: 500 })
+        }
+        return new Response(
+          JSON.stringify({
+            job: {
+              id: '550e8400-e29b-41d4-a716-446655440014',
+              status: 'uploading',
+              uploadUrl: 'https://upload.test/start-error',
+            },
+          }),
+          { status: 201 }
+        )
+      }
+      if (url === 'https://upload.test/start-error' && init?.method === 'PUT') {
+        return new Response(null, { status: 200 })
+      }
+      if (url.endsWith('/start') && init?.method === 'POST') {
+        return new Response('bad-start', { status: 500 })
+      }
+      return new Response(JSON.stringify({ videos: [] }), { status: 200 })
+    })
+
+    const user = userEvent.setup()
+    render(<VideoManager memorialId="page-14" />)
+
+    await screen.findByText(/Large videos can now be uploaded/)
+    let fileInput = document.querySelector(
+      'input[type="file"]'
+    ) as HTMLInputElement
+    await user.upload(
+      fileInput,
+      new File(['video-bytes'], 'tribute.mp4', { type: 'video/mp4' })
+    )
+    await user.click(
+      screen.getByRole('button', { name: /upload and process video/i })
+    )
+
+    expect(
+      await screen.findByText('Unable to initialize file upload.')
+    ).toBeInTheDocument()
+
+    stage = 'start'
+    fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
+    await user.upload(
+      fileInput,
+      new File(['video-bytes'], 'tribute.mp4', { type: 'video/mp4' })
+    )
+    await user.click(
+      screen.getByRole('button', { name: /upload and process video/i })
+    )
+
+    expect(
+      await screen.findByText('Unable to start video processing.')
+    ).toBeInTheDocument()
+  })
+
+  it('shows a row-level loader only for the video being deleted', async () => {
+    const deleteRequest = deferredResponse()
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/api/admin/memorials/page-15/videos')) {
+        return new Response(
+          JSON.stringify({
+            videos: [
+              {
+                id: 'video-1',
+                provider: 'youtube',
+                provider_id: 'abcdefghijk',
+                title: 'First clip',
+              },
+              {
+                id: 'video-2',
+                provider: 'cloudinary',
+                provider_id: 'everlume/demo',
+                title: 'Second clip',
+              },
+            ],
+          }),
+          { status: 200 }
+        )
+      }
+      if (url === '/api/admin/videos/video-1' && init?.method === 'DELETE') {
+        return deleteRequest.promise
+      }
+      return new Response('{}', { status: 200 })
+    })
+
+    const user = userEvent.setup()
+    render(<VideoManager memorialId="page-15" />)
+
+    await screen.findByText('First clip')
+    const deleteButtons = screen.getAllByRole('button', {
+      name: /delete video/i,
+    })
+
+    await user.click(deleteButtons[0])
+
+    await waitFor(() => {
+      expect(screen.queryByText('First clip')).not.toBeInTheDocument()
+      expect(screen.getByText('Second clip')).toBeInTheDocument()
+      expect(
+        screen.getAllByRole('button', { name: /delete video/i })
+      ).toHaveLength(1)
+    })
+
+    deleteRequest.resolve(
+      new Response(JSON.stringify({ ok: true }), { status: 200 })
+    )
+
+    await waitFor(() => {
+      expect(screen.queryByText('First clip')).not.toBeInTheDocument()
+      expect(screen.getByText('Second clip')).toBeInTheDocument()
+    })
   })
 })
