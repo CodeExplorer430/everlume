@@ -245,6 +245,57 @@ describe('admin users route', () => {
     })
   })
 
+  it('GET tolerates null profile and auth-user collections', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'admin-1' } } })
+    mockProfileSingle.mockResolvedValue({
+      data: { role: 'admin', is_active: true },
+      error: null,
+    })
+    mockServiceProfilesOrder.mockResolvedValue({
+      data: null,
+      error: null,
+    })
+    mockListUsers.mockResolvedValue({
+      data: null,
+      error: null,
+    })
+
+    const res = await GET()
+
+    expect(res.status).toBe(200)
+    await expect(res.json()).resolves.toEqual({ users: [] })
+  })
+
+  it('GET treats a null auth user list as invited when profile rows are present', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'admin-1' } } })
+    mockProfileSingle.mockResolvedValue({
+      data: { role: 'admin', is_active: true },
+      error: null,
+    })
+    mockServiceProfilesOrder.mockResolvedValue({
+      data: [{ id: 'u1', email: 'u1@test.dev', is_active: true }],
+      error: null,
+    })
+    mockListUsers.mockResolvedValue({
+      data: null,
+      error: null,
+    })
+
+    const res = await GET()
+
+    expect(res.status).toBe(200)
+    await expect(res.json()).resolves.toEqual({
+      users: [
+        {
+          id: 'u1',
+          email: 'u1@test.dev',
+          is_active: true,
+          account_state: 'invited',
+        },
+      ],
+    })
+  })
+
   it('POST invites and upserts user with a password setup redirect', async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'admin-1' } } })
     mockProfileSingle.mockResolvedValue({

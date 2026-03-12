@@ -347,6 +347,31 @@ describe('/memorials/[slug] page', () => {
     expect(mockPageSingle).not.toHaveBeenCalled()
   })
 
+  it('uses fallback metadata copy for database memorials without a name or hero image', async () => {
+    mockPageSingle.mockResolvedValue({
+      data: {
+        ...publicPage,
+        full_name: null,
+        hero_image_url: null,
+      },
+    })
+
+    const mod = await import('@/app/memorials/[slug]/page')
+    const metadata = await mod.generateMetadata({
+      params: Promise.resolve({ slug: 'jane' }),
+    })
+
+    expect(metadata).toEqual(
+      expect.objectContaining({
+        description: 'A digital memorial for our loved one.',
+        openGraph: expect.objectContaining({
+          description: 'A digital memorial for our loved one.',
+          images: [],
+        }),
+      })
+    )
+  })
+
   it('returns empty metadata when the memorial cannot be found', async () => {
     mockPageSingle.mockResolvedValue({ data: null })
 
@@ -596,6 +621,48 @@ describe('/memorials/[slug] page', () => {
             id: '51111111-1111-1111-1111-111111111111',
           }),
         ],
+      })
+    )
+  })
+
+  it('falls back to empty collections and featured layout when database queries or settings omit values', async () => {
+    mockPageSingle.mockResolvedValue({
+      data: {
+        ...publicPage,
+        memorial_video_layout: null,
+        memorial_slideshow_enabled: null,
+        memorial_slideshow_interval_ms: null,
+      },
+    })
+    mockSiteSettingsSingle.mockResolvedValue({
+      data: {
+        memorial_slideshow_enabled: true,
+        memorial_slideshow_interval_ms: 4500,
+        memorial_video_layout: 'featured',
+      },
+    })
+    mockPhotosOrder.mockResolvedValue({ data: null })
+    mockGuestbookOrder.mockResolvedValue({ data: null })
+    mockTimelineOrder.mockResolvedValue({ data: null })
+    mockVideosOrder.mockResolvedValue({ data: null })
+
+    const mod = await import('@/app/memorials/[slug]/page')
+    const node = await mod.default({
+      params: Promise.resolve({ slug: 'jane' }),
+    })
+    render(node)
+
+    expect(mockMemorialPageView).toHaveBeenCalledWith(
+      expect.objectContaining({
+        memorial: expect.objectContaining({
+          memorial_video_layout: 'featured',
+          memorial_slideshow_enabled: true,
+          memorial_slideshow_interval_ms: 4500,
+        }),
+        photos: [],
+        guestbook: [],
+        timeline: [],
+        videos: [],
       })
     )
   })

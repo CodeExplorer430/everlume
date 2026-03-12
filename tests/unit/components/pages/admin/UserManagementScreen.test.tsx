@@ -126,6 +126,63 @@ describe('UserManagementScreen', () => {
     expect(screen.getByText('No users match your search.')).toBeInTheDocument()
   })
 
+  it('falls back to the default load error when the initial user response is not json', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('broken', { status: 500 })
+    )
+
+    render(<UserManagementScreen />)
+
+    expect(await screen.findByText('Unable to load users.')).toBeInTheDocument()
+  })
+
+  it('treats a missing users payload as an empty list', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({}), { status: 200 })
+    )
+
+    render(<UserManagementScreen />)
+
+    expect(await screen.findByText('Invite New User')).toBeInTheDocument()
+    expect(screen.getByText('No users match your search.')).toBeInTheDocument()
+  })
+
+  it('filters users safely when profile names or emails are missing', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          users: [
+            makeUser({
+              id: 'u1',
+              email: '',
+              full_name: '',
+              role: 'viewer',
+            }),
+            makeUser({
+              id: 'u2',
+              email: 'maria@example.com',
+              full_name: 'Maria Reyes',
+              role: 'editor',
+            }),
+          ],
+        }),
+        { status: 200 }
+      )
+    )
+
+    const user = userEvent.setup()
+    render(<UserManagementScreen />)
+
+    await screen.findByText('Maria Reyes')
+    await user.type(
+      screen.getByPlaceholderText('Search users, emails, or roles'),
+      'maria'
+    )
+
+    expect(screen.getByText('Maria Reyes')).toBeInTheDocument()
+    expect(screen.queryByText('Alex Santos')).not.toBeInTheDocument()
+  })
+
   it('invites a new user', async () => {
     const fetchMock = vi
       .spyOn(globalThis, 'fetch')
@@ -684,6 +741,35 @@ describe('UserManagementScreen', () => {
     expect(await screen.findByText('Deactivate failed')).toBeInTheDocument()
   })
 
+  it('falls back to the default deactivate error when the response is not json', async () => {
+    const confirmMock = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url === '/api/admin/users' && (!init || !init.method)) {
+        return new Response(JSON.stringify({ users: [makeUser()] }), {
+          status: 200,
+        })
+      }
+      if (url === '/api/admin/users/u1' && init?.method === 'DELETE') {
+        return new Response('broken', { status: 500 })
+      }
+      return new Response(JSON.stringify({}), { status: 200 })
+    })
+
+    const user = userEvent.setup()
+    render(<UserManagementScreen />)
+    await screen.findByText('Alex Santos')
+
+    await user.click(
+      screen.getByRole('button', { name: 'Deactivate Alex Santos' })
+    )
+
+    expect(confirmMock).toHaveBeenCalled()
+    expect(
+      await screen.findByText('Unable to deactivate user.')
+    ).toBeInTheDocument()
+  })
+
   it('reactivates inactive users and preserves the returned account state', async () => {
     const fetchMock = vi
       .spyOn(globalThis, 'fetch')
@@ -770,6 +856,101 @@ describe('UserManagementScreen', () => {
     expect(
       screen.getByRole('button', { name: 'Reactivate Alex Santos' })
     ).toBeInTheDocument()
+  })
+
+  it('preserves unrelated users when deactivation returns an updated user payload', async () => {
+    const confirmMock = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url === '/api/admin/users' && (!init || !init.method)) {
+        return new Response(
+          JSON.stringify({
+            users: [
+              makeUser(),
+              makeUser({
+                id: 'u2',
+                email: 'maria@example.com',
+                full_name: 'Maria Reyes',
+              }),
+            ],
+          }),
+          { status: 200 }
+        )
+      }
+      if (url === '/api/admin/users/u1' && init?.method === 'DELETE') {
+        return new Response(
+          JSON.stringify({
+            user: makeUser({
+              is_active: false,
+              account_state: 'deactivated',
+              deactivated_at: '2026-03-08T00:00:00.000Z',
+            }),
+          }),
+          { status: 200 }
+        )
+      }
+      return new Response(JSON.stringify({}), { status: 200 })
+    })
+
+    const user = userEvent.setup()
+    render(<UserManagementScreen />)
+    await screen.findByText('Maria Reyes')
+
+    await user.click(
+      screen.getByRole('button', { name: 'Deactivate Alex Santos' })
+    )
+
+    expect(confirmMock).toHaveBeenCalled()
+    expect(await screen.findByText('User deactivated.')).toBeInTheDocument()
+    expect(screen.getByText('Maria Reyes')).toBeInTheDocument()
+  })
+
+  it('updates only the invited user when resend invite returns a user payload', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url === '/api/admin/users' && (!init || !init.method)) {
+        return new Response(
+          JSON.stringify({
+            users: [
+              makeUser({
+                account_state: 'invited',
+                invited_at: '2026-03-01T00:00:00.000Z',
+              }),
+              makeUser({
+                id: 'u2',
+                email: 'maria@example.com',
+                full_name: 'Maria Reyes',
+              }),
+            ],
+          }),
+          { status: 200 }
+        )
+      }
+      if (url === '/api/admin/users/u1/invite' && init?.method === 'POST') {
+        return new Response(
+          JSON.stringify({
+            user: makeUser({
+              account_state: 'invited',
+              invited_at: '2026-03-09T00:00:00.000Z',
+            }),
+            message: 'Invite email sent.',
+          }),
+          { status: 200 }
+        )
+      }
+      return new Response(JSON.stringify({}), { status: 200 })
+    })
+
+    const user = userEvent.setup()
+    render(<UserManagementScreen />)
+    await screen.findByText('Maria Reyes')
+
+    await user.click(
+      screen.getByRole('button', { name: 'Resend invite to Alex Santos' })
+    )
+
+    expect(await screen.findByText('Invite email sent.')).toBeInTheDocument()
+    expect(screen.getByText('Maria Reyes')).toBeInTheDocument()
   })
 
   it('signs the current browser out after self-deactivation', async () => {
