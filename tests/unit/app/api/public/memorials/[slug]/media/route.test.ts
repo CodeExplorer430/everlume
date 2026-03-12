@@ -107,6 +107,12 @@ describe('GET /api/public/memorials/[slug]/media', () => {
     const json = await res.json()
     expect(json.photos[0].image_url).toBe('https://img/1.jpg')
     expect(mockCreateSignedMediaToken).not.toHaveBeenCalled()
+    expect(mockPageEq).toHaveBeenCalledWith('slug', 'legacy')
+    expect(mockPhotosEq).toHaveBeenCalledWith('page_id', 'page-1')
+    expect(mockPhotosOrder).toHaveBeenCalledWith('sort_index', {
+      ascending: true,
+    })
+    expect(mockSiteSettingsSingle).not.toHaveBeenCalled()
   })
 
   it('returns tokenized media urls for password memorials after unlock', async () => {
@@ -149,6 +155,7 @@ describe('GET /api/public/memorials/[slug]/media', () => {
       '/api/public/media/photo-1?variant=image&token='
     )
     expect(mockCreateSignedMediaToken).toHaveBeenCalledTimes(2)
+    expect(mockSiteSettingsSingle).toHaveBeenCalledTimes(1)
   })
 
   it('returns 403 when protected media consent has not been confirmed', async () => {
@@ -178,6 +185,22 @@ describe('GET /api/public/memorials/[slug]/media', () => {
       message: 'Confirm the protected media notice before viewing photos.',
     })
     expect(mockCreateSignedMediaToken).not.toHaveBeenCalled()
+  })
+
+  it('returns 404 when the memorial cannot be found', async () => {
+    mockPageSingle.mockResolvedValue({ data: null })
+
+    const req = new NextRequest(
+      'http://localhost/api/public/memorials/missing/media'
+    )
+    const res = await GET(req, { params: Promise.resolve({ slug: 'missing' }) })
+
+    expect(res.status).toBe(404)
+    await expect(res.json()).resolves.toMatchObject({
+      code: 'NOT_FOUND',
+      message: 'Memorial not found.',
+    })
+    expect(mockPhotosOrder).not.toHaveBeenCalled()
   })
 
   it('returns 403 when a password memorial has not been unlocked', async () => {
@@ -236,6 +259,37 @@ describe('GET /api/public/memorials/[slug]/media', () => {
     })
   })
 
+  it('returns 500 when the photo query fails', async () => {
+    mockPageSingle.mockResolvedValue({
+      data: {
+        id: 'page-1',
+        owner_id: 'owner-1',
+        privacy: 'public',
+        access_mode: 'public',
+        password_updated_at: null,
+      },
+    })
+    mockCanAccessMemorial.mockResolvedValue({
+      allowed: true,
+      requiresPassword: false,
+    })
+    mockPhotosOrder.mockResolvedValue({
+      data: null,
+      error: { message: 'boom' },
+    })
+
+    const req = new NextRequest(
+      'http://localhost/api/public/memorials/legacy/media'
+    )
+    const res = await GET(req, { params: Promise.resolve({ slug: 'legacy' }) })
+
+    expect(res.status).toBe(500)
+    await expect(res.json()).resolves.toMatchObject({
+      code: 'DATABASE_ERROR',
+      message: 'Unable to load media.',
+    })
+  })
+
   it('falls back to legacy privacy when access_mode is missing', async () => {
     mockPageSingle.mockResolvedValue({
       data: {
@@ -278,6 +332,49 @@ describe('GET /api/public/memorials/[slug]/media', () => {
     )
   })
 
+  it('falls back to consent version 1 and returns an empty protected gallery when settings are missing', async () => {
+    mockPageSingle.mockResolvedValue({
+      data: {
+        id: 'page-1',
+        owner_id: 'owner-1',
+        privacy: 'private',
+        access_mode: 'password',
+        password_updated_at: '2026-03-01T00:00:00.000Z',
+        media_consent_revoked_at: null,
+      },
+    })
+    mockSiteSettingsSingle.mockResolvedValue({ data: null })
+    mockCanAccessMemorial.mockResolvedValue({
+      allowed: true,
+      requiresPassword: false,
+    })
+    mockPhotosOrder.mockResolvedValue({
+      data: [],
+      error: null,
+    })
+
+    const req = new NextRequest(
+      'http://localhost/api/public/memorials/protected/media',
+      {
+        headers: { cookie: 'everlume_memorial_media_consent_page-1=valid' },
+      }
+    )
+    const res = await GET(req, {
+      params: Promise.resolve({ slug: 'protected' }),
+    })
+
+    expect(res.status).toBe(200)
+    await expect(res.json()).resolves.toEqual({ photos: [] })
+    expect(mockVerifyConsent).toHaveBeenCalledWith(
+      'valid',
+      'page-1',
+      '2026-03-01T00:00:00.000Z',
+      1,
+      null
+    )
+    expect(mockCreateSignedMediaToken).not.toHaveBeenCalled()
+  })
+
   it('returns fixture-backed media without hitting the database when the e2e public lane is enabled', async () => {
     vi.stubEnv('E2E_PUBLIC_FIXTURES', '1')
     mockCanAccessMemorial.mockResolvedValue({
@@ -296,6 +393,29 @@ describe('GET /api/public/memorials/[slug]/media', () => {
     const json = await res.json()
     expect(json.photos).toHaveLength(2)
     expect(json.photos[0].image_url).toBe('/vercel.svg')
+    expect(mockPageSingle).not.toHaveBeenCalled()
+    expect(mockPhotosOrder).not.toHaveBeenCalled()
+  })
+
+  it('returns fixture private memorial denial without hitting the database', async () => {
+    vi.stubEnv('E2E_PUBLIC_FIXTURES', '1')
+    mockCanAccessMemorial.mockResolvedValue({
+      allowed: false,
+      requiresPassword: false,
+    })
+
+    const req = new NextRequest(
+      'http://localhost/api/public/memorials/e2e-private-memorial/media'
+    )
+    const res = await GET(req, {
+      params: Promise.resolve({ slug: 'e2e-private-memorial' }),
+    })
+
+    expect(res.status).toBe(403)
+    await expect(res.json()).resolves.toMatchObject({
+      code: 'FORBIDDEN',
+      message: 'This memorial is private.',
+    })
     expect(mockPageSingle).not.toHaveBeenCalled()
     expect(mockPhotosOrder).not.toHaveBeenCalled()
   })
@@ -341,5 +461,36 @@ describe('GET /api/public/memorials/[slug]/media', () => {
     await expect(res.json()).resolves.toMatchObject({
       code: 'CONSENT_REQUIRED',
     })
+  })
+
+  it('returns tokenized fixture media for password memorials after access and consent are granted', async () => {
+    vi.stubEnv('E2E_PUBLIC_FIXTURES', '1')
+    mockCanAccessMemorial.mockResolvedValue({
+      allowed: true,
+      requiresPassword: false,
+    })
+
+    const req = new NextRequest(
+      'http://localhost/api/public/memorials/e2e-password-memorial/media',
+      {
+        headers: {
+          cookie:
+            'everlume_memorial_media_consent_12222222-2222-2222-2222-222222222222=valid',
+        },
+      }
+    )
+    const res = await GET(req, {
+      params: Promise.resolve({ slug: 'e2e-password-memorial' }),
+    })
+
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json.photos).toHaveLength(2)
+    expect(json.photos[0].image_url).toContain(
+      '/api/public/media/22222222-2222-2222-2222-222222222221?variant=image&token='
+    )
+    expect(mockCreateSignedMediaToken).toHaveBeenCalledTimes(4)
+    expect(mockPageSingle).not.toHaveBeenCalled()
+    expect(mockPhotosOrder).not.toHaveBeenCalled()
   })
 })
