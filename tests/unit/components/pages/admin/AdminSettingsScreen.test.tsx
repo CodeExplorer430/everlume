@@ -542,6 +542,84 @@ describe('AdminSettingsScreen', () => {
     })
   })
 
+  it('ignores a second redirect delete while another delete is already pending', async () => {
+    const deleteRequest = deferredResponse()
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async (input, init) => {
+        const url = String(input)
+        if (url === '/api/admin/site-settings') {
+          return new Response(
+            JSON.stringify({ settings: { homeDirectoryEnabled: false } }),
+            { status: 200 }
+          )
+        }
+        if (url === '/api/admin/redirects') {
+          return new Response(
+            JSON.stringify({
+              redirects: [
+                {
+                  id: 'r1',
+                  shortcode: 'sample',
+                  target_url: 'https://example.com/memorials/sample',
+                  print_status: 'unverified',
+                  last_verified_at: null,
+                  is_active: true,
+                  created_at: '2026-01-01T00:00:00.000Z',
+                },
+                {
+                  id: 'r2',
+                  shortcode: 'second',
+                  target_url: 'https://example.com/memorials/second',
+                  print_status: 'unverified',
+                  last_verified_at: null,
+                  is_active: true,
+                  created_at: '2026-01-02T00:00:00.000Z',
+                },
+              ],
+            }),
+            { status: 200 }
+          )
+        }
+        if (url === '/api/admin/redirects/r1' && init?.method === 'DELETE') {
+          return deleteRequest.promise
+        }
+        if (url === '/api/admin/redirects/r2' && init?.method === 'DELETE') {
+          return new Response(JSON.stringify({ ok: true }), { status: 200 })
+        }
+        return new Response(JSON.stringify({}), { status: 200 })
+      })
+
+    const user = userEvent.setup()
+    render(<AdminSettingsScreen />)
+    await screen.findByText('/sample')
+
+    await user.click(
+      screen.getByRole('button', { name: 'Delete redirect sample' })
+    )
+    await user.click(
+      screen.getByRole('button', { name: 'Delete redirect second' })
+    )
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/admin/redirects/r1',
+      expect.objectContaining({ method: 'DELETE' })
+    )
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      '/api/admin/redirects/r2',
+      expect.objectContaining({ method: 'DELETE' })
+    )
+
+    deleteRequest.resolve(
+      new Response(JSON.stringify({ ok: true }), { status: 200 })
+    )
+
+    await waitFor(() => {
+      expect(screen.queryByText('/sample')).not.toBeInTheDocument()
+      expect(screen.getByText('/second')).toBeInTheDocument()
+    })
+  })
+
   it('keeps the optimistic redirect toggle when the API responds without a redirect payload', async () => {
     const fetchMock = vi
       .spyOn(globalThis, 'fetch')

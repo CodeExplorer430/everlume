@@ -306,12 +306,7 @@ export function GuestbookModerationScreen() {
                           disabled={pendingAction?.id === entry.id}
                           aria-label={`Delete guestbook entry from ${entry.name}`}
                         >
-                          {pendingAction?.id === entry.id &&
-                          pendingAction.kind === 'delete' ? (
-                            <Loader2 className="h-4 w-4 animate-spin text-destructive" />
-                          ) : (
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          )}
+                          <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
                     </td>

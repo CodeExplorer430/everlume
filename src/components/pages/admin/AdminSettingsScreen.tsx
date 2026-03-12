@@ -691,11 +691,7 @@ export function AdminSettingsScreen() {
                           disabled={deletingId === r.id}
                           aria-label={`Delete redirect ${r.shortcode}`}
                         >
-                          {deletingId === r.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          )}
+                          <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
                     </td>

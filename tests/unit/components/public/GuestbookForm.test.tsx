@@ -307,6 +307,26 @@ describe('GuestbookForm', () => {
     ).toBeInTheDocument()
   })
 
+  it('shows the script-load failure guidance before submission when captcha script loading fails', async () => {
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = 'site-key'
+    scriptState = 'error'
+    const fetchMock = vi.spyOn(globalThis, 'fetch')
+    const user = userEvent.setup()
+
+    render(<GuestbookForm memorialId="page-1" />)
+
+    await user.type(screen.getByLabelText('Your Name'), 'Maria')
+    await user.type(screen.getByLabelText('Your Message'), 'Forever remembered')
+    await user.click(screen.getByRole('button', { name: 'Post to Guestbook' }))
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(
+      await screen.findByText(
+        'Spam protection failed to load. Refresh the page and try again.'
+      )
+    ).toBeInTheDocument()
+  })
+
   it('shows a network failure and resets captcha when submission cannot reach the api', async () => {
     process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = 'site-key'
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('network down'))
@@ -340,6 +360,47 @@ describe('GuestbookForm', () => {
     expect(
       await screen.findByText(
         'The guestbook could not be reached. Please check your connection and try again.'
+      )
+    ).toBeInTheDocument()
+    expect(resetMock).toHaveBeenCalledWith('widget-1')
+  })
+
+  it('resets captcha after an api validation failure when captcha is enabled', async () => {
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = 'site-key'
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ code: 'VALIDATION_ERROR' }), {
+        status: 400,
+      })
+    )
+    let onSolved: ((token: string) => void) | undefined
+    const resetMock = vi.fn()
+
+    Object.defineProperty(window, 'turnstile', {
+      value: {
+        render: vi.fn(
+          (_container: HTMLElement, options: Record<string, unknown>) => {
+            onSolved = options.callback as (token: string) => void
+            return 'widget-1'
+          }
+        ),
+        reset: resetMock,
+      },
+      configurable: true,
+    })
+
+    const user = userEvent.setup()
+    render(<GuestbookForm memorialId="page-1" />)
+
+    await user.type(screen.getByLabelText('Your Name'), 'Maria')
+    await user.type(screen.getByLabelText('Your Message'), 'Forever remembered')
+    await act(async () => {
+      onSolved?.('token-123')
+    })
+    await user.click(screen.getByRole('button', { name: 'Post to Guestbook' }))
+
+    expect(
+      await screen.findByText(
+        'Please review your name and message, then try again.'
       )
     ).toBeInTheDocument()
     expect(resetMock).toHaveBeenCalledWith('widget-1')

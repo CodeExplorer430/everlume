@@ -88,7 +88,9 @@ describe('GuestbookModerationScreen', () => {
 
     const user = userEvent.setup()
     render(<GuestbookModerationScreen />)
-    await screen.findByText('Forever remembered')
+    await screen.findByRole('button', {
+      name: 'Delete guestbook entry from',
+    })
 
     await user.click(
       screen.getByRole('button', { name: 'Approve guestbook entry from' })
@@ -548,7 +550,9 @@ describe('GuestbookModerationScreen', () => {
 
     const user = userEvent.setup()
     render(<GuestbookModerationScreen />)
-    await screen.findByText('Forever remembered')
+    await screen.findByRole('button', {
+      name: 'Delete guestbook entry from Ana',
+    })
 
     await user.click(
       screen.getByRole('button', { name: 'Delete guestbook entry from Ana' })
@@ -594,7 +598,9 @@ describe('GuestbookModerationScreen', () => {
 
     const user = userEvent.setup()
     render(<GuestbookModerationScreen />)
-    await screen.findByText('Forever remembered')
+    await screen.findByRole('button', {
+      name: 'Delete guestbook entry from',
+    })
 
     await user.click(
       screen.getByRole('button', { name: 'Delete guestbook entry from' })
@@ -605,6 +611,71 @@ describe('GuestbookModerationScreen', () => {
         'Deleted guestbook entry from the moderation queue.'
       )
     ).toBeInTheDocument()
+  })
+
+  it('ignores a second delete while another delete is already pending', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const deleteRequest = deferredResponse()
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async (input, init) => {
+        const url = String(input)
+        if (url === '/api/admin/guestbook' && (!init || !init.method)) {
+          return new Response(
+            JSON.stringify({
+              entries: [
+                sampleEntry,
+                { ...sampleEntry, id: 'entry-2', name: 'Bea' },
+              ],
+            }),
+            { status: 200 }
+          )
+        }
+        if (
+          url === '/api/admin/guestbook/entry-1' &&
+          init?.method === 'DELETE'
+        ) {
+          return deleteRequest.promise
+        }
+        if (
+          url === '/api/admin/guestbook/entry-2' &&
+          init?.method === 'DELETE'
+        ) {
+          return new Response(JSON.stringify({ ok: true }), { status: 200 })
+        }
+        return new Response(JSON.stringify({}), { status: 200 })
+      })
+
+    const user = userEvent.setup()
+    render(<GuestbookModerationScreen />)
+    await screen.findByRole('button', {
+      name: 'Delete guestbook entry from Ana',
+    })
+
+    await user.click(
+      screen.getByRole('button', { name: 'Delete guestbook entry from Ana' })
+    )
+    await user.click(
+      screen.getByRole('button', { name: 'Delete guestbook entry from Bea' })
+    )
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/admin/guestbook/entry-1',
+      expect.objectContaining({ method: 'DELETE' })
+    )
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      '/api/admin/guestbook/entry-2',
+      expect.objectContaining({ method: 'DELETE' })
+    )
+
+    deleteRequest.resolve(
+      new Response(JSON.stringify({ ok: true }), { status: 200 })
+    )
+
+    expect(
+      await screen.findByText('Deleted Ana from the moderation queue.')
+    ).toBeInTheDocument()
+    expect(screen.getByText('Bea')).toBeInTheDocument()
   })
 
   it('ignores a second moderation action while another request is still pending', async () => {
