@@ -471,6 +471,48 @@ describe('DataExport', () => {
     )
   })
 
+  it('exports media-consent csv rows with explicit media metadata and version values', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          logs: [
+            {
+              id: 'c2',
+              event_type: 'media_accessed',
+              access_mode: 'private',
+              consent_source: 'gallery',
+              consent_version: 4,
+              media_kind: 'photo',
+              media_variant: 'thumb',
+              ip_hash: 'hash-2',
+              user_agent_hash: 'ua-2',
+              created_at: '2026-01-02T00:00:00.000Z',
+            },
+          ],
+        }),
+        { status: 200 }
+      )
+    )
+
+    const user = userEvent.setup()
+    render(<DataExport memorialId="page-1" memorialTitle="Jane Doe" />)
+
+    await user.click(
+      screen.getByRole('button', { name: /Export Media Consent/i })
+    )
+
+    await waitFor(() => {
+      expect(URL.createObjectURL).toHaveBeenCalled()
+    })
+
+    const csvBlob = vi.mocked(URL.createObjectURL).mock.calls.at(-1)?.[0]
+    expect(csvBlob).toBeInstanceOf(Blob)
+    const csvText = await (csvBlob as Blob).text()
+    expect(csvText).toContain(
+      'media_accessed,photo,thumb,private,4,gallery,hash-2,ua-2,'
+    )
+  })
+
   it('shows the loading state while the memorial package export is pending', async () => {
     const memorialRequest = deferredResponse()
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
@@ -710,6 +752,23 @@ describe('DataExport', () => {
     expect(await screen.findByText('No photos to export.')).toBeInTheDocument()
   })
 
+  it('treats missing media-consent logs as an empty export', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({}), { status: 200 })
+    )
+
+    const user = userEvent.setup()
+    render(<DataExport memorialId="page-1" memorialTitle="Jane Doe" />)
+
+    await user.click(
+      screen.getByRole('button', { name: /Export Media Consent/i })
+    )
+
+    expect(
+      await screen.findByText('No protected media consent records to export.')
+    ).toBeInTheDocument()
+  })
+
   it('clears a prior notice before showing a later export error', async () => {
     const fetchMock = vi
       .spyOn(globalThis, 'fetch')
@@ -886,6 +945,58 @@ describe('DataExport', () => {
     const files = Object.keys(zip.files).filter((name) => !zip.files[name]?.dir)
 
     expect(files).toEqual(['photos/photo_2.jpeg'])
+  })
+
+  it('falls back to a jpg extension when image content-type has no subtype', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input)
+      if (url === '/api/admin/memorials/page-1/photos') {
+        return new Response(
+          JSON.stringify({
+            photos: [
+              {
+                id: 'p1',
+                caption: 'Fallback extension',
+                image_url: 'https://cdn.example.com/fallback-ext',
+                thumb_url: null,
+                cloudinary_public_id: null,
+                created_at: '2026-01-01T00:00:00.000Z',
+                taken_at: null,
+              },
+            ],
+          }),
+          { status: 200 }
+        )
+      }
+      if (url === 'https://cdn.example.com/fallback-ext') {
+        return {
+          ok: true,
+          headers: {
+            get: vi.fn(() => 'image/'),
+          },
+          arrayBuffer: async () => Uint8Array.from([1, 2, 3]).buffer,
+        } as unknown as Response
+      }
+      return new Response(JSON.stringify({}), { status: 200 })
+    })
+
+    const user = userEvent.setup()
+    render(<DataExport memorialId="page-1" memorialTitle="Jane Doe" />)
+
+    await user.click(
+      screen.getByRole('button', { name: /Download All Photos/i })
+    )
+
+    await waitFor(() => {
+      expect(URL.createObjectURL).toHaveBeenCalled()
+    })
+
+    const zipBlob = vi.mocked(URL.createObjectURL).mock.calls.at(-1)?.[0]
+    expect(zipBlob).toBeInstanceOf(Blob)
+    const zip = await JSZip.loadAsync(zipBlob as Blob)
+    const files = Object.keys(zip.files).filter((name) => !zip.files[name]?.dir)
+
+    expect(files).toEqual(['photos/photo_1.jpg'])
   })
 
   it('shows the zip fallback error when photo download or archive generation throws', async () => {
@@ -1120,6 +1231,27 @@ describe('DataExport', () => {
 
     expect(
       await screen.findByText('JSON export failed: JSON export failed.')
+    ).toBeInTheDocument()
+  })
+
+  it('shows the generic media-consent export fallback when a non-error value is thrown', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input)
+      if (url === '/api/admin/memorials/page-1/media-consent') {
+        throw 'boom'
+      }
+      return new Response(JSON.stringify({}), { status: 200 })
+    })
+
+    const user = userEvent.setup()
+    render(<DataExport memorialId="page-1" memorialTitle="Jane Doe" />)
+
+    await user.click(
+      screen.getByRole('button', { name: /Export Media Consent/i })
+    )
+
+    expect(
+      await screen.findByText('Export failed: Export failed.')
     ).toBeInTheDocument()
   })
 

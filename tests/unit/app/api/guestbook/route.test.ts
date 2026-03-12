@@ -208,6 +208,162 @@ describe('POST /api/guestbook', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
+  it('uses the custom captcha verify url when configured', async () => {
+    vi.stubEnv('CAPTCHA_ENABLED', '1')
+    vi.stubEnv('CAPTCHA_SECRET', 'test-secret')
+    vi.stubEnv('CAPTCHA_VERIFY_URL', 'https://captcha.example.test/verify')
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ success: true }), { status: 200 })
+    )
+    mockSingle.mockResolvedValue({ data: { id: 'page-1' } })
+    mockInsert.mockResolvedValue({ error: null })
+
+    const req = new Request('http://localhost/api/guestbook', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-forwarded-for': '1.2.3.4',
+      },
+      body: JSON.stringify({
+        memorialId: '550e8400-e29b-41d4-a716-446655440000',
+        name: 'Maria',
+        message: 'Forever remembered',
+        submittedAt: Date.now() - 3000,
+        captchaToken: 'good-token',
+      }),
+    })
+
+    const res = await POST(req as never)
+
+    expect(res.status).toBe(201)
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://captcha.example.test/verify',
+      expect.objectContaining({ method: 'POST' })
+    )
+  })
+
+  it('returns captcha failure when captcha verification returns invalid json', async () => {
+    vi.stubEnv('CAPTCHA_ENABLED', '1')
+    vi.stubEnv('CAPTCHA_SECRET', 'test-secret')
+    fetchMock.mockResolvedValue(new Response('bad json', { status: 200 }))
+
+    const req = new Request('http://localhost/api/guestbook', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-forwarded-for': '1.2.3.4',
+      },
+      body: JSON.stringify({
+        memorialId: '550e8400-e29b-41d4-a716-446655440000',
+        name: 'Maria',
+        message: 'Forever remembered',
+        submittedAt: Date.now() - 3000,
+        captchaToken: 'maybe-valid',
+      }),
+    })
+
+    const res = await POST(req as never)
+    const payload = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(payload).toEqual({
+      code: 'CAPTCHA_FAILED',
+      message:
+        'Spam protection is temporarily unavailable. Please try again shortly.',
+    })
+  })
+
+  it('returns rate limited when too many messages are submitted for the same memorial and ip', async () => {
+    mockSingle.mockResolvedValue({ data: { id: 'page-1' } })
+    mockInsert.mockResolvedValue({ error: null })
+
+    const makeRequest = () =>
+      POST(
+        new Request('http://localhost/api/guestbook', {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            'x-forwarded-for': '198.51.100.10',
+          },
+          body: JSON.stringify({
+            memorialId: '550e8400-e29b-41d4-a716-446655440000',
+            name: 'Maria',
+            message: 'Forever remembered',
+            submittedAt: Date.now() - 3000,
+          }),
+        }) as never
+      )
+
+    for (let index = 0; index < 5; index += 1) {
+      const res = await makeRequest()
+      expect(res.status).toBe(201)
+    }
+
+    const blocked = await makeRequest()
+    const payload = await blocked.json()
+
+    expect(blocked.status).toBe(429)
+    expect(payload).toEqual({
+      code: 'RATE_LIMITED',
+      message: 'Too many requests. Please try again in a minute.',
+    })
+  })
+
+  it('returns not found when the memorial cannot be loaded', async () => {
+    mockSingle.mockResolvedValue({ data: null })
+
+    const req = new Request('http://localhost/api/guestbook', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-forwarded-for': '203.0.113.10',
+      },
+      body: JSON.stringify({
+        pageId: '550e8400-e29b-41d4-a716-446655440000',
+        name: 'Maria',
+        message: 'Forever remembered',
+        submittedAt: Date.now() - 3000,
+      }),
+    })
+
+    const res = await POST(req as never)
+    const payload = await res.json()
+
+    expect(res.status).toBe(404)
+    expect(payload).toEqual({
+      code: 'MEMORIAL_NOT_FOUND',
+      message: 'Memorial not found.',
+    })
+  })
+
+  it('returns a database error when guestbook insert fails', async () => {
+    mockSingle.mockResolvedValue({ data: { id: 'page-1' } })
+    mockInsert.mockResolvedValue({ error: { message: 'insert failed' } })
+
+    const req = new Request('http://localhost/api/guestbook', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-forwarded-for': '203.0.113.11',
+      },
+      body: JSON.stringify({
+        memorialId: '550e8400-e29b-41d4-a716-446655440000',
+        name: 'Maria',
+        message: 'Forever remembered',
+        submittedAt: Date.now() - 3000,
+      }),
+    })
+
+    const res = await POST(req as never)
+    const payload = await res.json()
+
+    expect(res.status).toBe(500)
+    expect(payload).toEqual({
+      code: 'DATABASE_ERROR',
+      message: 'Unable to submit your message right now.',
+    })
+  })
+
   it('creates guestbook entry when captcha verification succeeds', async () => {
     vi.stubEnv('CAPTCHA_ENABLED', '1')
     vi.stubEnv('CAPTCHA_SECRET', 'test-secret')

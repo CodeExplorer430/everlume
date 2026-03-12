@@ -154,6 +154,27 @@ describe('AdminMemorialInfo', () => {
     ).toBeInTheDocument()
   })
 
+  it('renders private access guidance when the memorial starts in private mode', () => {
+    render(
+      <AdminMemorialInfo
+        onUpdate={vi.fn()}
+        memorial={makePage({ accessMode: 'private' })}
+      />
+    )
+
+    expect(screen.getByText('private Mode')).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Hidden from public visitors and excluded from the homepage directory.'
+      )
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        /Visitors without admin access will not be able to open the memorial\./
+      )
+    ).toBeInTheDocument()
+  })
+
   it('submits edited dedication text', async () => {
     const fetchMock = vi
       .spyOn(globalThis, 'fetch')
@@ -285,6 +306,95 @@ describe('AdminMemorialInfo', () => {
       qrFrameStyle: 'double',
       qrCaptionFont: 'sans',
       qrShowLogo: true,
+    })
+  })
+
+  it('submits date fields and falls back to the default slideshow interval when cleared', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(
+        new Response(JSON.stringify({ ok: true }), { status: 200 })
+      )
+    const user = userEvent.setup()
+
+    render(
+      <AdminMemorialInfo
+        onUpdate={vi.fn()}
+        memorial={makePage({ id: 'page-13', dob: null, dod: null })}
+      />
+    )
+
+    await user.type(screen.getByLabelText('DOB'), '1945-01-01')
+    await user.type(screen.getByLabelText('DOD'), '2025-01-01')
+    await user.clear(screen.getByLabelText('Slideshow Interval (ms)'))
+    await user.click(screen.getByRole('button', { name: 'Save Changes' }))
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalled()
+    })
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(JSON.parse(String(init.body))).toMatchObject({
+      dob: '1945-01-01',
+      dod: '2025-01-01',
+      memorialSlideshowIntervalMs: 4500,
+    })
+  })
+
+  it('uses default memorial and qr settings when optional props are omitted', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(
+        new Response(JSON.stringify({ ok: true }), { status: 200 })
+      )
+    const user = userEvent.setup()
+
+    render(
+      <AdminMemorialInfo
+        onUpdate={vi.fn()}
+        memorial={makePage({
+          id: 'page-14',
+          memorial_theme: undefined,
+          memorial_slideshow_enabled: undefined,
+          memorial_slideshow_interval_ms: undefined,
+          memorial_video_layout: undefined,
+          memorial_photo_fit: undefined,
+          memorial_caption_style: undefined,
+          qr_template: undefined,
+          qr_caption: undefined,
+          qr_foreground_color: undefined,
+          qr_background_color: undefined,
+          qr_frame_style: undefined,
+          qr_caption_font: undefined,
+          qr_show_logo: undefined,
+        })}
+      />
+    )
+
+    expect(screen.getByLabelText('Theme Preset')).toHaveValue('classic')
+    expect(screen.getByLabelText('Slideshow')).toHaveValue('enabled')
+    expect(screen.getByLabelText('QR Caption')).toHaveValue('Scan me!')
+    expect(screen.getByLabelText('QR Monogram')).toHaveValue('disabled')
+
+    await user.click(screen.getByRole('button', { name: 'Save Changes' }))
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalled()
+    })
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(JSON.parse(String(init.body))).toMatchObject({
+      memorialTheme: 'classic',
+      memorialSlideshowEnabled: true,
+      memorialSlideshowIntervalMs: 4500,
+      memorialVideoLayout: 'grid',
+      memorialPhotoFit: 'cover',
+      memorialCaptionStyle: 'classic',
+      qrTemplate: 'classic',
+      qrCaption: 'Scan me!',
+      qrForegroundColor: '#111827',
+      qrBackgroundColor: '#ffffff',
+      qrFrameStyle: 'line',
+      qrCaptionFont: 'serif',
+      qrShowLogo: false,
     })
   })
 })

@@ -101,6 +101,18 @@ describe('VideoManager', () => {
     expect(await screen.findByText('Videos unavailable.')).toBeInTheDocument()
   })
 
+  it('falls back to the default load error when the initial response is not json', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('bad', { status: 500 })
+    )
+
+    render(<VideoManager memorialId="page-2b" />)
+
+    expect(
+      await screen.findByText('Unable to load videos.')
+    ).toBeInTheDocument()
+  })
+
   it('shows fallback add error when add request fails with non-json body', async () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
       const url = String(input)
@@ -209,6 +221,42 @@ describe('VideoManager', () => {
     expect(screen.getByText('Clip')).toBeInTheDocument()
   })
 
+  it('shows the fallback delete error when delete fails with a non-json body', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/api/admin/memorials/page-5b/videos')) {
+        return new Response(
+          JSON.stringify({
+            videos: [
+              {
+                id: '1',
+                provider: 'youtube',
+                provider_id: 'abcdefghijk',
+                title: 'Clip',
+              },
+            ],
+          }),
+          { status: 200 }
+        )
+      }
+      if (url === '/api/admin/videos/1' && init?.method === 'DELETE') {
+        return new Response('bad', { status: 500 })
+      }
+      return new Response('{}', { status: 200 })
+    })
+
+    const user = userEvent.setup()
+    render(<VideoManager memorialId="page-5b" />)
+
+    await screen.findByText('Clip')
+    await user.click(screen.getByRole('button', { name: /delete video/i }))
+
+    expect(
+      await screen.findByText('Unable to delete video.')
+    ).toBeInTheDocument()
+    expect(screen.getByText('Clip')).toBeInTheDocument()
+  })
+
   it('shows fallback guidance when compression cannot reach free-tier size', async () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
       const url = String(input)
@@ -280,6 +328,53 @@ describe('VideoManager', () => {
     expect(
       screen.getByRole('button', { name: /upload and process video/i })
     ).toBeDisabled()
+  })
+
+  it('renders fallback labels for videos without a title or known provider', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          videos: [
+            {
+              id: 'null-provider',
+              provider: null,
+              provider_id: 'providerless',
+              title: null,
+            },
+          ],
+        }),
+        { status: 200 }
+      )
+    )
+
+    render(<VideoManager memorialId="page-7b" />)
+
+    expect(await screen.findByText('Untitled Video')).toBeInTheDocument()
+    expect(screen.getByText('YouTube ID: providerless')).toBeInTheDocument()
+  })
+
+  it('clears the selected file when the file input is reset', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ videos: [] }), { status: 200 })
+    )
+
+    const user = userEvent.setup()
+    render(<VideoManager memorialId="page-7c" />)
+
+    await screen.findByText(/Large videos can now be uploaded/)
+    const button = screen.getByRole('button', {
+      name: /upload and process video/i,
+    })
+    const fileInput = document.querySelector(
+      'input[type="file"]'
+    ) as HTMLInputElement
+    const file = new File(['video-bytes'], 'tribute.mp4', { type: 'video/mp4' })
+
+    await user.upload(fileInput, file)
+    expect(button).toBeEnabled()
+
+    fireEvent.change(fileInput, { target: { files: [] } })
+    expect(button).toBeDisabled()
   })
 
   it('shows an error when upload init fails before the file is uploaded', async () => {
