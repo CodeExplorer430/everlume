@@ -70,6 +70,7 @@ describe('GET /api/public/memorials/[slug]/media', () => {
 
   afterEach(() => {
     vi.unstubAllEnvs()
+    vi.doUnmock('@/lib/server/e2e-public-fixtures')
   })
 
   it('returns plain media urls for public pages', async () => {
@@ -373,6 +374,141 @@ describe('GET /api/public/memorials/[slug]/media', () => {
       null
     )
     expect(mockCreateSignedMediaToken).not.toHaveBeenCalled()
+  })
+
+  it('falls back to an empty public gallery when the photo query returns null data without an error', async () => {
+    mockPageSingle.mockResolvedValue({
+      data: {
+        id: 'page-1',
+        owner_id: 'owner-1',
+        privacy: 'public',
+        access_mode: 'public',
+        password_updated_at: null,
+      },
+    })
+    mockCanAccessMemorial.mockResolvedValue({
+      allowed: true,
+      requiresPassword: false,
+    })
+    mockPhotosOrder.mockResolvedValue({
+      data: null,
+      error: null,
+    })
+
+    const req = new NextRequest(
+      'http://localhost/api/public/memorials/legacy/media'
+    )
+    const res = await GET(req, { params: Promise.resolve({ slug: 'legacy' }) })
+
+    expect(res.status).toBe(200)
+    await expect(res.json()).resolves.toEqual({ photos: [] })
+    expect(mockCreateSignedMediaToken).not.toHaveBeenCalled()
+  })
+
+  it('falls back to an empty protected gallery when the photo query returns null data without an error', async () => {
+    mockPageSingle.mockResolvedValue({
+      data: {
+        id: 'page-1',
+        owner_id: 'owner-1',
+        privacy: 'private',
+        access_mode: 'password',
+        password_updated_at: '2026-03-01T00:00:00.000Z',
+        media_consent_revoked_at: null,
+      },
+    })
+    mockCanAccessMemorial.mockResolvedValue({
+      allowed: true,
+      requiresPassword: false,
+    })
+    mockPhotosOrder.mockResolvedValue({
+      data: null,
+      error: null,
+    })
+
+    const req = new NextRequest(
+      'http://localhost/api/public/memorials/protected/media',
+      {
+        headers: { cookie: 'everlume_memorial_media_consent_page-1=valid' },
+      }
+    )
+    const res = await GET(req, {
+      params: Promise.resolve({ slug: 'protected' }),
+    })
+
+    expect(res.status).toBe(200)
+    await expect(res.json()).resolves.toEqual({ photos: [] })
+    expect(mockCreateSignedMediaToken).not.toHaveBeenCalled()
+  })
+
+  it('falls back to null password timestamps and consent version 1 for protected fixture memorials', async () => {
+    vi.resetModules()
+    vi.stubEnv('E2E_PUBLIC_FIXTURES', '1')
+    vi.doMock('@/lib/server/e2e-public-fixtures', () => ({
+      getE2EMemorialFixtureBySlug: (slug: string) =>
+        slug === 'fixture-password-null'
+          ? {
+              memorial: {
+                id: 'fixture-1',
+                slug: 'fixture-password-null',
+                owner_id: 'owner-1',
+                title: 'Fixture Memorial',
+                full_name: 'Fixture Memorial',
+                dedication_text: null,
+                hero_image_url: null,
+                dob: null,
+                dod: null,
+                privacy: 'private',
+                access_mode: 'password',
+                password_hash: 'hashed',
+                password_updated_at: null,
+                media_consent_revoked_at: null,
+              },
+              photos: [
+                {
+                  id: 'fixture-photo-1',
+                  page_id: 'fixture-1',
+                  image_url: '/image.jpg',
+                  thumb_url: '/thumb.jpg',
+                  caption: 'Fixture photo',
+                  sort_index: 1,
+                },
+              ],
+              videos: [],
+              timeline: [],
+              guestbook: [],
+              siteSettings: undefined,
+            }
+          : null,
+    }))
+
+    const { GET: fixtureGet } =
+      await import('@/app/api/public/memorials/[slug]/media/route')
+
+    mockCanAccessMemorial.mockResolvedValue({
+      allowed: true,
+      requiresPassword: false,
+    })
+
+    const req = new NextRequest(
+      'http://localhost/api/public/memorials/fixture-password-null/media',
+      {
+        headers: {
+          cookie: 'everlume_memorial_media_consent_fixture-1=valid',
+        },
+      }
+    )
+    const res = await fixtureGet(req, {
+      params: Promise.resolve({ slug: 'fixture-password-null' }),
+    })
+
+    expect(res.status).toBe(200)
+    expect(mockVerifyConsent).toHaveBeenCalledWith(
+      'valid',
+      'fixture-1',
+      null,
+      1,
+      null
+    )
   })
 
   it('returns fixture-backed media without hitting the database when the e2e public lane is enabled', async () => {

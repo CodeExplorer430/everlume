@@ -354,6 +354,124 @@ describe('EditMemorialScreen', () => {
     })
   })
 
+  it('falls back to empty arrays when related payloads omit redirects and photos', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url === '/api/admin/memorials/page-1' && (!init || !init.method)) {
+        return new Response(
+          JSON.stringify({
+            memorial: {
+              id: 'page-1',
+              title: 'In Memory',
+              slug: 'in-memory',
+              full_name: 'Jane Doe',
+              dedicationText: null,
+              dob: null,
+              dod: null,
+              accessMode: 'public',
+              hero_image_url: null,
+            },
+          }),
+          { status: 200 }
+        )
+      }
+      if (url === '/api/admin/memorials/page-1/redirects') {
+        return new Response(JSON.stringify({}), { status: 200 })
+      }
+      if (url === '/api/admin/memorials/page-1/photos') {
+        return new Response(JSON.stringify({}), { status: 200 })
+      }
+
+      return new Response(JSON.stringify({}), { status: 200 })
+    })
+
+    render(<EditMemorialScreen memorialId="page-1" />)
+
+    expect(
+      await screen.findByText('Edit Memorial: In Memory')
+    ).toBeInTheDocument()
+    expect(screen.getByText('Redirect Count: 0')).toBeInTheDocument()
+    expect(screen.getByText('Photo Count: 0')).toBeInTheDocument()
+  })
+
+  it('keeps the hero image success path stable if memorial state becomes null before the patch resolves', async () => {
+    let resolveHeroPatch: ((value: Response) => void) | undefined
+    let memorialLoads = 0
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+      const url = String(input)
+      if (url === '/api/admin/memorials/page-1' && (!init || !init.method)) {
+        memorialLoads += 1
+        if (memorialLoads === 1) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                memorial: {
+                  id: 'page-1',
+                  title: 'In Memory',
+                  slug: 'in-memory',
+                  full_name: 'Jane Doe',
+                  dedicationText: null,
+                  dob: null,
+                  dod: null,
+                  accessMode: 'public',
+                  hero_image_url: null,
+                },
+              }),
+              { status: 200 }
+            )
+          )
+        }
+
+        return Promise.resolve(
+          new Response(JSON.stringify({ message: 'Reload failed' }), {
+            status: 500,
+          })
+        )
+      }
+      if (url === '/api/admin/memorials/page-1/redirects') {
+        return Promise.resolve(
+          new Response(JSON.stringify({ redirects: [] }), { status: 200 })
+        )
+      }
+      if (url === '/api/admin/memorials/page-1/photos') {
+        return Promise.resolve(
+          new Response(JSON.stringify({ photos: [] }), { status: 200 })
+        )
+      }
+      if (url === '/api/admin/memorials/page-1' && init?.method === 'PATCH') {
+        return new Promise((resolve) => {
+          resolveHeroPatch = resolve
+        })
+      }
+
+      return Promise.resolve(new Response(JSON.stringify({}), { status: 200 }))
+    })
+
+    const user = userEvent.setup()
+    render(<EditMemorialScreen memorialId="page-1" />)
+
+    expect(
+      await screen.findByText('Edit Memorial: In Memory')
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Set Hero Mock' }))
+    await user.click(
+      screen.getByRole('button', { name: 'Refresh Gallery Mock' })
+    )
+
+    expect(await screen.findByText('Reload failed')).toBeInTheDocument()
+    expect(await screen.findByText('Memorial not found.')).toBeInTheDocument()
+
+    await act(async () => {
+      resolveHeroPatch?.(
+        new Response(JSON.stringify({ ok: true }), { status: 200 })
+      )
+    })
+
+    expect(screen.getByText('Memorial not found.')).toBeInTheDocument()
+  })
+
   it('shows a fallback error when the hero image update fails', async () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
       const url = String(input)
