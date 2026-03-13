@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { GET } from '@/app/api/public/memorials/[slug]/media/route'
 
 const mockCanAccessMemorial = vi.fn()
+let fixtureOverride: ((slug: string) => unknown) | null = null
 const mockCreateSignedMediaToken = vi.fn(
   (...args: unknown[]) => `${args[0] as string}-${args[1] as string}-token`
 )
@@ -13,6 +14,26 @@ const mockSiteSettingsSingle = vi.fn()
 const mockPhotosOrder = vi.fn()
 const mockPhotosEq = vi.fn(() => ({ order: mockPhotosOrder }))
 const mockPhotosSelect = vi.fn(() => ({ eq: mockPhotosEq }))
+
+function mockSupabaseServerModule() {
+  return {
+    createClient: async () => ({
+      from: (table: string) => {
+        if (table === 'site_settings') {
+          return {
+            select: () => ({
+              eq: () => ({
+                single: mockSiteSettingsSingle,
+              }),
+            }),
+          }
+        }
+        if (table === 'pages') return { select: mockPageSelect }
+        return { select: mockPhotosSelect }
+      },
+    }),
+  }
+}
 
 vi.mock('@/lib/server/page-access', () => ({
   canAccessMemorial: (...args: unknown[]) => mockCanAccessMemorial(...args),
@@ -36,27 +57,25 @@ vi.mock('@/lib/server/media-consent', () => ({
     mockVerifyConsent(...args),
 }))
 
-vi.mock('@/lib/supabase/server', () => ({
-  createClient: async () => ({
-    from: (table: string) => {
-      if (table === 'site_settings') {
-        return {
-          select: () => ({
-            eq: () => ({
-              single: mockSiteSettingsSingle,
-            }),
-          }),
-        }
-      }
-      if (table === 'pages') return { select: mockPageSelect }
-      return { select: mockPhotosSelect }
-    },
-  }),
-}))
+vi.mock('@/lib/server/e2e-public-fixtures', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('@/lib/server/e2e-public-fixtures')>()
+
+  return {
+    ...actual,
+    getE2EMemorialFixtureBySlug: (slug: string) =>
+      fixtureOverride
+        ? fixtureOverride(slug)
+        : actual.getE2EMemorialFixtureBySlug(slug),
+  }
+})
+
+vi.mock('@/lib/supabase/server', mockSupabaseServerModule)
 
 describe('GET /api/public/memorials/[slug]/media', () => {
   beforeEach(() => {
     mockCanAccessMemorial.mockReset()
+    fixtureOverride = null
     mockCreateSignedMediaToken.mockClear()
     mockVerifyConsent.mockReset()
     mockPageSingle.mockReset()
@@ -70,7 +89,6 @@ describe('GET /api/public/memorials/[slug]/media', () => {
 
   afterEach(() => {
     vi.unstubAllEnvs()
-    vi.doUnmock('@/lib/server/e2e-public-fixtures')
   })
 
   it('returns plain media urls for public pages', async () => {
@@ -441,48 +459,42 @@ describe('GET /api/public/memorials/[slug]/media', () => {
   })
 
   it('falls back to null password timestamps and consent version 1 for protected fixture memorials', async () => {
-    vi.resetModules()
     vi.stubEnv('E2E_PUBLIC_FIXTURES', '1')
-    vi.doMock('@/lib/server/e2e-public-fixtures', () => ({
-      getE2EMemorialFixtureBySlug: (slug: string) =>
-        slug === 'fixture-password-null'
-          ? {
-              memorial: {
-                id: 'fixture-1',
-                slug: 'fixture-password-null',
-                owner_id: 'owner-1',
-                title: 'Fixture Memorial',
-                full_name: 'Fixture Memorial',
-                dedication_text: null,
-                hero_image_url: null,
-                dob: null,
-                dod: null,
-                privacy: 'private',
-                access_mode: 'password',
-                password_hash: 'hashed',
-                password_updated_at: null,
-                media_consent_revoked_at: null,
+    fixtureOverride = (slug: string) =>
+      slug === 'fixture-password-null'
+        ? {
+            memorial: {
+              id: 'fixture-1',
+              slug: 'fixture-password-null',
+              owner_id: 'owner-1',
+              title: 'Fixture Memorial',
+              full_name: 'Fixture Memorial',
+              dedication_text: null,
+              hero_image_url: null,
+              dob: null,
+              dod: null,
+              privacy: 'private',
+              access_mode: 'password',
+              password_hash: 'hashed',
+              password_updated_at: null,
+              media_consent_revoked_at: null,
+            },
+            photos: [
+              {
+                id: 'fixture-photo-1',
+                page_id: 'fixture-1',
+                image_url: '/image.jpg',
+                thumb_url: '/thumb.jpg',
+                caption: 'Fixture photo',
+                sort_index: 1,
               },
-              photos: [
-                {
-                  id: 'fixture-photo-1',
-                  page_id: 'fixture-1',
-                  image_url: '/image.jpg',
-                  thumb_url: '/thumb.jpg',
-                  caption: 'Fixture photo',
-                  sort_index: 1,
-                },
-              ],
-              videos: [],
-              timeline: [],
-              guestbook: [],
-              siteSettings: undefined,
-            }
-          : null,
-    }))
-
-    const { GET: fixtureGet } =
-      await import('@/app/api/public/memorials/[slug]/media/route')
+            ],
+            videos: [],
+            timeline: [],
+            guestbook: [],
+            siteSettings: undefined,
+          }
+        : null
 
     mockCanAccessMemorial.mockResolvedValue({
       allowed: true,
@@ -497,7 +509,7 @@ describe('GET /api/public/memorials/[slug]/media', () => {
         },
       }
     )
-    const res = await fixtureGet(req, {
+    const res = await GET(req, {
       params: Promise.resolve({ slug: 'fixture-password-null' }),
     })
 
