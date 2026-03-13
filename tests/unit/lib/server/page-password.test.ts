@@ -48,6 +48,18 @@ describe('memorial password helpers', () => {
     ).toBe(false)
   })
 
+  it('treats an unset password version as a stable token version', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-03-12T00:00:00.000Z'))
+
+    const token = createMemorialAccessToken('page-1', null)
+
+    expect(verifyMemorialAccessToken(token, 'page-1', null)).toBe(true)
+    expect(
+      verifyMemorialAccessToken(token, 'page-1', '2026-03-06T00:00:00.000Z')
+    ).toBe(false)
+  })
+
   it('rejects malformed memorial access tokens', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-03-12T00:00:00.000Z'))

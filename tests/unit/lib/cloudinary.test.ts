@@ -46,6 +46,14 @@ describe('cloudinary helpers', () => {
     ).toBe('everlume/a.jpg')
   })
 
+  it('normalizes public id from a cloudinary video URL', () => {
+    expect(
+      normalizeCloudinaryPublicId(
+        'https://res.cloudinary.com/demo/video/upload/v1740/everlume/a.mp4'
+      )
+    ).toBe('everlume/a.mp4')
+  })
+
   it('returns raw value when value is already a public id', () => {
     expect(normalizeCloudinaryPublicId('everlume/raw.jpg')).toBe(
       'everlume/raw.jpg'

@@ -46,6 +46,7 @@ describe('e2e public fixtures', () => {
         caption: 'Mateo with the family workshop in 1975',
       }),
     })
+    expect(getE2EMemorialFixtureBySlug('missing-slug')).toBeNull()
   })
 
   it('verifies the password memorial unlock secret only for password fixtures', () => {

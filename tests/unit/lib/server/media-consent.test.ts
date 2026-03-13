@@ -329,6 +329,37 @@ describe('media consent helpers', () => {
     expect(blankForwardedRecord.ip_hash).toBe(unknownRecord.ip_hash)
   })
 
+  it('falls back to unknown when the first forwarded-for segment is blank', () => {
+    const segmentedRequest = new NextRequest(
+      'http://localhost/api/public/memorials/jane/media-consent',
+      {
+        headers: {
+          'x-forwarded-for': '   , 203.0.113.10',
+        },
+      }
+    )
+    const unknownRequest = new NextRequest(
+      'http://localhost/api/public/memorials/jane/media-consent'
+    )
+
+    const segmentedRecord = buildMemorialMediaConsentRecord({
+      request: segmentedRequest,
+      memorialId: 'memorial-1',
+      accessMode: 'password',
+      consentVersion: 2,
+      eventType: 'consent_granted',
+    })
+    const unknownRecord = buildMemorialMediaConsentRecord({
+      request: unknownRequest,
+      memorialId: 'memorial-1',
+      accessMode: 'password',
+      consentVersion: 2,
+      eventType: 'consent_granted',
+    })
+
+    expect(segmentedRecord.ip_hash).toBe(unknownRecord.ip_hash)
+  })
+
   it('records media consent through the service-role client', async () => {
     mockInsert.mockResolvedValue({ error: null })
     const request = new NextRequest('http://localhost/api/public/media')
