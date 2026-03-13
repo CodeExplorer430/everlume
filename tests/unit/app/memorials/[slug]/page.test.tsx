@@ -347,6 +347,45 @@ describe('/memorials/[slug] page', () => {
     expect(mockPageSingle).not.toHaveBeenCalled()
   })
 
+  it('uses fallback fixture metadata copy when the fixture has no name or hero image', async () => {
+    vi.doMock('@/lib/server/e2e-public-fixtures', async () => {
+      const actual = await vi.importActual<
+        typeof import('@/lib/server/e2e-public-fixtures')
+      >('@/lib/server/e2e-public-fixtures')
+
+      return {
+        ...actual,
+        getE2EMemorialFixtureBySlug: (slug: string) =>
+          slug === 'fixture-fallback'
+            ? {
+                memorial: {
+                  ...publicPage,
+                  slug: 'fixture-fallback',
+                  full_name: null,
+                  hero_image_url: null,
+                },
+              }
+            : actual.getE2EMemorialFixtureBySlug(slug),
+      }
+    })
+
+    const mod = await import('@/app/memorials/[slug]/page')
+    const metadata = await mod.generateMetadata({
+      params: Promise.resolve({ slug: 'fixture-fallback' }),
+    })
+
+    expect(metadata).toEqual(
+      expect.objectContaining({
+        description: 'A digital memorial for our loved one.',
+        openGraph: expect.objectContaining({
+          description: 'A digital memorial for our loved one.',
+          images: [],
+        }),
+      })
+    )
+    expect(mockPageSingle).not.toHaveBeenCalled()
+  })
+
   it('uses fallback metadata copy for database memorials without a name or hero image', async () => {
     mockPageSingle.mockResolvedValue({
       data: {

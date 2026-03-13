@@ -133,6 +133,40 @@ describe('POST /api/admin/redirects', () => {
     )
   })
 
+  it('preserves last_verified_at when the inserted redirect row includes it', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    mockInsertSelectSingle.mockResolvedValue({
+      data: {
+        id: 'r1',
+        shortcode: 'grandma',
+        target_url: 'https://example.com/memorials/x',
+        print_status: 'verified',
+        last_verified_at: '2026-01-05T00:00:00Z',
+        is_active: true,
+        created_at: '2026-01-01T00:00:00Z',
+      },
+      error: null,
+    })
+
+    const req = new Request('http://localhost/api/admin/redirects', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        shortcode: 'Grandma',
+        targetUrl: 'https://example.com/memorials/x',
+      }),
+    })
+
+    const res = await POST(req as never)
+    const payload = await res.json()
+
+    expect(res.status).toBe(201)
+    expect(payload.redirect).toMatchObject({
+      print_status: 'verified',
+      last_verified_at: '2026-01-05T00:00:00Z',
+    })
+  })
+
   it('falls back to legacy redirect inserts and normalizes the response payload', async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
     mockInsertSelectSingle

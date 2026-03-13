@@ -140,4 +140,45 @@ describe('GET /api/admin/redirects', () => {
       },
     ])
   })
+
+  it('normalizes null redirect data to an empty list', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    mockOrder.mockResolvedValue({
+      data: null,
+      error: null,
+    })
+
+    const res = await GET()
+    const payload = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(payload.redirects).toEqual([])
+  })
+
+  it('preserves last_verified_at when the redirect row includes it', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    mockOrder.mockResolvedValue({
+      data: [
+        {
+          id: 'r1',
+          shortcode: 'legacy-link',
+          target_url: 'https://example.com/memorials/x',
+          print_status: 'verified',
+          last_verified_at: '2026-01-02T00:00:00Z',
+          is_active: true,
+          created_at: '2026-01-01T00:00:00Z',
+        },
+      ],
+      error: null,
+    })
+
+    const res = await GET()
+    const payload = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(payload.redirects[0]).toMatchObject({
+      print_status: 'verified',
+      last_verified_at: '2026-01-02T00:00:00Z',
+    })
+  })
 })
