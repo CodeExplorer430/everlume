@@ -8,6 +8,7 @@ Operational cadence for family admins.
 - Review guestbook moderation queue.
 - Confirm active short links still point to valid targets.
 - Check latest backup workflow runs in GitHub Actions.
+- Review current production alerts / failed health signals against the SLO doc.
 
 ## Monthly
 
@@ -20,6 +21,7 @@ Operational cadence for family admins.
 - Run restore drill (or review scheduled restore drill result artifact).
 - Perform QR health sweep for all production plaque codes.
 - Review incident log and unresolved risks.
+- Review consent-log and admin-audit retention windows against policy.
 
 ## Annually
 

@@ -7,6 +7,7 @@ import {
 import { logAdminAudit } from '@/lib/server/admin-audit'
 import { resolveMemorialId } from '@/lib/server/memorials'
 import { getYoutubeId } from '@/lib/server/youtube'
+import { validateAdminMutationOrigin } from '@/lib/security/request-origin'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -22,6 +23,9 @@ const videoSchema = z
   })
 
 export async function POST(request: NextRequest) {
+  const originError = validateAdminMutationOrigin(request)
+  if (originError) return originError
+
   let payload: unknown
   try {
     payload = await request.json()

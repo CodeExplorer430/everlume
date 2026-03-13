@@ -1,5 +1,6 @@
 import { databaseError, requireAdminUser } from '@/lib/server/admin-auth'
 import { logAdminAudit } from '@/lib/server/admin-audit'
+import { validateAdminMutationOrigin } from '@/lib/security/request-origin'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -80,6 +81,9 @@ export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
+  const originError = validateAdminMutationOrigin(request)
+  if (originError) return originError
+
   const params = await context.params
   const parsedParams = paramsSchema.safeParse(params)
   if (!parsedParams.success) {
@@ -208,9 +212,12 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
+  const originError = validateAdminMutationOrigin(request)
+  if (originError) return originError
+
   const params = await context.params
   const parsedParams = paramsSchema.safeParse(params)
   if (!parsedParams.success) {

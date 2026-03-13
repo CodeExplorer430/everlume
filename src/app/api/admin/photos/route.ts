@@ -6,6 +6,7 @@ import {
 } from '@/lib/server/admin-auth'
 import { logAdminAudit } from '@/lib/server/admin-audit'
 import { resolveMemorialId } from '@/lib/server/memorials'
+import { validateAdminMutationOrigin } from '@/lib/security/request-origin'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -27,6 +28,9 @@ const createPhotoSchema = z
   })
 
 export async function POST(request: NextRequest) {
+  const originError = validateAdminMutationOrigin(request)
+  if (originError) return originError
+
   let payload: unknown
   try {
     payload = await request.json()

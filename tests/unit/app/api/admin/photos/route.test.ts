@@ -85,6 +85,27 @@ describe('POST /api/admin/photos', () => {
     expect(mockLogAdminAudit).not.toHaveBeenCalled()
   })
 
+  it('rejects cross-origin photo metadata writes before auth', async () => {
+    const req = new Request('http://localhost/api/admin/photos', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        origin: 'https://evil.example',
+      },
+      body: JSON.stringify({
+        memorialId: '550e8400-e29b-41d4-a716-446655440000',
+        cloudinaryPublicId: 'everlume/abc',
+        imageUrl: 'https://res.cloudinary.com/demo/image/upload/abc.jpg',
+      }),
+    })
+
+    const res = await POST(req as never)
+
+    expect(res.status).toBe(403)
+    expect(mockGetUser).not.toHaveBeenCalled()
+    expect(mockPhotoInsert).not.toHaveBeenCalled()
+  })
+
   it('creates photo metadata for authorized owner', async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
     mockPageSingle.mockResolvedValue({ data: { id: 'page-1' } })

@@ -11,6 +11,7 @@ import {
   getVideoTranscodeApiTokenOrThrow,
   isVideoTranscodeConfigured,
 } from '@/lib/server/video-upload'
+import { validateAdminMutationOrigin } from '@/lib/security/request-origin'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -38,6 +39,9 @@ const transcodeInitResponseSchema = z.object({
 })
 
 export async function POST(request: NextRequest) {
+  const originError = validateAdminMutationOrigin(request)
+  if (originError) return originError
+
   let payload: unknown
   try {
     payload = await request.json()

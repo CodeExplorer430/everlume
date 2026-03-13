@@ -107,6 +107,28 @@ describe('admin users [id] route', () => {
     expect(mockUpdate).not.toHaveBeenCalled()
   })
 
+  it('rejects cross-origin user patch requests before auth', async () => {
+    const req = new Request(
+      'http://localhost/api/admin/users/550e8400-e29b-41d4-a716-446655440000',
+      {
+        method: 'PATCH',
+        headers: {
+          'content-type': 'application/json',
+          origin: 'https://evil.example',
+        },
+        body: JSON.stringify({ role: 'viewer' }),
+      }
+    )
+
+    const res = await PATCH(req as never, {
+      params: Promise.resolve({ id: '550e8400-e29b-41d4-a716-446655440000' }),
+    })
+
+    expect(res.status).toBe(403)
+    expect(mockGetUser).not.toHaveBeenCalled()
+    expect(mockUpdate).not.toHaveBeenCalled()
+  })
+
   it('returns 409 when trying to deactivate last active admin', async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'admin-1' } } })
     mockProfileSingle.mockResolvedValue({
@@ -625,6 +647,26 @@ describe('admin users [id] route', () => {
         entityId: '550e8400-e29b-41d4-a716-446655440000',
       })
     )
+  })
+
+  it('rejects cross-origin user delete requests before auth', async () => {
+    const req = new Request(
+      'http://localhost/api/admin/users/550e8400-e29b-41d4-a716-446655440000',
+      {
+        method: 'DELETE',
+        headers: {
+          origin: 'https://evil.example',
+        },
+      }
+    )
+
+    const res = await DELETE(req as never, {
+      params: Promise.resolve({ id: '550e8400-e29b-41d4-a716-446655440000' }),
+    })
+
+    expect(res.status).toBe(403)
+    expect(mockGetUser).not.toHaveBeenCalled()
+    expect(mockUpdate).not.toHaveBeenCalled()
   })
 
   it('returns 404 when deleting a missing user', async () => {

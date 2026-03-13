@@ -11,6 +11,7 @@ import {
   toMemorialRecord,
 } from '@/lib/server/memorials'
 import { hashMemorialPassword } from '@/lib/server/page-password'
+import { validateAdminMutationOrigin } from '@/lib/security/request-origin'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -94,6 +95,9 @@ export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
+  const originError = validateAdminMutationOrigin(request)
+  if (originError) return originError
+
   const params = await context.params
   const parsedParams = paramsSchema.safeParse(params)
   if (!parsedParams.success) {

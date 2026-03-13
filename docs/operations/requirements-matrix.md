@@ -49,7 +49,10 @@ This document records the current audit status of the repository's major product
 
 - Main quality gates currently pass when executed in a localhost-capable environment.
 - Turbopack remains intentionally diagnostic rather than release-blocking.
-- The remaining largest gaps are now governance-heavy rather than feature-heavy:
-  privacy/retention policy formalization, CSRF/origin review evidence, and
-  operational observability/SLO ownership.
+- Security and governance follow-through now includes explicit browser-origin
+  validation for admin mutations, a retention policy, and observability/SLO
+  ownership docs.
+- The largest remaining standards gaps are now higher-order governance items:
+  formal threat modeling, key rotation policy, and documented manual
+  accessibility review evidence.
 - Branch and PR hygiene are tracked separately from this matrix; see repo governance and GitHub state for merge workflow decisions.

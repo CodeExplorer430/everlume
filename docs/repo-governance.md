@@ -45,6 +45,7 @@ Configure in GitHub repository settings:
 5. Restrict direct pushes to `main`
 6. Enable Dependabot alerts and security updates
 7. Enable secret scanning (if available)
+8. Enable Dependency Graph so dependency review workflows remain actionable
 
 ## Ownership and Templates
 

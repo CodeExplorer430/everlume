@@ -5,6 +5,7 @@ import {
   requireAdminUser,
 } from '@/lib/server/admin-auth'
 import { logAdminAudit } from '@/lib/server/admin-audit'
+import { validateAdminMutationOrigin } from '@/lib/security/request-origin'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -13,9 +14,12 @@ const paramsSchema = z.object({
 })
 
 export async function POST(
-  _request: NextRequest,
+  request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
+  const originError = validateAdminMutationOrigin(request)
+  if (originError) return originError
+
   const params = await context.params
   const parsed = paramsSchema.safeParse(params)
   if (!parsed.success) {

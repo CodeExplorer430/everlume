@@ -148,6 +148,22 @@ describe('/api/admin/site-settings', () => {
     expect(mockSelect).not.toHaveBeenCalled()
   })
 
+  it('rejects cross-origin site settings updates before auth', async () => {
+    const req = new Request('http://localhost/api/admin/site-settings', {
+      method: 'PATCH',
+      headers: {
+        'content-type': 'application/json',
+        origin: 'https://evil.example',
+      },
+      body: JSON.stringify({ homeDirectoryEnabled: true }),
+    })
+
+    const res = await PATCH(req as never)
+
+    expect(res.status).toBe(403)
+    expect(mockRequireAdminUser).not.toHaveBeenCalled()
+  })
+
   it('returns 500 when site settings cannot be loaded for get', async () => {
     mockSingle.mockResolvedValue({
       data: null,
