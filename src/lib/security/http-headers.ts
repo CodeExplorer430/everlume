@@ -31,10 +31,22 @@ function collectEnvOrigins(env: EnvSource) {
 }
 
 export function buildContentSecurityPolicy(env: EnvSource = process.env) {
+  const isProduction =
+    env.NODE_ENV === 'production' || env.VERCEL_ENV === 'production'
   const appOrigins = collectEnvOrigins(env)
+  const devConnectSources = isProduction
+    ? []
+    : [
+        'http://127.0.0.1:3000',
+        'http://127.0.0.1:4173',
+        'http://localhost:3000',
+        'http://localhost:4173',
+        'ws:',
+      ]
   const connectSources = [
     "'self'",
     ...appOrigins,
+    ...devConnectSources,
     'https://*.supabase.co',
     'https://api.cloudinary.com',
     'https://res.cloudinary.com',
@@ -70,6 +82,7 @@ export function buildContentSecurityPolicy(env: EnvSource = process.env) {
       [
         "'self'",
         "'unsafe-inline'",
+        ...(isProduction ? [] : ["'unsafe-eval'"]),
         'https://challenges.cloudflare.com',
         'https://widget.cloudinary.com',
         'https://upload-widget.cloudinary.com',

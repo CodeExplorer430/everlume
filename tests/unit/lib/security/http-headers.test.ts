@@ -6,6 +6,7 @@ import {
 describe('security headers', () => {
   it('builds a CSP with required third-party allowlists and env-derived origins', () => {
     const csp = buildContentSecurityPolicy({
+      NODE_ENV: 'production',
       NEXT_PUBLIC_APP_URL: 'https://app.everlume.test',
       NEXT_PUBLIC_SHORT_DOMAIN: 'https://go.everlume.test',
       NEXT_PUBLIC_SUPABASE_URL: 'https://demo.supabase.co',
@@ -22,6 +23,16 @@ describe('security headers', () => {
     expect(csp).toContain('https://widget.cloudinary.com')
     expect(csp).toContain('https://challenges.cloudflare.com')
     expect(csp).toContain("frame-ancestors 'none'")
+  })
+
+  it('adds the minimum webpack-dev allowances outside production', () => {
+    const csp = buildContentSecurityPolicy({
+      NODE_ENV: 'development',
+    })
+
+    expect(csp).toContain("'unsafe-eval'")
+    expect(csp).toContain('http://127.0.0.1:4173')
+    expect(csp).toContain('ws:')
   })
 
   it('ignores invalid env origins when building the CSP', () => {
