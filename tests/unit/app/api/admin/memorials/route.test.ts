@@ -169,6 +169,41 @@ describe('POST /api/admin/memorials', () => {
     )
   })
 
+  it('uses featured memorial video layout when site settings enable it', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    mockSettingsSingle.mockResolvedValue({
+      data: {
+        memorial_slideshow_enabled: true,
+        memorial_slideshow_interval_ms: 6000,
+        memorial_video_layout: 'featured',
+      },
+      error: null,
+    })
+    mockInsertSingle.mockResolvedValue({
+      data: { id: 'p3', slug: 'featured-memory', dedication_text: null },
+      error: null,
+    })
+
+    const req = new Request('http://localhost/api/admin/memorials', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        title: 'Featured Memory',
+        slug: 'featured-memory',
+      }),
+    })
+
+    const res = await POST(req as never)
+
+    expect(res.status).toBe(201)
+    expect(mockInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        memorial_slideshow_interval_ms: 6000,
+        memorial_video_layout: 'featured',
+      })
+    )
+  })
+
   it('returns 409 when the slug already exists', async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
     mockInsertSingle.mockResolvedValue({

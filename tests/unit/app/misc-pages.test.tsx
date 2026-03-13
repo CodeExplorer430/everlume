@@ -84,6 +84,19 @@ describe('misc app pages', () => {
     ).toBeInTheDocument()
   })
 
+  it('uses the missing-link reason when no redirect reason is provided', async () => {
+    const mod = await import('@/app/r/not-found/page')
+    const node = await mod.default({
+      searchParams: Promise.resolve({ code: 'hello' }),
+    })
+    render(node)
+
+    expect(screen.getByText(/\/hello/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/this short link does not exist\./i)
+    ).toBeInTheDocument()
+  })
+
   it('hides the memorial directory CTA when site settings cannot be loaded', async () => {
     mockSiteSettingsSingle.mockResolvedValue({
       data: null,

@@ -181,6 +181,42 @@ describe('requireAdminUser', () => {
     expect(mockProfileSelect).toHaveBeenCalledWith('role')
   })
 
+  it('falls back to the legacy lookup when the primary profile role is empty', async () => {
+    const { requireAdminUser } = await import('@/lib/server/admin-auth')
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    mockProfileSingle.mockResolvedValue({
+      data: { role: '', is_active: true },
+      error: null,
+    })
+    mockLegacyProfileSingle.mockResolvedValue({
+      data: { role: 'viewer' },
+      error: null,
+    })
+
+    const auth = await requireAdminUser({ minRole: 'viewer' })
+
+    expect(auth.ok).toBe(true)
+    if (auth.ok) expect(auth.role).toBe('viewer')
+  })
+
+  it('returns 403 when the legacy profile role is empty', async () => {
+    const { requireAdminUser } = await import('@/lib/server/admin-auth')
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    mockProfileSingle.mockResolvedValue({
+      data: null,
+      error: { message: 'missing is_active column' },
+    })
+    mockLegacyProfileSingle.mockResolvedValue({
+      data: { role: '' },
+      error: null,
+    })
+
+    const auth = await requireAdminUser({ minRole: 'viewer' })
+
+    expect(auth.ok).toBe(false)
+    if (!auth.ok) expect(auth.response.status).toBe(403)
+  })
+
   it('denies fake e2e auth sessions when the account is inactive', async () => {
     process.env.E2E_FAKE_AUTH = '1'
     const e2eAuth = await import('@/lib/server/e2e-auth')
@@ -219,6 +255,23 @@ describe('requireAdminUser', () => {
     expect(auth.ok).toBe(false)
     if (!auth.ok) expect(auth.response.status).toBe(403)
     expect(mockGetUser).not.toHaveBeenCalled()
+  })
+
+  it('falls back to Supabase auth when fake auth is enabled but no session exists', async () => {
+    process.env.E2E_FAKE_AUTH = '1'
+    const e2eAuth = await import('@/lib/server/e2e-auth')
+    vi.spyOn(e2eAuth, 'getE2EAuthSession').mockResolvedValue(null)
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    mockProfileSingle.mockResolvedValue({
+      data: { role: 'admin', is_active: true },
+      error: null,
+    })
+
+    const { requireAdminUser } = await import('@/lib/server/admin-auth')
+    const auth = await requireAdminUser({ minRole: 'viewer' })
+
+    expect(auth.ok).toBe(true)
+    expect(mockGetUser).toHaveBeenCalled()
   })
 })
 
@@ -278,6 +331,47 @@ describe('admin-auth ownership helpers', () => {
 
     expect(memorial).toBeNull()
     expect(mockPageOwnerEq).toHaveBeenCalledWith('owner_id', 'user-1')
+  })
+
+  it('skips owner scoping when getOwnedMemorial is called as admin', async () => {
+    const { getOwnedMemorial } = await import('@/lib/server/admin-auth')
+    mockPageSingle.mockResolvedValue({
+      data: {
+        id: 'memorial-1',
+        title: 'Memorial One',
+        slug: 'memorial-one',
+        full_name: 'Memorial One',
+        dedication_text: null,
+        dob: null,
+        dod: null,
+        privacy: 'public',
+        access_mode: 'public',
+        hero_image_url: null,
+        memorial_theme: null,
+        memorial_slideshow_enabled: null,
+        memorial_slideshow_interval_ms: null,
+        memorial_video_layout: null,
+        memorial_photo_fit: null,
+        memorial_caption_style: null,
+        qr_template: null,
+        qr_caption: null,
+        qr_foreground_color: null,
+        qr_background_color: null,
+        qr_frame_style: null,
+        qr_caption_font: null,
+        qr_show_logo: null,
+      },
+    })
+
+    const memorial = await getOwnedMemorial(
+      { from: () => ({ select: mockPageSelect }) } as never,
+      'memorial-1',
+      'admin-1',
+      'admin'
+    )
+
+    expect(memorial).toMatchObject({ id: 'memorial-1', slug: 'memorial-one' })
+    expect(mockPageOwnerEq).not.toHaveBeenCalled()
   })
 
   it('returns false when an owned-row lookup misses and checks page ownership when found', async () => {

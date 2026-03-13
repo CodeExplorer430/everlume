@@ -176,6 +176,33 @@ describe('GET /api/admin/media-consent', () => {
     })
   })
 
+  it('normalizes null consent log data to an empty report', async () => {
+    mockLimit.mockResolvedValue({ data: null, error: null })
+    mockRequireAdminUser.mockResolvedValue({
+      ok: true,
+      userId: 'admin-1',
+      role: 'admin',
+      supabase: {
+        from: () => ({
+          select: mockSelect,
+        }),
+      },
+    })
+
+    const res = await GET()
+
+    expect(res.status).toBe(200)
+    await expect(res.json()).resolves.toEqual({
+      logs: [],
+      summary: {
+        total: 0,
+        consentGranted: 0,
+        mediaAccessed: 0,
+        memorials: 0,
+      },
+    })
+  })
+
   it('falls back to default memorial metadata when the joined page is missing', async () => {
     mockLimit.mockResolvedValue({
       data: [

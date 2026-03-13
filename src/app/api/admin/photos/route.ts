@@ -59,13 +59,7 @@ export async function POST(request: NextRequest) {
     width,
     height,
   } = parsed.data
-  const memorialId = resolveMemorialId(parsed.data)
-  if (!memorialId) {
-    return NextResponse.json(
-      { code: 'VALIDATION_ERROR', message: 'Memorial id is required.' },
-      { status: 400 }
-    )
-  }
+  const memorialId = resolveMemorialId(parsed.data)!
   const ownsMemorial = await assertMemorialOwnership(
     supabase,
     memorialId,

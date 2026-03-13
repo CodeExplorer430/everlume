@@ -43,12 +43,12 @@ export function PublicGallery({
   }, [])
 
   const nextImage = useCallback(() => {
-    setSelectedIndex((current) => ((current ?? 0) + 1) % photos.length)
+    setSelectedIndex((current) => ((current as number) + 1) % photos.length)
   }, [photos.length])
 
   const prevImage = useCallback(() => {
     setSelectedIndex(
-      (current) => ((current ?? 0) - 1 + photos.length) % photos.length
+      (current) => ((current as number) - 1 + photos.length) % photos.length
     )
   }, [photos.length])
 

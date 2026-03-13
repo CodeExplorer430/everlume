@@ -123,4 +123,18 @@ describe('auth callback route', () => {
       'https://everlume.test/login?error=Recovery%20link%20expired'
     )
   })
+
+  it('falls back to the default auth error message when the provider returns no message', async () => {
+    mockExchangeCodeForSession.mockResolvedValue({
+      error: {},
+    })
+
+    const res = await GET(
+      new Request('https://everlume.test/auth/callback?code=expired') as never
+    )
+
+    expect(res.headers.get('location')).toBe(
+      'https://everlume.test/login?error=Unable%20to%20complete%20sign%20in.'
+    )
+  })
 })

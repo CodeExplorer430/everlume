@@ -160,6 +160,46 @@ describe('GET /api/admin/guestbook', () => {
     expect(payload.entries[0].pages.title).toBeNull()
   })
 
+  it('normalizes null guestbook query data to an empty list', async () => {
+    mockPagesEq.mockReturnValue(
+      Promise.resolve({
+        data: [{ id: 'page-1', title: 'My Page' }],
+        error: null,
+      })
+    )
+    mockPagesSelect.mockReturnValue(
+      createPagesQuery({
+        data: [{ id: 'page-1', title: 'My Page' }],
+        error: null,
+      })
+    )
+    mockGuestbookOrder.mockResolvedValue({ data: null, error: null })
+    mockRequireAdminUser.mockResolvedValue({
+      ok: true,
+      userId: 'user-1',
+      role: 'editor',
+      supabase: {
+        from: (table: string) => {
+          if (table === 'pages') {
+            return { select: mockPagesSelect }
+          }
+
+          if (table === 'guestbook') {
+            return { select: mockGuestbookSelect }
+          }
+
+          return { select: vi.fn() }
+        },
+      },
+    })
+
+    const res = await GET()
+    const payload = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(payload.entries).toEqual([])
+  })
+
   it('returns empty when there are no owned pages and skips the guestbook query', async () => {
     mockPagesEq.mockReturnValue(Promise.resolve({ data: [], error: null }))
     mockPagesSelect.mockReturnValue(createPagesQuery({ data: [], error: null }))

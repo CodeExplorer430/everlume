@@ -119,6 +119,27 @@ describe('MemorialConsentLog', () => {
     ).toBeInTheDocument()
   })
 
+  it('treats a successful response without logs as an empty result set', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          memorial: { mediaConsentRevokedAt: null },
+          consentNoticeVersion: 3,
+        }),
+        { status: 200 }
+      )
+    )
+
+    render(<MemorialConsentLog memorialId="page-1" />)
+
+    expect(
+      await screen.findByText(
+        'No protected media consent events have been recorded yet.'
+      )
+    ).toBeInTheDocument()
+    expect(screen.getByText('Active notice version 3')).toBeInTheDocument()
+  })
+
   it('shows an error state when the log request fails', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(

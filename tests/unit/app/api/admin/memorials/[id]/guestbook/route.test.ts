@@ -104,6 +104,22 @@ describe('GET /api/admin/memorials/[id]/guestbook', () => {
     await expect(res.json()).resolves.toEqual({ entries: [] })
   })
 
+  it('normalizes null guestbook data to an empty list', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    mockPageSingle.mockResolvedValue({ data: { id: 'page-1' } })
+    mockOrder.mockResolvedValue({ data: null, error: null })
+
+    const req = new Request(
+      'http://localhost/api/admin/memorials/550e8400-e29b-41d4-a716-446655440000/guestbook'
+    )
+    const res = await GET(req as never, {
+      params: Promise.resolve({ id: '550e8400-e29b-41d4-a716-446655440000' }),
+    })
+
+    expect(res.status).toBe(200)
+    await expect(res.json()).resolves.toEqual({ entries: [] })
+  })
+
   it('returns a database error when guestbook loading fails', async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
     mockPageSingle.mockResolvedValue({ data: { id: 'page-1' } })

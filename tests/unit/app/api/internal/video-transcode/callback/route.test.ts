@@ -55,6 +55,25 @@ describe('POST /api/internal/video-transcode/callback', () => {
     expect(res.status).toBe(400)
   })
 
+  it('rejects structurally invalid callback payloads', async () => {
+    const req = new Request(
+      'http://localhost/api/internal/video-transcode/callback',
+      {
+        method: 'POST',
+        headers: {
+          authorization: 'Bearer callback-secret',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: 'processing',
+        }),
+      }
+    )
+
+    const res = await POST(req as never)
+    expect(res.status).toBe(400)
+  })
+
   it('rejects unsupported callback statuses', async () => {
     const req = new Request(
       'http://localhost/api/internal/video-transcode/callback',

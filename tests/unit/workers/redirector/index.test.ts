@@ -48,6 +48,40 @@ describe('redirector worker', () => {
     )
   })
 
+  it('supports /r/ prefixed paths and uses SUPABASE_SECRET_KEY when provided', async () => {
+    fetchMock.mockResolvedValue(
+      new Response(
+        JSON.stringify([
+          {
+            target_url: 'https://everlume.app/memorials/jane',
+            is_active: true,
+          },
+        ]),
+        { status: 200 }
+      )
+    )
+
+    const response = await worker.fetch(
+      new Request('https://go.everlume.app/r/grandma'),
+      {
+        SUPABASE_URL: env.SUPABASE_URL,
+        SUPABASE_SECRET_KEY: 'secret-key',
+        FALLBACK_URL: env.FALLBACK_URL,
+      }
+    )
+
+    expect(response.status).toBe(302)
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('shortcode=eq.grandma'),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          apikey: 'secret-key',
+          Authorization: 'Bearer secret-key',
+        }),
+      })
+    )
+  })
+
   it('returns 404 when shortcode is inactive', async () => {
     fetchMock.mockResolvedValue(
       new Response(
@@ -76,6 +110,17 @@ describe('redirector worker', () => {
 
     const response = await worker.fetch(
       new Request('https://go.everlume.app/missing'),
+      env
+    )
+
+    expect(response.status).toBe(404)
+  })
+
+  it('returns 404 when the upstream redirect lookup is non-ok', async () => {
+    fetchMock.mockResolvedValue(new Response('boom', { status: 500 }))
+
+    const response = await worker.fetch(
+      new Request('https://go.everlume.app/grandma'),
       env
     )
 
@@ -128,6 +173,16 @@ describe('redirector worker', () => {
     const response = await worker.fetch(
       new Request('https://go.everlume.app/'),
       { ...env, FALLBACK_URL: 'not-a-url' }
+    )
+
+    expect(response.status).toBe(404)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('returns 404 when a sanitized /r/ path has no shortcode', async () => {
+    const response = await worker.fetch(
+      new Request('https://go.everlume.app/r/'),
+      env
     )
 
     expect(response.status).toBe(404)

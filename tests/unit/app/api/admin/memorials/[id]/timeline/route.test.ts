@@ -107,6 +107,22 @@ describe('GET /api/admin/memorials/[id]/timeline', () => {
     await expect(res.json()).resolves.toEqual({ events: [] })
   })
 
+  it('normalizes null timeline data to an empty list', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    mockPageSingle.mockResolvedValue({ data: { id: 'page-1' } })
+    mockOrder.mockResolvedValue({ data: null, error: null })
+
+    const req = new Request(
+      'http://localhost/api/admin/memorials/550e8400-e29b-41d4-a716-446655440000/timeline'
+    )
+    const res = await GET(req as never, {
+      params: Promise.resolve({ id: '550e8400-e29b-41d4-a716-446655440000' }),
+    })
+
+    expect(res.status).toBe(200)
+    await expect(res.json()).resolves.toEqual({ events: [] })
+  })
+
   it('returns a database error when timeline loading fails', async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
     mockPageSingle.mockResolvedValue({ data: { id: 'page-1' } })
