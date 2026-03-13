@@ -100,6 +100,13 @@ export function MemorialPageView({
   const remembranceCopy =
     memorial.dedicationText?.trim() ||
     `Welcome to the memorial for ${memorial.full_name || 'our loved one'}. We invite you to explore the gallery and leave a message for the family.`
+  const sectionLinks = [
+    { href: '#remembrance', label: 'Remembrance' },
+    { href: '#photos', label: 'Gallery' },
+    ...(!requiresMediaConsent ? [{ href: '#videos', label: 'Videos' }] : []),
+    { href: '#timeline', label: 'Timeline' },
+    { href: '#guestbook', label: 'Guestbook' },
+  ]
 
   return (
     <div
@@ -115,7 +122,7 @@ export function MemorialPageView({
       >
         <MemorialActionBar
           memorialTitle={memorial.title}
-          guestbookHref="#guestbook"
+          sectionLinks={sectionLinks}
         />
 
         <section

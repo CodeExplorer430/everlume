@@ -37,7 +37,10 @@ describe('MemorialActionBar', () => {
     render(
       <MemorialActionBar
         memorialTitle="In Loving Memory of Jane Doe"
-        guestbookHref="#guestbook"
+        sectionLinks={[
+          { href: '#remembrance', label: 'Remembrance' },
+          { href: '#guestbook', label: 'Guestbook' },
+        ]}
       />
     )
 
@@ -66,7 +69,10 @@ describe('MemorialActionBar', () => {
     render(
       <MemorialActionBar
         memorialTitle="In Loving Memory of Jane Doe"
-        guestbookHref="#guestbook"
+        sectionLinks={[
+          { href: '#remembrance', label: 'Remembrance' },
+          { href: '#guestbook', label: 'Guestbook' },
+        ]}
       />
     )
 
@@ -78,6 +84,14 @@ describe('MemorialActionBar', () => {
     expect(
       screen.getByText('Memorial link copied. You can paste it anywhere.')
     ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Remembrance' })).toHaveAttribute(
+      'href',
+      '#remembrance'
+    )
+    expect(screen.getByRole('link', { name: 'Guestbook' })).toHaveAttribute(
+      'href',
+      '#guestbook'
+    )
     expect(
       screen.getByRole('link', { name: /leave a message/i })
     ).toHaveAttribute('href', '#guestbook')
@@ -90,7 +104,10 @@ describe('MemorialActionBar', () => {
     render(
       <MemorialActionBar
         memorialTitle="In Loving Memory of Jane Doe"
-        guestbookHref="#guestbook"
+        sectionLinks={[
+          { href: '#remembrance', label: 'Remembrance' },
+          { href: '#guestbook', label: 'Guestbook' },
+        ]}
       />
     )
 
@@ -220,5 +237,16 @@ describe('MemorialActionBar', () => {
         screen.getByText('Copy link is unavailable on this device.')
       ).toBeInTheDocument()
     })
+  })
+
+  it('omits section navigation when no section links are provided', () => {
+    render(<MemorialActionBar memorialTitle="In Loving Memory of Jane Doe" />)
+
+    expect(
+      screen.queryByRole('navigation', { name: /memorial sections/i })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: /leave a message/i })
+    ).toHaveAttribute('href', '#guestbook')
   })
 })

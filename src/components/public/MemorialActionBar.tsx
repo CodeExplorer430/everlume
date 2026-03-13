@@ -5,14 +5,19 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Copy, MessageSquareMore, Printer, Share2 } from 'lucide-react'
 
+type MemorialSectionLink = {
+  href: string
+  label: string
+}
+
 interface MemorialActionBarProps {
   memorialTitle: string
-  guestbookHref?: string
+  sectionLinks?: MemorialSectionLink[]
 }
 
 export function MemorialActionBar({
   memorialTitle,
-  guestbookHref,
+  sectionLinks = [],
 }: MemorialActionBarProps) {
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
 
@@ -83,12 +88,24 @@ export function MemorialActionBar({
       data-print-hide="true"
     >
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-1">
+        <div className="space-y-3">
           <p className="section-kicker">Visitor Actions</p>
           <p className="text-sm text-muted-foreground">
             Share this memorial, save a printable keepsake, or move directly to
             the guestbook.
           </p>
+          {sectionLinks.length > 0 ? (
+            <nav
+              aria-label="Memorial sections"
+              className="flex flex-wrap gap-2"
+            >
+              {sectionLinks.map((link) => (
+                <Button key={link.href} variant="ghost" size="sm" asChild>
+                  <Link href={link.href}>{link.label}</Link>
+                </Button>
+              ))}
+            </nav>
+          ) : null}
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -112,14 +129,12 @@ export function MemorialActionBar({
             <Printer className="h-4 w-4" />
             Print memorial
           </Button>
-          {guestbookHref ? (
-            <Button variant="ghost" asChild>
-              <Link href={guestbookHref}>
-                <MessageSquareMore className="h-4 w-4" />
-                Leave a message
-              </Link>
-            </Button>
-          ) : null}
+          <Button variant="ghost" asChild>
+            <Link href="#guestbook">
+              <MessageSquareMore className="h-4 w-4" />
+              Leave a message
+            </Link>
+          </Button>
         </div>
       </div>
 
