@@ -101,7 +101,13 @@ describe('MemorialPageView', () => {
     ).toBeInTheDocument()
     expect(mockMemorialActionBar).toHaveBeenCalledWith({
       memorialTitle: 'In Loving Memory',
-      guestbookHref: '#guestbook',
+      sectionLinks: [
+        { href: '#remembrance', label: 'Remembrance' },
+        { href: '#photos', label: 'Gallery' },
+        { href: '#videos', label: 'Videos' },
+        { href: '#timeline', label: 'Timeline' },
+        { href: '#guestbook', label: 'Guestbook' },
+      ],
     })
     expect(mockPublicGallery).not.toHaveBeenCalled()
     expect(mockTributeVideos).toHaveBeenCalledWith({
@@ -217,6 +223,15 @@ describe('MemorialPageView', () => {
     ).toBeInTheDocument()
     expect(mockProtectedMediaConsentGate).toHaveBeenCalledWith({
       slug: 'jane-doe',
+    })
+    expect(mockMemorialActionBar).toHaveBeenCalledWith({
+      memorialTitle: 'In Loving Memory',
+      sectionLinks: [
+        { href: '#remembrance', label: 'Remembrance' },
+        { href: '#photos', label: 'Gallery' },
+        { href: '#timeline', label: 'Timeline' },
+        { href: '#guestbook', label: 'Guestbook' },
+      ],
     })
     expect(mockPublicGallery).not.toHaveBeenCalled()
     expect(mockTributeVideos).not.toHaveBeenCalled()
