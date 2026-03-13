@@ -53,4 +53,20 @@ describe('GET /api/health/redirects', () => {
     expect(payload.ok).toBe(true)
     expect(payload.workerReachable).toBe(true)
   })
+
+  it('returns 503 when the redirects table is unavailable', async () => {
+    process.env.NEXT_PUBLIC_SHORT_DOMAIN = 'https://fam.example'
+    mockLimit.mockResolvedValue({ error: { message: 'db down' } })
+    fetchMock.mockRejectedValue(new Error('network down'))
+
+    const res = await GET()
+    const payload = (await res.json()) as {
+      ok: boolean
+      workerReachable: boolean
+    }
+
+    expect(res.status).toBe(503)
+    expect(payload.ok).toBe(false)
+    expect(payload.workerReachable).toBe(false)
+  })
 })

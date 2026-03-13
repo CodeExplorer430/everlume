@@ -69,4 +69,19 @@ describe('POST /auth/signout', () => {
     expect(res.cookies.get('everlume_e2e_auth')?.value).toBe('')
     expect(mockSignOut).not.toHaveBeenCalled()
   })
+
+  it('redirects fake e2e auth users without clearing cookies when no session exists', async () => {
+    process.env.E2E_FAKE_AUTH = '1'
+    const e2eAuth = await import('@/lib/server/e2e-auth')
+    vi.spyOn(e2eAuth, 'getE2EAuthSession').mockResolvedValue(null)
+
+    const req = new Request('http://localhost/auth/signout', { method: 'POST' })
+    const res = await POST(req as never)
+
+    expect(res.status).toBe(302)
+    expect(res.headers.get('location')).toBe('http://localhost/login')
+    expect(res.cookies.get('everlume_e2e_auth')).toBeUndefined()
+    expect(mockSignOut).not.toHaveBeenCalled()
+    expect(mockRevalidatePath).toHaveBeenCalledWith('/', 'layout')
+  })
 })

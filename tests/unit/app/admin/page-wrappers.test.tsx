@@ -112,6 +112,16 @@ describe('Admin page wrappers', () => {
     expect(mockAdminDashboardView).toHaveBeenCalledWith({ pages })
   })
 
+  it('falls back to an empty pages list when the admin query returns no rows', async () => {
+    mockOrder.mockResolvedValue({ data: null })
+
+    const mod = await import('@/app/admin/page')
+    const node = await mod.default()
+    render(node)
+
+    expect(mockAdminDashboardView).toHaveBeenCalledWith({ pages: [] })
+  })
+
   it('skips the supabase query for the admin dashboard in fake auth mode', async () => {
     process.env.E2E_FAKE_AUTH = '1'
 

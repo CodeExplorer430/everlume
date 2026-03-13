@@ -65,4 +65,76 @@ describe('auth callback route', () => {
       'https://everlume.test/login?error=Link%20expired'
     )
   })
+
+  it('falls back to /admin when next is invalid', async () => {
+    mockExchangeCodeForSession.mockResolvedValue({ error: null })
+
+    const res = await GET(
+      new Request(
+        'https://everlume.test/auth/callback?code=abc123&next=https://example.com/elsewhere'
+      ) as never
+    )
+
+    expect(res.headers.get('location')).toBe('https://everlume.test/admin')
+  })
+
+  it('redirects to login with a missing-token error when callback params are incomplete', async () => {
+    const missingTypeResponse = await GET(
+      new Request(
+        'https://everlume.test/auth/callback?token_hash=hash123'
+      ) as never
+    )
+    const missingHashResponse = await GET(
+      new Request('https://everlume.test/auth/callback?type=recovery') as never
+    )
+    const missingAllResponse = await GET(
+      new Request('https://everlume.test/auth/callback') as never
+    )
+
+    expect(mockExchangeCodeForSession).not.toHaveBeenCalled()
+    expect(mockVerifyOtp).not.toHaveBeenCalled()
+    expect(missingTypeResponse.headers.get('location')).toBe(
+      'https://everlume.test/login?error=Missing%20auth%20token.'
+    )
+    expect(missingHashResponse.headers.get('location')).toBe(
+      'https://everlume.test/login?error=Missing%20auth%20token.'
+    )
+    expect(missingAllResponse.headers.get('location')).toBe(
+      'https://everlume.test/login?error=Missing%20auth%20token.'
+    )
+  })
+
+  it('redirects to login with the verify-otp error when otp verification fails', async () => {
+    mockVerifyOtp.mockResolvedValue({
+      error: { message: 'Recovery link expired' },
+    })
+
+    const res = await GET(
+      new Request(
+        'https://everlume.test/auth/callback?token_hash=hash123&type=recovery&next=/login/reset-password'
+      ) as never
+    )
+
+    expect(mockVerifyOtp).toHaveBeenCalledWith({
+      token_hash: 'hash123',
+      type: 'recovery',
+    })
+    expect(res.headers.get('location')).toBe(
+      'https://everlume.test/login?error=Recovery%20link%20expired'
+    )
+  })
+
+  it('falls back to the default auth error message when the provider returns no message', async () => {
+    mockExchangeCodeForSession.mockResolvedValue({
+      error: {},
+    })
+
+    const res = await GET(
+      new Request('https://everlume.test/auth/callback?code=expired') as never
+    )
+
+    expect(res.headers.get('location')).toBe(
+      'https://everlume.test/login?error=Unable%20to%20complete%20sign%20in.'
+    )
+  })
 })

@@ -209,6 +209,34 @@ describe('POST /api/admin/videos/uploads/[jobId]/start', () => {
     expect(res.status).toBe(503)
   })
 
+  it('falls back to the local job id when cloud_job_id is missing', async () => {
+    mockJobSingle.mockResolvedValue({
+      data: {
+        id: 'job-1',
+        page_id: 'page-1',
+        status: 'queued',
+        cloud_job_id: null,
+      },
+      error: null,
+    })
+
+    const req = new Request(
+      'http://localhost/api/admin/videos/uploads/550e8400-e29b-41d4-a716-446655440000/start',
+      { method: 'POST' }
+    )
+    const res = await POST(req as never, {
+      params: Promise.resolve({
+        jobId: '550e8400-e29b-41d4-a716-446655440000',
+      }),
+    })
+
+    expect(res.status).toBe(202)
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      'https://transcode.example.com/jobs/job-1/start',
+      expect.anything()
+    )
+  })
+
   it('returns 502 with upstream message when start call fails', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ message: 'upstream denied job start' }), {

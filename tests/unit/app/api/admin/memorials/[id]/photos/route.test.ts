@@ -47,6 +47,29 @@ describe('GET /api/admin/memorials/[id]/photos', () => {
     expect(res.status).toBe(401)
   })
 
+  it('returns 400 for invalid params', async () => {
+    const req = new Request(
+      'http://localhost/api/admin/memorials/not-a-uuid/photos'
+    )
+    const res = await GET(req as never, {
+      params: Promise.resolve({ id: 'not-a-uuid' }),
+    })
+    expect(res.status).toBe(400)
+  })
+
+  it('returns forbidden for non-owners', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    mockPageSingle.mockResolvedValue({ data: null })
+
+    const req = new Request(
+      'http://localhost/api/admin/memorials/550e8400-e29b-41d4-a716-446655440000/photos'
+    )
+    const res = await GET(req as never, {
+      params: Promise.resolve({ id: '550e8400-e29b-41d4-a716-446655440000' }),
+    })
+    expect(res.status).toBe(403)
+  })
+
   it('returns photos for owner', async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
     mockPageSingle.mockResolvedValue({ data: { id: 'page-1' } })
@@ -59,5 +82,55 @@ describe('GET /api/admin/memorials/[id]/photos', () => {
       params: Promise.resolve({ id: '550e8400-e29b-41d4-a716-446655440000' }),
     })
     expect(res.status).toBe(200)
+    expect(mockEq).toHaveBeenCalledWith(
+      'page_id',
+      '550e8400-e29b-41d4-a716-446655440000'
+    )
+    expect(mockOrder).toHaveBeenCalledWith('sort_index', { ascending: true })
+  })
+
+  it('returns an empty photos list when no photos exist', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    mockPageSingle.mockResolvedValue({ data: { id: 'page-1' } })
+    mockOrder.mockResolvedValue({ data: [], error: null })
+
+    const req = new Request(
+      'http://localhost/api/admin/memorials/550e8400-e29b-41d4-a716-446655440000/photos'
+    )
+    const res = await GET(req as never, {
+      params: Promise.resolve({ id: '550e8400-e29b-41d4-a716-446655440000' }),
+    })
+    expect(res.status).toBe(200)
+    await expect(res.json()).resolves.toEqual({ photos: [] })
+  })
+
+  it('normalizes null photos data to an empty list', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    mockPageSingle.mockResolvedValue({ data: { id: 'page-1' } })
+    mockOrder.mockResolvedValue({ data: null, error: null })
+
+    const req = new Request(
+      'http://localhost/api/admin/memorials/550e8400-e29b-41d4-a716-446655440000/photos'
+    )
+    const res = await GET(req as never, {
+      params: Promise.resolve({ id: '550e8400-e29b-41d4-a716-446655440000' }),
+    })
+
+    expect(res.status).toBe(200)
+    await expect(res.json()).resolves.toEqual({ photos: [] })
+  })
+
+  it('returns a database error when photo loading fails', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    mockPageSingle.mockResolvedValue({ data: { id: 'page-1' } })
+    mockOrder.mockResolvedValue({ data: null, error: { message: 'db failed' } })
+
+    const req = new Request(
+      'http://localhost/api/admin/memorials/550e8400-e29b-41d4-a716-446655440000/photos'
+    )
+    const res = await GET(req as never, {
+      params: Promise.resolve({ id: '550e8400-e29b-41d4-a716-446655440000' }),
+    })
+    expect(res.status).toBe(500)
   })
 })

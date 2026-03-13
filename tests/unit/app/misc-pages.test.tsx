@@ -71,6 +71,52 @@ describe('misc app pages', () => {
     ).toHaveAttribute('href', '/#memorial-directory')
   })
 
+  it('falls back to unknown code and invalid-link messaging when redirect params are missing or invalid', async () => {
+    const mod = await import('@/app/r/not-found/page')
+    const node = await mod.default({
+      searchParams: Promise.resolve({ reason: 'wat' }),
+    })
+    render(node)
+
+    expect(screen.getByText(/\/unknown/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/this short link does not exist\./i)
+    ).toBeInTheDocument()
+  })
+
+  it('uses the missing-link reason when no redirect reason is provided', async () => {
+    const mod = await import('@/app/r/not-found/page')
+    const node = await mod.default({
+      searchParams: Promise.resolve({ code: 'hello' }),
+    })
+    render(node)
+
+    expect(screen.getByText(/\/hello/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/this short link does not exist\./i)
+    ).toBeInTheDocument()
+  })
+
+  it('hides the memorial directory CTA when site settings cannot be loaded', async () => {
+    mockSiteSettingsSingle.mockResolvedValue({
+      data: null,
+      error: { message: 'db unavailable' },
+    })
+
+    const mod = await import('@/app/r/not-found/page')
+    const node = await mod.default({
+      searchParams: Promise.resolve({ code: 'hello', reason: 'invalid' }),
+    })
+    render(node)
+
+    expect(
+      screen.getByText(/the short link format is invalid\./i)
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('link', { name: /browse public memorials/i })
+    ).not.toBeInTheDocument()
+  })
+
   it('redirects legacy pages routes to memorials', async () => {
     const legacyPage = await import('@/app/pages/[slug]/page')
     await expect(

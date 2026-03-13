@@ -150,7 +150,16 @@ export function EditMemorialScreen({ memorialId }: EditMemorialScreenProps) {
       </div>
     )
   if (!memorial)
-    return <div className="surface-card p-8 text-sm">Memorial not found.</div>
+    return (
+      <div className="surface-card space-y-3 p-8 text-sm">
+        {errorMessage ? (
+          <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {errorMessage}
+          </p>
+        ) : null}
+        <p>Memorial not found.</p>
+      </div>
+    )
 
   return (
     <div className="space-y-6">

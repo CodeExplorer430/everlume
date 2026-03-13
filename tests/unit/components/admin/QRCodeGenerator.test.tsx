@@ -165,6 +165,41 @@ describe('QRCodeGenerator', () => {
     expect(svgText).toContain('<circle')
   })
 
+  it('renders a minimal svg plaque with sans caption styling and no logo markup', async () => {
+    mockToString.mockImplementation(
+      (
+        _: string,
+        __: unknown,
+        callback: (err: Error | null, svg: string) => void
+      ) => {
+        callback(null, '<svg><rect /></svg>')
+      }
+    )
+
+    const user = userEvent.setup()
+    render(
+      <QRCodeGenerator
+        url="https://example.com/r/soft"
+        template="minimal"
+        caption="Quiet memory"
+        captionFont="sans"
+      />
+    )
+
+    await waitFor(() => {
+      expect(mockToString).toHaveBeenCalled()
+    })
+
+    await user.click(screen.getByRole('button', { name: /Download SVG/i }))
+    const svgBlob = vi
+      .mocked(URL.createObjectURL)
+      .mock.calls.at(-1)?.[0] as Blob
+    const svgText = await svgBlob.text()
+    expect(svgText).toContain("Helvetica Neue', Arial, sans-serif")
+    expect(svgText).toContain('Quiet memory')
+    expect(svgText).not.toContain('<circle')
+  })
+
   it('renders the png export with logo and sans caption when canvas context is available', async () => {
     mockToString.mockImplementation(
       (
@@ -231,6 +266,166 @@ describe('QRCodeGenerator', () => {
     expect(arc).toHaveBeenCalledWith(900, 1740, 62, 0, Math.PI * 2)
     expect(fillText).toHaveBeenCalledWith('E', 900, 1760)
     expect(fillText).toHaveBeenCalledWith('Visit tribute', 900, 2260)
+  })
+
+  it('builds a rounded svg plaque without logo markup', async () => {
+    mockToString.mockImplementation(
+      (
+        _: string,
+        __: unknown,
+        callback: (err: Error | null, svg: string) => void
+      ) => {
+        callback(null, '<svg><path /></svg>')
+      }
+    )
+
+    const user = userEvent.setup()
+    render(
+      <QRCodeGenerator
+        url="https://example.com/r/maria"
+        template="classic"
+        caption="Remember Maria"
+        frameStyle="rounded"
+      />
+    )
+
+    await waitFor(() => {
+      expect(mockToString).toHaveBeenCalled()
+    })
+
+    await user.click(screen.getByRole('button', { name: /Download SVG/i }))
+    const svgBlob = vi
+      .mocked(URL.createObjectURL)
+      .mock.calls.at(-1)?.[0] as Blob
+    const svgText = await svgBlob.text()
+    expect(svgText).toContain('rx="48"')
+    expect(svgText).not.toContain('<circle')
+    expect(svgText).toContain('Remember Maria')
+  })
+
+  it('renders a rounded png export without logo decorations', async () => {
+    mockToString.mockImplementation(
+      (
+        _: string,
+        __: unknown,
+        callback: (err: Error | null, svg: string) => void
+      ) => {
+        callback(null, '<svg><rect /></svg>')
+      }
+    )
+
+    const arc = vi.fn()
+    const fillRect = vi.fn()
+    const strokeRect = vi.fn()
+    const drawImage = vi.fn()
+    const fillText = vi.fn()
+    const exportContext = {
+      fillStyle: '',
+      strokeStyle: '',
+      lineWidth: 0,
+      textAlign: '',
+      font: '',
+      fillRect,
+      strokeRect,
+      drawImage,
+      fillText,
+      beginPath: vi.fn(),
+      arc,
+      fill: vi.fn(),
+      stroke: vi.fn(),
+    }
+
+    const originalGetContext = HTMLCanvasElement.prototype.getContext
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+      function (this: HTMLCanvasElement) {
+        if (this.width === 1800 && this.height === 2400)
+          return exportContext as unknown as CanvasRenderingContext2D
+        return originalGetContext.call(this, '2d')
+      }
+    )
+
+    const user = userEvent.setup()
+    render(
+      <QRCodeGenerator
+        url="https://example.com/r/maria"
+        template="warm"
+        caption="Scan here"
+        frameStyle="rounded"
+      />
+    )
+
+    await waitFor(() => {
+      expect(mockToString).toHaveBeenCalled()
+    })
+
+    await user.click(screen.getByRole('button', { name: /Download PNG/i }))
+    expect(fillRect).toHaveBeenCalled()
+    expect(strokeRect).toHaveBeenCalledTimes(1)
+    expect(drawImage).toHaveBeenCalled()
+    expect(arc).not.toHaveBeenCalled()
+    expect(fillText).not.toHaveBeenCalledWith('E', 900, 1760)
+    expect(fillText).toHaveBeenCalledWith('Scan here', 900, 2260)
+  })
+
+  it('renders a classic line-frame png export without logo decorations', async () => {
+    mockToString.mockImplementation(
+      (
+        _: string,
+        __: unknown,
+        callback: (err: Error | null, svg: string) => void
+      ) => {
+        callback(null, '<svg><rect /></svg>')
+      }
+    )
+
+    const fillRect = vi.fn()
+    const strokeRect = vi.fn()
+    const drawImage = vi.fn()
+    const fillText = vi.fn()
+    const exportContext = {
+      fillStyle: '',
+      strokeStyle: '',
+      lineWidth: 0,
+      textAlign: '',
+      font: '',
+      fillRect,
+      strokeRect,
+      drawImage,
+      fillText,
+      beginPath: vi.fn(),
+      arc: vi.fn(),
+      fill: vi.fn(),
+      stroke: vi.fn(),
+    }
+
+    const originalGetContext = HTMLCanvasElement.prototype.getContext
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+      function (this: HTMLCanvasElement) {
+        if (this.width === 1800 && this.height === 2400)
+          return exportContext as unknown as CanvasRenderingContext2D
+        return originalGetContext.call(this, '2d')
+      }
+    )
+
+    const user = userEvent.setup()
+    render(
+      <QRCodeGenerator
+        url="https://example.com/r/classic"
+        template="classic"
+        caption="Classic tribute"
+        frameStyle="line"
+      />
+    )
+
+    await waitFor(() => {
+      expect(mockToString).toHaveBeenCalled()
+    })
+
+    await user.click(screen.getByRole('button', { name: /Download PNG/i }))
+    expect(fillRect).toHaveBeenCalled()
+    expect(strokeRect).toHaveBeenCalledTimes(1)
+    expect(drawImage).toHaveBeenCalled()
+    expect(fillText).toHaveBeenCalledWith('Classic tribute', 900, 2260)
   })
 
   it('does not try to download an svg before qr markup is available', async () => {

@@ -60,6 +60,21 @@ describe('app/admin/layout', () => {
     )
   })
 
+  it('uses the fallback bypass email when E2E_BYPASS_ADMIN_AUTH is enabled without an explicit email', async () => {
+    process.env.E2E_BYPASS_ADMIN_AUTH = '1'
+
+    const mod = await import('@/app/admin/layout')
+    const node = await mod.default({ children: <div>Admin child</div> })
+    render(node)
+
+    expect(mockCreateClient).not.toHaveBeenCalled()
+    expect(mockAdminShell).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userEmail: 'e2e-admin@everlume.local',
+      })
+    )
+  })
+
   it('redirects to /login when user is missing', async () => {
     mockGetUser.mockResolvedValue({ data: { user: null } })
 
@@ -105,5 +120,26 @@ describe('app/admin/layout', () => {
     expect(mockAdminShell).toHaveBeenCalledWith(
       expect.objectContaining({ userEmail: 'fake@example.com' })
     )
+  })
+
+  it('redirects to /login when fake e2e auth session is inactive', async () => {
+    process.env.E2E_FAKE_AUTH = '1'
+    const e2eAuth = await import('@/lib/server/e2e-auth')
+    vi.spyOn(e2eAuth, 'getE2EAuthSession').mockResolvedValue({
+      userId: 'fake-user',
+      email: 'fake@example.com',
+      role: 'admin',
+      isActive: false,
+      fullName: 'Fake Admin',
+      state: 'deactivated',
+    })
+
+    const mod = await import('@/app/admin/layout')
+    await expect(
+      mod.default({ children: <div>Admin child</div> })
+    ).rejects.toThrow('NEXT_REDIRECT')
+
+    expect(mockRedirect).toHaveBeenCalledWith('/login')
+    expect(mockCreateClient).not.toHaveBeenCalled()
   })
 })

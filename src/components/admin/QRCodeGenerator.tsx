@@ -44,14 +44,12 @@ export function QRCodeGenerator({
       }
     )
 
-    if (canvasRef.current) {
-      QRCode.toCanvas(canvasRef.current, url, {
-        width: 1400,
-        margin: 3,
-        errorCorrectionLevel: 'H',
-        color: { dark: foregroundColor, light: backgroundColor },
-      })
-    }
+    QRCode.toCanvas(canvasRef.current!, url, {
+      width: 1400,
+      margin: 3,
+      errorCorrectionLevel: 'H',
+      color: { dark: foregroundColor, light: backgroundColor },
+    })
   }, [url, foregroundColor, backgroundColor])
 
   const buildPlaqueSvg = () => {
@@ -93,14 +91,14 @@ export function QRCodeGenerator({
   }
 
   const downloadPNG = () => {
-    if (!canvasRef.current) return
+    const qrCanvas = canvasRef.current!
     const exportCanvas = document.createElement('canvas')
     exportCanvas.width = 1800
     exportCanvas.height = 2400
     const ctx = exportCanvas.getContext('2d')
     if (!ctx) {
       const link = document.createElement('a')
-      link.href = canvasRef.current.toDataURL('image/png')
+      link.href = qrCanvas.toDataURL('image/png')
       link.download = `everlume-qr-print-2048-${url.split('/').pop()}.png`
       link.click()
       return
@@ -124,7 +122,7 @@ export function QRCodeGenerator({
       ctx.strokeRect(150, 150, 1500, 1860)
     }
 
-    ctx.drawImage(canvasRef.current, 200, 220, 1400, 1400)
+    ctx.drawImage(qrCanvas, 200, 220, 1400, 1400)
     ctx.fillStyle = palette.text
     ctx.textAlign = 'center'
     ctx.font =

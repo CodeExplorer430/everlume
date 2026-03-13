@@ -96,6 +96,19 @@ describe('Home page data loading', () => {
     )
   })
 
+  it('treats missing site settings data as a disabled directory', async () => {
+    mockSingle.mockResolvedValue({ data: null, error: null })
+
+    const mod = await import('@/app/page')
+    const node = await mod.default()
+    render(node)
+
+    expect(mockPagesSelect).not.toHaveBeenCalled()
+    expect(mockLandingContent).toHaveBeenCalledWith(
+      expect.objectContaining({ directoryEnabled: false, memorials: [] })
+    )
+  })
+
   it('filters memorial directory entries with canonical access_mode first', async () => {
     mockSingle.mockResolvedValue({
       data: { home_directory_enabled: true },
@@ -157,6 +170,46 @@ describe('Home page data loading', () => {
           },
         ],
       })
+    )
+  })
+
+  it('falls back to an empty directory when the memorial query fails', async () => {
+    mockSingle.mockResolvedValue({
+      data: { home_directory_enabled: true },
+      error: null,
+    })
+    mockLimit.mockResolvedValue({
+      data: null,
+      error: { message: 'directory unavailable' },
+    })
+
+    const mod = await import('@/app/page')
+    const node = await mod.default()
+    render(node)
+
+    expect(mockPagesSelect).toHaveBeenCalled()
+    expect(mockLandingContent).toHaveBeenCalledWith(
+      expect.objectContaining({ directoryEnabled: true, memorials: [] })
+    )
+  })
+
+  it('falls back to an empty directory when the memorial query returns no rows without an error', async () => {
+    mockSingle.mockResolvedValue({
+      data: { home_directory_enabled: true },
+      error: null,
+    })
+    mockLimit.mockResolvedValue({
+      data: null,
+      error: null,
+    })
+
+    const mod = await import('@/app/page')
+    const node = await mod.default()
+    render(node)
+
+    expect(mockPagesSelect).toHaveBeenCalled()
+    expect(mockLandingContent).toHaveBeenCalledWith(
+      expect.objectContaining({ directoryEnabled: true, memorials: [] })
     )
   })
 })

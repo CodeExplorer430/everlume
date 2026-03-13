@@ -2,6 +2,14 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ForgotPasswordScreen } from '@/components/pages/auth/ForgotPasswordScreen'
 
+function deferredResult<T>() {
+  let resolve: (value: T) => void
+  const promise = new Promise<T>((res) => {
+    resolve = res
+  })
+  return { promise, resolve: resolve! }
+}
+
 const mockResetPasswordForEmail = vi.fn()
 const fetchMock = vi.fn()
 
@@ -63,6 +71,29 @@ describe('ForgotPasswordScreen', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Reset failed')
   })
 
+  it('shows the loading state while a reset request is pending', async () => {
+    const request = deferredResult<{ error: null }>()
+    mockResetPasswordForEmail.mockReturnValue(request.promise)
+
+    const user = userEvent.setup()
+    render(<ForgotPasswordScreen />)
+
+    await user.type(screen.getByLabelText('Email'), 'admin@example.com')
+    await user.click(
+      screen.getByRole('button', { name: /send password reset/i })
+    )
+
+    expect(
+      screen.getByRole('button', { name: /sending reset link/i })
+    ).toBeDisabled()
+
+    request.resolve({ error: null })
+
+    expect(
+      await screen.findByText(/password reset instructions have been sent/i)
+    ).toBeInTheDocument()
+  })
+
   it('shows a reset continuation link in fake auth mode', async () => {
     process.env.NEXT_PUBLIC_E2E_FAKE_AUTH = '1'
     fetchMock.mockResolvedValue(
@@ -98,5 +129,46 @@ describe('ForgotPasswordScreen', () => {
       'href',
       '/login/reset-password?email=pending-admin%40everlume.local'
     )
+  })
+
+  it('shows the fallback fake-auth error when the API response is not json', async () => {
+    process.env.NEXT_PUBLIC_E2E_FAKE_AUTH = '1'
+    fetchMock.mockResolvedValue(new Response('bad', { status: 500 }))
+
+    const user = userEvent.setup()
+    render(<ForgotPasswordScreen />)
+
+    await user.type(screen.getByLabelText('Email'), 'admin@example.com')
+    await user.click(
+      screen.getByRole('button', { name: /send password reset/i })
+    )
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Unable to send reset email.'
+    )
+  })
+
+  it('uses the fallback success message and omits the continuation link when fake auth returns no reset path', async () => {
+    process.env.NEXT_PUBLIC_E2E_FAKE_AUTH = '1'
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({}), { status: 200 })
+    )
+
+    const user = userEvent.setup()
+    render(<ForgotPasswordScreen />)
+
+    await user.type(screen.getByLabelText('Email'), 'admin@example.com')
+    await user.click(
+      screen.getByRole('button', { name: /send password reset/i })
+    )
+
+    expect(
+      await screen.findByText(
+        'Password reset instructions have been sent if the account exists.'
+      )
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('link', { name: /continue to password reset/i })
+    ).not.toBeInTheDocument()
   })
 })

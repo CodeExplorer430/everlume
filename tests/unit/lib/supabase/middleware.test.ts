@@ -106,4 +106,67 @@ describe('updateSession middleware', () => {
     expect(response.status).toBe(200)
     expect(mockCreateServerClient).not.toHaveBeenCalled()
   })
+
+  it('redirects admin requests with inactive fake e2e sessions to login', async () => {
+    process.env.E2E_FAKE_AUTH = '1'
+
+    const request = new NextRequest('http://localhost/admin/users', {
+      headers: {
+        cookie:
+          'everlume_e2e_auth=' +
+          encodeURIComponent(
+            JSON.stringify({
+              userId: 'fake-user',
+              email: 'fake@example.com',
+              role: 'admin',
+              isActive: false,
+              fullName: 'Fake Admin',
+              state: 'deactivated',
+            })
+          ),
+      },
+    })
+    const response = await updateSession(request)
+
+    expect(response.status).toBe(307)
+    expect(response.headers.get('location')).toContain('/login')
+    expect(mockCreateServerClient).not.toHaveBeenCalled()
+  })
+
+  it('passes request cookies through getAll when creating the supabase client', async () => {
+    const getAllSpy = vi.fn()
+    mockCreateServerClient.mockImplementationOnce(
+      (
+        _url: string,
+        _key: string,
+        options: {
+          cookies: {
+            getAll: () => CookieArg[]
+            setAll: (cookies: CookieArg[]) => void
+          }
+        }
+      ) => {
+        getAllSpy(options.cookies.getAll())
+        return {
+          auth: {
+            getUser: mockGetUser,
+          },
+        }
+      }
+    )
+    mockGetUser.mockResolvedValue({ data: { user: null } })
+
+    const request = new NextRequest('http://localhost/memorials/test', {
+      headers: {
+        cookie: 'hello=world; theme=serene',
+      },
+    })
+    const response = await updateSession(request)
+
+    expect(response.status).toBe(200)
+    expect(getAllSpy).toHaveBeenCalledWith([
+      expect.objectContaining({ name: 'hello', value: 'world' }),
+      expect.objectContaining({ name: 'theme', value: 'serene' }),
+    ])
+  })
 })

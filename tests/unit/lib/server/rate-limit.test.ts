@@ -88,11 +88,87 @@ describe('rate limit helper', () => {
     expect(first.allowed).toBe(true)
     expect(second.allowed).toBe(false)
   })
+
+  it('falls back to memory when upstash env is missing', async () => {
+    process.env.RATE_LIMIT_BACKEND = 'upstash'
+    const fetchMock = vi.spyOn(globalThis, 'fetch')
+
+    const first = await checkRateLimit('test:key:no-env', 1, 60_000)
+    const second = await checkRateLimit('test:key:no-env', 1, 60_000)
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(first.allowed).toBe(true)
+    expect(second.allowed).toBe(false)
+  })
+
+  it('sets expiry on the first upstash hit and falls back to windowMs when ttl is missing', async () => {
+    process.env.RATE_LIMIT_BACKEND = 'upstash'
+    process.env.UPSTASH_REDIS_REST_URL = 'https://upstash.example.com'
+    process.env.UPSTASH_REDIS_REST_TOKEN = 'token'
+    vi.spyOn(Date, 'now').mockReturnValue(2_000)
+
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify([{ result: 1 }]), { status: 200 })
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify([{ result: null }]), { status: 200 })
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify([{ result: null }]), { status: 200 })
+      )
+
+    const result = await checkRateLimit('test:key:first-hit', 3, 90_000)
+
+    expect(result).toEqual({
+      allowed: true,
+      remaining: 2,
+      resetAt: 92_000,
+    })
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(
+      fetchMock.mock.calls.map(
+        ([, init]) => JSON.parse(String(init?.body ?? '[]'))[0]
+      )
+    ).toEqual([
+      ['INCR', 'test:key:first-hit'],
+      ['PEXPIRE', 'test:key:first-hit', '90000'],
+      ['PTTL', 'test:key:first-hit'],
+    ])
+  })
+
+  it('blocks requests when upstash count exceeds the limit', async () => {
+    process.env.RATE_LIMIT_BACKEND = 'upstash'
+    process.env.UPSTASH_REDIS_REST_URL = 'https://upstash.example.com'
+    process.env.UPSTASH_REDIS_REST_TOKEN = 'token'
+    vi.spyOn(Date, 'now').mockReturnValue(1_000)
+
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify([{ result: 3 }]), { status: 200 })
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify([{ result: 5_000 }]), { status: 200 })
+      )
+
+    const result = await checkRateLimit('test:key:blocked-upstash', 2, 60_000)
+
+    expect(result).toEqual({
+      allowed: false,
+      remaining: 0,
+      resetAt: 6_000,
+    })
+  })
 })
 
 describe('getClientIp', () => {
   it('returns unknown when forwarded header is missing', () => {
     expect(getClientIp(null)).toBe('unknown')
+  })
+
+  it('returns unknown when forwarded header is blank', () => {
+    expect(getClientIp('   ')).toBe('unknown')
   })
 
   it('extracts first client ip from forwarded list', () => {

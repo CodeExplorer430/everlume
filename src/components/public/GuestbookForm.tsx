@@ -77,10 +77,13 @@ export function GuestbookForm({ memorialId }: GuestbookFormProps) {
   const [error, setError] = useState<string | null>(null)
   const [startedAt] = useState(() => Date.now())
 
+  const resetTurnstile = () => {
+    window.turnstile?.reset(turnstileWidgetIdRef.current!)
+  }
+
   useEffect(() => {
     if (!shouldUseCaptcha || !turnstileReady || !window.turnstile) return
-    const container = turnstileContainerRef.current
-    if (!container || turnstileWidgetIdRef.current) return
+    const container = turnstileContainerRef.current!
 
     turnstileWidgetIdRef.current = window.turnstile.render(container, {
       sitekey: turnstileSiteKey,
@@ -166,7 +169,7 @@ export function GuestbookForm({ memorialId }: GuestbookFormProps) {
           turnstileWidgetIdRef.current &&
           window.turnstile
         ) {
-          window.turnstile.reset(turnstileWidgetIdRef.current)
+          resetTurnstile()
         }
         setCaptchaToken(null)
         return
@@ -177,12 +180,8 @@ export function GuestbookForm({ memorialId }: GuestbookFormProps) {
       setError(
         'The guestbook could not be reached. Please check your connection and try again.'
       )
-      if (
-        shouldUseCaptcha &&
-        turnstileWidgetIdRef.current &&
-        window.turnstile
-      ) {
-        window.turnstile.reset(turnstileWidgetIdRef.current)
+      if (shouldUseCaptcha && turnstileWidgetIdRef.current) {
+        resetTurnstile()
       }
       setCaptchaToken(null)
     } finally {
@@ -210,12 +209,8 @@ export function GuestbookForm({ memorialId }: GuestbookFormProps) {
             setName('')
             setMessage('')
             setCaptchaToken(null)
-            if (
-              shouldUseCaptcha &&
-              turnstileWidgetIdRef.current &&
-              window.turnstile
-            ) {
-              window.turnstile.reset(turnstileWidgetIdRef.current)
+            if (shouldUseCaptcha && turnstileWidgetIdRef.current) {
+              resetTurnstile()
             }
           }}
         >

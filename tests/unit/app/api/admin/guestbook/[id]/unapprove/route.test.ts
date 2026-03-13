@@ -29,6 +29,7 @@ describe('POST /api/admin/guestbook/[id]/unapprove', () => {
     mockRequireAdminUser.mockReset()
     mockAssertOwnedRowByPageId.mockReset()
     mockLogAdminAudit.mockReset()
+    mockUpdate.mockClear()
     mockUpdateEq.mockReset()
   })
 
@@ -68,6 +69,92 @@ describe('POST /api/admin/guestbook/[id]/unapprove', () => {
 
     expect(res.status).toBe(200)
     expect(mockUpdate).toHaveBeenCalledWith({ is_approved: false })
+    expect(mockUpdateEq).toHaveBeenCalledWith(
+      'id',
+      '550e8400-e29b-41d4-a716-446655440000'
+    )
     expect(mockLogAdminAudit).toHaveBeenCalled()
+  })
+
+  it('returns auth response without mutating when user is unauthorized', async () => {
+    mockRequireAdminUser.mockResolvedValue({
+      ok: false,
+      response: new Response(
+        JSON.stringify({
+          code: 'UNAUTHORIZED',
+          message: 'You must be signed in.',
+        }),
+        { status: 401 }
+      ),
+    })
+
+    const req = new Request(
+      'http://localhost/api/admin/guestbook/550e8400-e29b-41d4-a716-446655440000/unapprove',
+      { method: 'POST' }
+    )
+    const res = await POST(req as never, {
+      params: Promise.resolve({ id: '550e8400-e29b-41d4-a716-446655440000' }),
+    })
+
+    expect(res.status).toBe(401)
+    expect(mockAssertOwnedRowByPageId).not.toHaveBeenCalled()
+    expect(mockUpdate).not.toHaveBeenCalled()
+    expect(mockLogAdminAudit).not.toHaveBeenCalled()
+  })
+
+  it('returns forbidden when owner check fails', async () => {
+    mockRequireAdminUser.mockResolvedValue({
+      ok: true,
+      userId: 'user-1',
+      role: 'editor',
+      supabase: {
+        from: () => ({
+          update: mockUpdate,
+        }),
+      },
+    })
+    mockAssertOwnedRowByPageId.mockResolvedValue(false)
+
+    const req = new Request(
+      'http://localhost/api/admin/guestbook/550e8400-e29b-41d4-a716-446655440000/unapprove',
+      { method: 'POST' }
+    )
+    const res = await POST(req as never, {
+      params: Promise.resolve({ id: '550e8400-e29b-41d4-a716-446655440000' }),
+    })
+
+    expect(res.status).toBe(403)
+    expect(mockUpdate).not.toHaveBeenCalled()
+    expect(mockLogAdminAudit).not.toHaveBeenCalled()
+  })
+
+  it('returns database error without auditing when unapprove fails', async () => {
+    mockRequireAdminUser.mockResolvedValue({
+      ok: true,
+      userId: 'user-1',
+      role: 'editor',
+      supabase: {
+        from: () => ({
+          update: mockUpdate,
+        }),
+      },
+    })
+    mockAssertOwnedRowByPageId.mockResolvedValue(true)
+    mockUpdateEq.mockResolvedValue({ error: { message: 'boom' } })
+
+    const req = new Request(
+      'http://localhost/api/admin/guestbook/550e8400-e29b-41d4-a716-446655440000/unapprove',
+      { method: 'POST' }
+    )
+    const res = await POST(req as never, {
+      params: Promise.resolve({ id: '550e8400-e29b-41d4-a716-446655440000' }),
+    })
+
+    expect(res.status).toBe(500)
+    expect(mockUpdateEq).toHaveBeenCalledWith(
+      'id',
+      '550e8400-e29b-41d4-a716-446655440000'
+    )
+    expect(mockLogAdminAudit).not.toHaveBeenCalled()
   })
 })

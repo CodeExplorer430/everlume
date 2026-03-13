@@ -43,14 +43,12 @@ export function PublicGallery({
   }, [])
 
   const nextImage = useCallback(() => {
-    setSelectedIndex((current) =>
-      current !== null ? (current + 1) % photos.length : current
-    )
+    setSelectedIndex((current) => ((current as number) + 1) % photos.length)
   }, [photos.length])
 
   const prevImage = useCallback(() => {
-    setSelectedIndex((current) =>
-      current !== null ? (current - 1 + photos.length) % photos.length : current
+    setSelectedIndex(
+      (current) => ((current as number) - 1 + photos.length) % photos.length
     )
   }, [photos.length])
 
@@ -60,15 +58,19 @@ export function PublicGallery({
     closeButtonRef.current?.focus()
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        closeLightbox()
-      } else if (event.key === 'ArrowRight') {
-        event.preventDefault()
-        nextImage()
-      } else if (event.key === 'ArrowLeft') {
-        event.preventDefault()
-        prevImage()
+      switch (event.key) {
+        case 'Escape':
+          event.preventDefault()
+          closeLightbox()
+          break
+        case 'ArrowRight':
+          event.preventDefault()
+          nextImage()
+          break
+        case 'ArrowLeft':
+          event.preventDefault()
+          prevImage()
+          break
       }
     }
 
@@ -197,43 +199,52 @@ export function PublicGallery({
           </button>
 
           <div className="relative flex h-full w-full flex-col items-center justify-center">
-            <div className="mb-4 flex w-full max-w-6xl items-center justify-between gap-3 text-sm text-white/72">
-              <p>
-                Photo {selectedIndex + 1} of {photos.length}
-              </p>
-              <p className="hidden md:block">
-                Use arrow keys to move between photos.
-              </p>
-            </div>
-            <div className="relative h-[84vh] w-full max-w-6xl">
-              <Image
-                src={
-                  photos[selectedIndex].image_url ||
-                  photos[selectedIndex].thumb_url ||
-                  ''
-                }
-                alt={
-                  photos[selectedIndex].caption ||
-                  `Memorial photo ${selectedIndex + 1}`
-                }
-                fill
-                sizes="100vw"
-                unoptimized={(
-                  photos[selectedIndex].image_url ||
-                  photos[selectedIndex].thumb_url ||
-                  ''
-                ).startsWith('/api/public/media/')}
-                className={`rounded-[1.5rem] ${fit === 'contain' ? 'object-contain' : 'object-cover'} shadow-2xl transition-all duration-700`}
-                priority
-              />
-            </div>
-            {photos[selectedIndex].caption && (
-              <p
-                className={`mt-5 text-center ${captionStyle === 'minimal' ? 'text-xs tracking-[0.06em] uppercase' : 'text-sm md:text-base'} text-white/90`}
-              >
-                {photos[selectedIndex].caption}
-              </p>
-            )}
+            {(() => {
+              const selectedPhoto = photos[selectedIndex]
+              const selectedSrc =
+                selectedPhoto.image_url || selectedPhoto.thumb_url || ''
+              const selectedAlt =
+                selectedPhoto.caption || `Memorial photo ${selectedIndex + 1}`
+              const selectedUsesProtectedMediaProxy =
+                selectedSrc.startsWith('/api/public/media/')
+
+              return (
+                <>
+                  <div className="mb-4 flex w-full max-w-6xl items-center justify-between gap-3 text-sm text-white/72">
+                    <p>
+                      Photo {selectedIndex + 1} of {photos.length}
+                    </p>
+                    <p className="hidden md:block">
+                      Use arrow keys to move between photos.
+                    </p>
+                  </div>
+                  <div className="relative h-[84vh] w-full max-w-6xl">
+                    {selectedSrc ? (
+                      <Image
+                        src={selectedSrc}
+                        alt={selectedAlt}
+                        fill
+                        sizes="100vw"
+                        unoptimized={selectedUsesProtectedMediaProxy}
+                        className={`rounded-[1.5rem] ${fit === 'contain' ? 'object-contain' : 'object-cover'} shadow-2xl transition-all duration-700`}
+                        priority
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center rounded-[1.5rem] border border-white/15 bg-black/20 text-sm text-white/80">
+                        Missing image URL
+                      </div>
+                    )}
+                  </div>
+                  {selectedPhoto.caption && (
+                    <p
+                      className={`mt-5 text-center ${captionStyle === 'minimal' ? 'text-xs tracking-[0.06em] uppercase' : 'text-sm md:text-base'} text-white/90`}
+                    >
+                      {selectedPhoto.caption}
+                    </p>
+                  )}
+                </>
+              )
+            })()}
           </div>
         </div>
       )}

@@ -29,6 +29,7 @@ describe('DELETE /api/admin/timeline/[id]', () => {
     mockRequireAdminUser.mockReset()
     mockAssertOwnedRowByPageId.mockReset()
     mockLogAdminAudit.mockReset()
+    mockDelete.mockClear()
     mockDeleteEq.mockReset()
   })
 
@@ -67,6 +68,92 @@ describe('DELETE /api/admin/timeline/[id]', () => {
 
     expect(res.status).toBe(200)
     expect(mockDelete).toHaveBeenCalled()
+    expect(mockDeleteEq).toHaveBeenCalledWith(
+      'id',
+      '550e8400-e29b-41d4-a716-446655440000'
+    )
     expect(mockLogAdminAudit).toHaveBeenCalled()
+  })
+
+  it('returns auth response without mutating when user is unauthorized', async () => {
+    mockRequireAdminUser.mockResolvedValue({
+      ok: false,
+      response: new Response(
+        JSON.stringify({
+          code: 'UNAUTHORIZED',
+          message: 'You must be signed in.',
+        }),
+        { status: 401 }
+      ),
+    })
+
+    const req = new Request(
+      'http://localhost/api/admin/timeline/550e8400-e29b-41d4-a716-446655440000',
+      { method: 'DELETE' }
+    )
+    const res = await DELETE(req as never, {
+      params: Promise.resolve({ id: '550e8400-e29b-41d4-a716-446655440000' }),
+    })
+
+    expect(res.status).toBe(401)
+    expect(mockAssertOwnedRowByPageId).not.toHaveBeenCalled()
+    expect(mockDelete).not.toHaveBeenCalled()
+    expect(mockLogAdminAudit).not.toHaveBeenCalled()
+  })
+
+  it('returns forbidden when owner check fails', async () => {
+    mockRequireAdminUser.mockResolvedValue({
+      ok: true,
+      userId: 'user-1',
+      role: 'editor',
+      supabase: {
+        from: () => ({
+          delete: mockDelete,
+        }),
+      },
+    })
+    mockAssertOwnedRowByPageId.mockResolvedValue(false)
+
+    const req = new Request(
+      'http://localhost/api/admin/timeline/550e8400-e29b-41d4-a716-446655440000',
+      { method: 'DELETE' }
+    )
+    const res = await DELETE(req as never, {
+      params: Promise.resolve({ id: '550e8400-e29b-41d4-a716-446655440000' }),
+    })
+
+    expect(res.status).toBe(403)
+    expect(mockDelete).not.toHaveBeenCalled()
+    expect(mockLogAdminAudit).not.toHaveBeenCalled()
+  })
+
+  it('returns database error without auditing when delete fails', async () => {
+    mockRequireAdminUser.mockResolvedValue({
+      ok: true,
+      userId: 'user-1',
+      role: 'editor',
+      supabase: {
+        from: () => ({
+          delete: mockDelete,
+        }),
+      },
+    })
+    mockAssertOwnedRowByPageId.mockResolvedValue(true)
+    mockDeleteEq.mockResolvedValue({ error: { message: 'boom' } })
+
+    const req = new Request(
+      'http://localhost/api/admin/timeline/550e8400-e29b-41d4-a716-446655440000',
+      { method: 'DELETE' }
+    )
+    const res = await DELETE(req as never, {
+      params: Promise.resolve({ id: '550e8400-e29b-41d4-a716-446655440000' }),
+    })
+
+    expect(res.status).toBe(500)
+    expect(mockDeleteEq).toHaveBeenCalledWith(
+      'id',
+      '550e8400-e29b-41d4-a716-446655440000'
+    )
+    expect(mockLogAdminAudit).not.toHaveBeenCalled()
   })
 })

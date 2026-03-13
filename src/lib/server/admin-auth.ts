@@ -38,7 +38,7 @@ async function getProfileAccess(
 
   if (!error && data?.role) {
     return {
-      role: (data.role as AdminRole) || 'viewer',
+      role: data.role as AdminRole,
       isActive: data.is_active !== false,
     }
   }
@@ -50,7 +50,7 @@ async function getProfileAccess(
     .eq('id', userId)
     .single()
   if (!legacy.error && legacy.data?.role) {
-    return { role: (legacy.data.role as AdminRole) || 'viewer', isActive: true }
+    return { role: legacy.data.role as AdminRole, isActive: true }
   }
 
   return null

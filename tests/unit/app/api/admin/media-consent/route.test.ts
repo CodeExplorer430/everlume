@@ -76,6 +76,8 @@ describe('GET /api/admin/media-consent', () => {
       },
     })
     expect(mockEq).not.toHaveBeenCalled()
+    expect(mockOrder).toHaveBeenCalledWith('created_at', { ascending: false })
+    expect(mockLimit).toHaveBeenCalledWith(250)
   })
 
   it('normalizes joined memorial rows when the pages relation is returned as an array', async () => {
@@ -143,6 +145,106 @@ describe('GET /api/admin/media-consent', () => {
     const res = await GET()
     expect(res.status).toBe(200)
     expect(mockEq).toHaveBeenCalledWith('pages.owner_id', 'viewer-1')
+    expect(mockOrder).toHaveBeenCalledWith('created_at', { ascending: false })
+    expect(mockLimit).toHaveBeenCalledWith(250)
+  })
+
+  it('returns an empty report summary when no consent logs exist', async () => {
+    mockLimit.mockResolvedValue({ data: [], error: null })
+    mockRequireAdminUser.mockResolvedValue({
+      ok: true,
+      userId: 'admin-1',
+      role: 'admin',
+      supabase: {
+        from: () => ({
+          select: mockSelect,
+        }),
+      },
+    })
+
+    const res = await GET()
+
+    expect(res.status).toBe(200)
+    await expect(res.json()).resolves.toEqual({
+      logs: [],
+      summary: {
+        total: 0,
+        consentGranted: 0,
+        mediaAccessed: 0,
+        memorials: 0,
+      },
+    })
+  })
+
+  it('normalizes null consent log data to an empty report', async () => {
+    mockLimit.mockResolvedValue({ data: null, error: null })
+    mockRequireAdminUser.mockResolvedValue({
+      ok: true,
+      userId: 'admin-1',
+      role: 'admin',
+      supabase: {
+        from: () => ({
+          select: mockSelect,
+        }),
+      },
+    })
+
+    const res = await GET()
+
+    expect(res.status).toBe(200)
+    await expect(res.json()).resolves.toEqual({
+      logs: [],
+      summary: {
+        total: 0,
+        consentGranted: 0,
+        mediaAccessed: 0,
+        memorials: 0,
+      },
+    })
+  })
+
+  it('falls back to default memorial metadata when the joined page is missing', async () => {
+    mockLimit.mockResolvedValue({
+      data: [
+        {
+          id: 'log-3',
+          page_id: 'memorial-3',
+          event_type: 'media_accessed',
+          access_mode: 'public',
+          consent_source: 'gallery',
+          consent_version: 1,
+          media_kind: null,
+          media_variant: null,
+          ip_hash: 'ip-hash',
+          user_agent_hash: 'ua-hash',
+          created_at: '2026-03-10T00:00:00.000Z',
+          pages: null,
+        },
+      ],
+      error: null,
+    })
+    mockRequireAdminUser.mockResolvedValue({
+      ok: true,
+      userId: 'admin-1',
+      role: 'admin',
+      supabase: {
+        from: () => ({
+          select: mockSelect,
+        }),
+      },
+    })
+
+    const res = await GET()
+
+    expect(res.status).toBe(200)
+    await expect(res.json()).resolves.toMatchObject({
+      logs: [
+        expect.objectContaining({
+          memorialTitle: 'Untitled memorial',
+          memorialSlug: '',
+        }),
+      ],
+    })
   })
 
   it('returns the auth failure response when admin access is denied', async () => {

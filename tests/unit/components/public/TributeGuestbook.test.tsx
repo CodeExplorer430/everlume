@@ -35,5 +35,19 @@ describe('TributeGuestbook', () => {
 
     expect(screen.getByText('Ana')).toBeInTheDocument()
     expect(screen.getByText(/We miss you/)).toBeInTheDocument()
+    expect(screen.getByText('January 1, 2026')).toBeInTheDocument()
+  })
+
+  it('falls back to generic loved-one copy when the memorial name is missing', () => {
+    render(<TributeGuestbook memorialId="p2" fullName={null} entries={[]} />)
+
+    expect(
+      screen.getByText('Leave a message in memory of our loved one.')
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        /You can be the first to leave a memory for this loved one\./
+      )
+    ).toBeInTheDocument()
   })
 })

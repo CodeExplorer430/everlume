@@ -27,6 +27,13 @@ describe('site url helper', () => {
     expect(getAppBaseUrl().toString()).toBe('https://everlume.vercel.app/')
   })
 
+  it('ignores invalid explicit app urls and falls back to the next valid source', () => {
+    process.env.NEXT_PUBLIC_APP_URL = 'http://[invalid'
+    process.env.VERCEL_PROJECT_PRODUCTION_URL = 'everlume.vercel.app'
+
+    expect(getAppBaseUrl().toString()).toBe('https://everlume.vercel.app/')
+  })
+
   it('falls back to the preview Vercel hostname before localhost', () => {
     process.env.VERCEL_URL = 'preview-everlume.vercel.app'
 

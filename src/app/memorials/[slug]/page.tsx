@@ -25,6 +25,23 @@ const DEFAULT_CONSENT_TITLE = 'Media Viewing Notice'
 const DEFAULT_CONSENT_BODY =
   "The family has protected this memorial's photos and videos for respectful viewing. Continuing confirms that access to protected media is recorded for family oversight."
 
+function metadataForRestrictedAccess(access: {
+  allowed: boolean
+  requiresPassword: boolean
+}) {
+  if (access.allowed) return null
+
+  return access.requiresPassword
+    ? {
+        title: 'Password Protected Memorial | Everlume',
+        robots: { index: false, follow: false } as const,
+      }
+    : {
+        title: 'Private Memorial | Everlume',
+        robots: { index: false, follow: false } as const,
+      }
+}
+
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
@@ -35,18 +52,9 @@ export async function generateMetadata({
   if (memorial) {
     if (resolveMemorialAccessMode(memorial) !== 'public') {
       const access = await canAccessMemorial(memorial)
-      if (!access.allowed && !access.requiresPassword) {
-        return {
-          title: 'Private Memorial | Everlume',
-          robots: { index: false, follow: false },
-        }
-      }
-
-      if (!access.allowed && access.requiresPassword) {
-        return {
-          title: 'Password Protected Memorial | Everlume',
-          robots: { index: false, follow: false },
-        }
+      const restrictedMetadata = metadataForRestrictedAccess(access)
+      if (restrictedMetadata) {
+        return restrictedMetadata
       }
     }
 
@@ -73,18 +81,9 @@ export async function generateMetadata({
 
   if (resolveMemorialAccessMode(databasePage) !== 'public') {
     const access = await canAccessMemorial(databasePage)
-    if (!access.allowed && !access.requiresPassword) {
-      return {
-        title: 'Private Memorial | Everlume',
-        robots: { index: false, follow: false },
-      }
-    }
-
-    if (!access.allowed && access.requiresPassword) {
-      return {
-        title: 'Password Protected Memorial | Everlume',
-        robots: { index: false, follow: false },
-      }
+    const restrictedMetadata = metadataForRestrictedAccess(access)
+    if (restrictedMetadata) {
+      return restrictedMetadata
     }
   }
 

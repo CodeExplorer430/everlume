@@ -70,4 +70,34 @@ describe('TributeVideos', () => {
 
     expect(screen.getByText('No additional videos yet.')).toBeInTheDocument()
   })
+
+  it('renders additional featured videos and omits title copy when titles are missing', () => {
+    const { container } = render(
+      <TributeVideos
+        layout="featured"
+        videos={[
+          {
+            id: 'v1',
+            provider: 'youtube',
+            provider_id: 'abcdefghijk',
+            title: null,
+          },
+          {
+            id: 'v2',
+            provider: 'cloudinary',
+            provider_id: 'everlume/page/video-2',
+            title: 'Family Interview',
+          },
+        ]}
+      />
+    )
+
+    const frames = container.querySelectorAll('iframe,video')
+    expect(frames).toHaveLength(2)
+    expect(screen.getByTitle('Video')).toBeInTheDocument()
+    expect(screen.getByText('Family Interview')).toBeInTheDocument()
+    expect(
+      screen.queryByText('No additional videos yet.')
+    ).not.toBeInTheDocument()
+  })
 })

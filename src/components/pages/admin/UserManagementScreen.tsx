@@ -289,10 +289,9 @@ export function UserManagementScreen() {
       message?: string
     }
     if (payload.user) {
+      const updatedUser = payload.user
       setUsers((current) =>
-        current.map((user) =>
-          user.id === userId ? (payload.user ?? user) : user
-        )
+        current.map((user) => (user.id === userId ? updatedUser : user))
       )
     }
     setSuccessMessage(payload.message || 'Invite email sent.')

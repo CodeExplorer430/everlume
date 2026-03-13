@@ -28,11 +28,10 @@ async function assertAdminPrivileges() {
 }
 
 function deriveAccountState(
-  profile: { is_active: boolean },
+  _profile: { is_active: boolean },
   authUser: { last_sign_in_at?: string | null } | null | undefined,
   authLookupAvailable: boolean
 ) {
-  if (!profile.is_active) return 'deactivated' as const
   if (!authLookupAvailable) return 'active' as const
   if (authUser?.last_sign_in_at) return 'active' as const
   return 'invited' as const

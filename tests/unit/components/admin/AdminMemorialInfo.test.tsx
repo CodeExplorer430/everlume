@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AdminMemorialInfo } from '@/components/admin/AdminMemorialInfo'
 
@@ -154,6 +154,27 @@ describe('AdminMemorialInfo', () => {
     ).toBeInTheDocument()
   })
 
+  it('renders private access guidance when the memorial starts in private mode', () => {
+    render(
+      <AdminMemorialInfo
+        onUpdate={vi.fn()}
+        memorial={makePage({ accessMode: 'private' })}
+      />
+    )
+
+    expect(screen.getByText('private Mode')).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Hidden from public visitors and excluded from the homepage directory.'
+      )
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        /Visitors without admin access will not be able to open the memorial\./
+      )
+    ).toBeInTheDocument()
+  })
+
   it('submits edited dedication text', async () => {
     const fetchMock = vi
       .spyOn(globalThis, 'fetch')
@@ -246,25 +267,42 @@ describe('AdminMemorialInfo', () => {
       />
     )
 
-    await user.selectOptions(screen.getByLabelText('Theme Preset'), 'editorial')
-    await user.selectOptions(screen.getByLabelText('Video Layout'), 'featured')
-    await user.selectOptions(screen.getByLabelText('Slideshow'), 'disabled')
-    await user.selectOptions(screen.getByLabelText('Photo Fit'), 'contain')
-    await user.selectOptions(screen.getByLabelText('Caption Style'), 'minimal')
-    await user.selectOptions(screen.getByLabelText('QR Template'), 'warm')
-    await user.clear(screen.getByLabelText('QR Caption'))
-    await user.type(screen.getByLabelText('QR Caption'), 'Visit tribute')
-    await user.selectOptions(
-      screen.getByLabelText('QR Foreground Color'),
-      '#14532d'
-    )
-    await user.selectOptions(
-      screen.getByLabelText('QR Background Color'),
-      '#fffaf2'
-    )
-    await user.selectOptions(screen.getByLabelText('QR Frame Style'), 'double')
-    await user.selectOptions(screen.getByLabelText('QR Caption Font'), 'sans')
-    await user.selectOptions(screen.getByLabelText('QR Monogram'), 'enabled')
+    fireEvent.change(screen.getByLabelText('Theme Preset'), {
+      target: { value: 'editorial' },
+    })
+    fireEvent.change(screen.getByLabelText('Video Layout'), {
+      target: { value: 'featured' },
+    })
+    fireEvent.change(screen.getByLabelText('Slideshow'), {
+      target: { value: 'disabled' },
+    })
+    fireEvent.change(screen.getByLabelText('Photo Fit'), {
+      target: { value: 'contain' },
+    })
+    fireEvent.change(screen.getByLabelText('Caption Style'), {
+      target: { value: 'minimal' },
+    })
+    fireEvent.change(screen.getByLabelText('QR Template'), {
+      target: { value: 'warm' },
+    })
+    fireEvent.change(screen.getByLabelText('QR Caption'), {
+      target: { value: 'Visit tribute' },
+    })
+    fireEvent.change(screen.getByLabelText('QR Foreground Color'), {
+      target: { value: '#14532d' },
+    })
+    fireEvent.change(screen.getByLabelText('QR Background Color'), {
+      target: { value: '#fffaf2' },
+    })
+    fireEvent.change(screen.getByLabelText('QR Frame Style'), {
+      target: { value: 'double' },
+    })
+    fireEvent.change(screen.getByLabelText('QR Caption Font'), {
+      target: { value: 'sans' },
+    })
+    fireEvent.change(screen.getByLabelText('QR Monogram'), {
+      target: { value: 'enabled' },
+    })
     await user.click(screen.getByRole('button', { name: 'Save Changes' }))
 
     await waitFor(() => {
@@ -286,5 +324,139 @@ describe('AdminMemorialInfo', () => {
       qrCaptionFont: 'sans',
       qrShowLogo: true,
     })
+  }, 30000)
+
+  it('submits date fields and falls back to the default slideshow interval when cleared', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(
+        new Response(JSON.stringify({ ok: true }), { status: 200 })
+      )
+    const user = userEvent.setup()
+
+    render(
+      <AdminMemorialInfo
+        onUpdate={vi.fn()}
+        memorial={makePage({ id: 'page-13', dob: null, dod: null })}
+      />
+    )
+
+    const dobInput = screen.getByLabelText('DOB')
+    const dodInput = screen.getByLabelText('DOD')
+
+    fireEvent.input(dobInput, {
+      target: { value: '1945-01-01' },
+    })
+    fireEvent.input(dodInput, {
+      target: { value: '2025-01-01' },
+    })
+    fireEvent.change(screen.getByLabelText('Slideshow Interval (ms)'), {
+      target: { value: '' },
+    })
+
+    expect(dobInput).toHaveValue('1945-01-01')
+    expect(dodInput).toHaveValue('2025-01-01')
+
+    await user.click(screen.getByRole('button', { name: 'Save Changes' }))
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalled()
+    })
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(JSON.parse(String(init.body))).toMatchObject({
+      dob: '1945-01-01',
+      dod: '2025-01-01',
+      memorialSlideshowIntervalMs: 4500,
+    })
+  }, 30000)
+
+  it('uses default memorial and qr settings when optional props are omitted', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(
+        new Response(JSON.stringify({ ok: true }), { status: 200 })
+      )
+    const user = userEvent.setup()
+
+    render(
+      <AdminMemorialInfo
+        onUpdate={vi.fn()}
+        memorial={makePage({
+          id: 'page-14',
+          memorial_theme: undefined,
+          memorial_slideshow_enabled: undefined,
+          memorial_slideshow_interval_ms: undefined,
+          memorial_video_layout: undefined,
+          memorial_photo_fit: undefined,
+          memorial_caption_style: undefined,
+          qr_template: undefined,
+          qr_caption: undefined,
+          qr_foreground_color: undefined,
+          qr_background_color: undefined,
+          qr_frame_style: undefined,
+          qr_caption_font: undefined,
+          qr_show_logo: undefined,
+        })}
+      />
+    )
+
+    expect(screen.getByLabelText('Theme Preset')).toHaveValue('classic')
+    expect(screen.getByLabelText('Slideshow')).toHaveValue('enabled')
+    expect(screen.getByLabelText('QR Caption')).toHaveValue('Scan me!')
+    expect(screen.getByLabelText('QR Monogram')).toHaveValue('disabled')
+
+    await user.click(screen.getByRole('button', { name: 'Save Changes' }))
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalled()
+    })
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(JSON.parse(String(init.body))).toMatchObject({
+      memorialTheme: 'classic',
+      memorialSlideshowEnabled: true,
+      memorialSlideshowIntervalMs: 4500,
+      memorialVideoLayout: 'grid',
+      memorialPhotoFit: 'cover',
+      memorialCaptionStyle: 'classic',
+      qrTemplate: 'classic',
+      qrCaption: 'Scan me!',
+      qrForegroundColor: '#111827',
+      qrBackgroundColor: '#ffffff',
+      qrFrameStyle: 'line',
+      qrCaptionFont: 'serif',
+      qrShowLogo: false,
+    })
+  })
+
+  it('falls back to default slideshow interval and qr caption when falsy values are provided', () => {
+    render(
+      <AdminMemorialInfo
+        onUpdate={vi.fn()}
+        memorial={makePage({
+          memorial_slideshow_interval_ms: 0,
+          qr_caption: '',
+        })}
+      />
+    )
+
+    expect(screen.getByLabelText('Slideshow Interval (ms)')).toHaveValue(4500)
+    expect(screen.getByLabelText('QR Caption')).toHaveValue('Scan me!')
+  })
+
+  it('updates slug and full name fields locally before saving', async () => {
+    const user = userEvent.setup()
+
+    render(<AdminMemorialInfo onUpdate={vi.fn()} memorial={makePage()} />)
+
+    const slugInput = screen.getByLabelText('Slug')
+    const fullNameInput = screen.getByLabelText('Full Name')
+
+    await user.clear(slugInput)
+    await user.type(slugInput, 'updated-slug')
+    await user.clear(fullNameInput)
+    await user.type(fullNameInput, 'Jane Victoria Doe')
+
+    expect(slugInput).toHaveValue('updated-slug')
+    expect(fullNameInput).toHaveValue('Jane Victoria Doe')
   })
 })

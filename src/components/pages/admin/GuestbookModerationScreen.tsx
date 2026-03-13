@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { format } from 'date-fns'
-import { Check, Loader2, RefreshCw, Trash2, X } from 'lucide-react'
+import { Check, RefreshCw, Trash2, X } from 'lucide-react'
 
 type Entry = {
   id: string
@@ -276,12 +276,7 @@ export function GuestbookModerationScreen() {
                             disabled={pendingAction?.id === entry.id}
                             aria-label={`Approve guestbook entry from ${entry.name}`}
                           >
-                            {pendingAction?.id === entry.id &&
-                            pendingAction.kind === 'approve' ? (
-                              <Loader2 className="h-4 w-4 animate-spin text-emerald-700" />
-                            ) : (
-                              <Check className="h-4 w-4 text-emerald-700" />
-                            )}
+                            <Check className="h-4 w-4 text-emerald-700" />
                           </Button>
                         ) : (
                           <Button
@@ -291,12 +286,7 @@ export function GuestbookModerationScreen() {
                             disabled={pendingAction?.id === entry.id}
                             aria-label={`Unapprove guestbook entry from ${entry.name}`}
                           >
-                            {pendingAction?.id === entry.id &&
-                            pendingAction.kind === 'unapprove' ? (
-                              <Loader2 className="h-4 w-4 animate-spin text-amber-700" />
-                            ) : (
-                              <X className="h-4 w-4 text-amber-700" />
-                            )}
+                            <X className="h-4 w-4 text-amber-700" />
                           </Button>
                         )}
                         <Button
@@ -306,12 +296,7 @@ export function GuestbookModerationScreen() {
                           disabled={pendingAction?.id === entry.id}
                           aria-label={`Delete guestbook entry from ${entry.name}`}
                         >
-                          {pendingAction?.id === entry.id &&
-                          pendingAction.kind === 'delete' ? (
-                            <Loader2 className="h-4 w-4 animate-spin text-destructive" />
-                          ) : (
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          )}
+                          <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
                     </td>

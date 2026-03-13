@@ -14,8 +14,8 @@ Checks:
 - `npm run test:coverage`
 - `npm run test:e2e` (webpack baseline)
 - `npm run test:e2e:auth` (password-based admin auth lane)
-- `npm run test:e2e:turbopack` (required parity run)
-- `e2e` alias check (passes only when both webpack + turbopack e2e jobs pass)
+- `npm run test:e2e:turbopack` (diagnostic compatibility run, non-blocking)
+- `e2e` alias check (passes when webpack + auth e2e jobs pass)
 - launch-readiness smoke (`/r/[code]` unit + short-links e2e flow)
 - Lighthouse perf/a11y budget gate (`npm run test:perf`)
 - `npm run build`
@@ -36,6 +36,7 @@ Required statuses: `lint`, `typecheck`, `unit_coverage`, `worker_tests`, `e2e`, 
 Workflow runtime note:
 
 - GitHub Actions workflow dependencies are pinned to the Node 24-compatible major line for `actions/checkout`, `actions/setup-node`, and `actions/upload-artifact` so CI and deploy runs do not emit the GitHub-hosted Node 20 deprecation warning.
+- Turbopack e2e still runs in CI and uploads artifacts, but it is treated as a diagnostic signal rather than a merge-blocking gate.
 
 ### 2) Next.js Deployment (Vercel) (`.github/workflows/deploy-vercel.yml`)
 

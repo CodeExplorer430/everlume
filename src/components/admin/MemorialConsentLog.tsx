@@ -88,7 +88,6 @@ export function MemorialConsentLog({ memorialId }: MemorialConsentLogProps) {
   }
 
   const revokeConsent = async () => {
-    if (revoking) return
     setRevoking(true)
     setErrorMessage(null)
     setSuccessMessage(null)

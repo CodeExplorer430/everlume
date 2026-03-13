@@ -38,6 +38,25 @@ describe('POST /api/internal/video-transcode/callback', () => {
     expect(res.status).toBe(403)
   })
 
+  it('rejects missing callback token headers', async () => {
+    const req = new Request(
+      'http://localhost/api/internal/video-transcode/callback',
+      {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          jobId: '550e8400-e29b-41d4-a716-446655440000',
+          status: 'processing',
+        }),
+      }
+    )
+
+    const res = await POST(req as never)
+    expect(res.status).toBe(403)
+  })
+
   it('rejects invalid json payloads', async () => {
     const req = new Request(
       'http://localhost/api/internal/video-transcode/callback',
@@ -48,6 +67,25 @@ describe('POST /api/internal/video-transcode/callback', () => {
           'content-type': 'application/json',
         },
         body: '{not-json',
+      }
+    )
+
+    const res = await POST(req as never)
+    expect(res.status).toBe(400)
+  })
+
+  it('rejects structurally invalid callback payloads', async () => {
+    const req = new Request(
+      'http://localhost/api/internal/video-transcode/callback',
+      {
+        method: 'POST',
+        headers: {
+          authorization: 'Bearer callback-secret',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: 'processing',
+        }),
       }
     )
 

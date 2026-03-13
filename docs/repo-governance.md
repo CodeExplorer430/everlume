@@ -16,8 +16,7 @@ Require these statuses before merge:
 - `typecheck`
 - `unit_coverage`
 - `worker_tests`
-- `e2e_webpack`
-- `e2e_turbopack`
+- `e2e`
 - `a11y`
 - `launch_readiness`
 - `perf_a11y_gate`

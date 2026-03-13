@@ -15,6 +15,7 @@ const mockPageSelect = vi.fn(() => ({ eq: mockPageEqId }))
 
 const mockDeleteEq = vi.fn()
 const mockDelete = vi.fn(() => ({ eq: mockDeleteEq }))
+const mockLogAdminAudit = vi.fn()
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
@@ -29,6 +30,10 @@ vi.mock('@/lib/supabase/server', () => ({
   }),
 }))
 
+vi.mock('@/lib/server/admin-audit', () => ({
+  logAdminAudit: (...args: unknown[]) => mockLogAdminAudit(...args),
+}))
+
 describe('DELETE /api/admin/videos/[id]', () => {
   beforeEach(() => {
     mockGetUser.mockReset()
@@ -36,10 +41,40 @@ describe('DELETE /api/admin/videos/[id]', () => {
     mockVideoSingle.mockReset()
     mockPageSingle.mockReset()
     mockDeleteEq.mockReset()
+    mockDelete.mockClear()
+    mockLogAdminAudit.mockReset()
     mockProfileSingle.mockResolvedValue({
       data: { role: 'editor', is_active: true },
       error: null,
     })
+  })
+
+  it('returns 400 for invalid params', async () => {
+    const req = new Request('http://localhost/api/admin/videos/not-a-uuid', {
+      method: 'DELETE',
+    })
+
+    const res = await DELETE(req as never, {
+      params: Promise.resolve({ id: 'not-a-uuid' }),
+    })
+
+    expect(res.status).toBe(400)
+    expect(mockDelete).not.toHaveBeenCalled()
+  })
+
+  it('returns unauthorized without a user', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null } })
+
+    const req = new Request(
+      'http://localhost/api/admin/videos/550e8400-e29b-41d4-a716-446655440000',
+      { method: 'DELETE' }
+    )
+    const res = await DELETE(req as never, {
+      params: Promise.resolve({ id: '550e8400-e29b-41d4-a716-446655440000' }),
+    })
+
+    expect(res.status).toBe(401)
+    expect(mockDelete).not.toHaveBeenCalled()
   })
 
   it('returns forbidden for non-owner', async () => {
@@ -55,6 +90,26 @@ describe('DELETE /api/admin/videos/[id]', () => {
       params: Promise.resolve({ id: '550e8400-e29b-41d4-a716-446655440000' }),
     })
     expect(res.status).toBe(403)
+    expect(mockDelete).not.toHaveBeenCalled()
+    expect(mockLogAdminAudit).not.toHaveBeenCalled()
+  })
+
+  it('returns a database error when delete fails', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    mockVideoSingle.mockResolvedValue({ data: { id: 'v1', page_id: 'page-1' } })
+    mockPageSingle.mockResolvedValue({ data: { id: 'page-1' } })
+    mockDeleteEq.mockResolvedValue({ error: { message: 'delete failed' } })
+
+    const req = new Request(
+      'http://localhost/api/admin/videos/550e8400-e29b-41d4-a716-446655440000',
+      { method: 'DELETE' }
+    )
+    const res = await DELETE(req as never, {
+      params: Promise.resolve({ id: '550e8400-e29b-41d4-a716-446655440000' }),
+    })
+
+    expect(res.status).toBe(500)
+    expect(mockLogAdminAudit).not.toHaveBeenCalled()
   })
 
   it('deletes video for owner', async () => {
@@ -71,5 +126,13 @@ describe('DELETE /api/admin/videos/[id]', () => {
       params: Promise.resolve({ id: '550e8400-e29b-41d4-a716-446655440000' }),
     })
     expect(res.status).toBe(200)
+    expect(mockLogAdminAudit).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        action: 'video.delete',
+        entity: 'video',
+        entityId: '550e8400-e29b-41d4-a716-446655440000',
+      })
+    )
   })
 })

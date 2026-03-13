@@ -2,6 +2,14 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemorialUnlockForm } from '@/components/public/MemorialUnlockForm'
 
+function deferredResponse() {
+  let resolve: (response: Response) => void
+  const promise = new Promise<Response>((res) => {
+    resolve = res
+  })
+  return { promise, resolve: resolve! }
+}
+
 describe('MemorialUnlockForm', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
@@ -53,6 +61,66 @@ describe('MemorialUnlockForm', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Invalid password'
     )
+  })
+
+  it('shows the fallback error when the unlock response is not json', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('bad', { status: 500 })
+    )
+
+    const user = userEvent.setup()
+    render(<MemorialUnlockForm slug="jane" />)
+
+    await user.type(screen.getByLabelText('Access Password'), 'wrong')
+    await user.click(screen.getByRole('button', { name: 'Unlock Memorial' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Unable to unlock this memorial.'
+    )
+  })
+
+  it('reloads the page after a successful unlock and clears the loading state only on response', async () => {
+    const request = deferredResponse()
+    const reloadMock = vi.fn()
+    vi.spyOn(globalThis, 'fetch').mockImplementation(
+      async () => request.promise
+    )
+    const originalLocation = window.location
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: {
+        ...originalLocation,
+        reload: reloadMock,
+      },
+    })
+
+    try {
+      const user = userEvent.setup()
+      render(<MemorialUnlockForm slug="jane" />)
+
+      await user.type(
+        screen.getByLabelText('Access Password'),
+        'family-password'
+      )
+      await user.click(screen.getByRole('button', { name: 'Unlock Memorial' }))
+
+      expect(
+        screen.getByRole('button', { name: 'Unlocking...' })
+      ).toBeDisabled()
+
+      request.resolve(
+        new Response(JSON.stringify({ ok: true }), { status: 200 })
+      )
+
+      await waitFor(() => {
+        expect(reloadMock).toHaveBeenCalled()
+      })
+    } finally {
+      Object.defineProperty(window, 'location', {
+        configurable: true,
+        value: originalLocation,
+      })
+    }
   })
 
   it('shows loading state while unlock request is pending', async () => {

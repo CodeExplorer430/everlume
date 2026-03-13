@@ -411,7 +411,7 @@ function AdminMemorialInfoForm({ memorial, onUpdate }: AdminMemorialInfoProps) {
               min={2000}
               max={12000}
               step={500}
-              value={formData.memorial_slideshow_interval_ms || 4500}
+              value={formData.memorial_slideshow_interval_ms}
               onChange={(e) =>
                 setFormData({
                   ...formData,
@@ -500,7 +500,7 @@ function AdminMemorialInfoForm({ memorial, onUpdate }: AdminMemorialInfoProps) {
             <Input
               id="qr-caption"
               maxLength={40}
-              value={formData.qr_caption || 'Scan me!'}
+              value={formData.qr_caption}
               onChange={(e) =>
                 setFormData({ ...formData, qr_caption: e.target.value })
               }

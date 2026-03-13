@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { NewMemorialForm } from '@/components/pages/admin/NewMemorialForm'
 
@@ -37,6 +37,21 @@ describe('NewMemorialForm', () => {
     expect(screen.getByLabelText('URL Slug')).toHaveValue('custom-slug')
   })
 
+  it('keeps slug in sync while it still matches the generated title slug', async () => {
+    const user = userEvent.setup()
+    render(<NewMemorialForm />)
+
+    const titleInput = screen.getByLabelText('Memorial Title')
+    const slugInput = screen.getByLabelText('URL Slug')
+
+    await user.type(titleInput, 'Jane Doe')
+    expect(slugInput).toHaveValue('jane-doe')
+
+    await user.clear(titleInput)
+    await user.type(titleInput, 'Jane Doe Senior')
+    expect(slugInput).toHaveValue('jane-doe-senior')
+  })
+
   it('submits and navigates to admin on success', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ memorial: { id: 'p1' } }), {
@@ -70,6 +85,41 @@ describe('NewMemorialForm', () => {
     expect(mockRefresh).toHaveBeenCalled()
   })
 
+  it('normalizes empty dates to null and shows the creating state while the request is pending', async () => {
+    let resolveRequest:
+      | ((value: Response | PromiseLike<Response>) => void)
+      | undefined
+
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockReturnValue(
+      new Promise((resolve) => {
+        resolveRequest = resolve
+      }) as Promise<Response>
+    )
+
+    const user = userEvent.setup()
+    render(<NewMemorialForm />)
+
+    await user.type(screen.getByLabelText('Memorial Title'), 'Jane Doe')
+    await user.type(screen.getByLabelText('URL Slug'), 'jane-doe')
+    await user.click(screen.getByRole('button', { name: 'Create Memorial' }))
+
+    expect(screen.getByRole('button', { name: 'Creating...' })).toBeDisabled()
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(JSON.parse(String(init.body))).toMatchObject({
+      dob: null,
+      dod: null,
+    })
+
+    resolveRequest?.(
+      new Response(JSON.stringify({ memorial: { id: 'p1' } }), { status: 200 })
+    )
+
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/admin')
+    })
+  })
+
   it('shows API error and supports cancel navigation', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ message: 'Creation failed' }), {
@@ -88,5 +138,48 @@ describe('NewMemorialForm', () => {
 
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(mockBack).toHaveBeenCalled()
+  })
+
+  it('serializes populated date fields in the create payload', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ memorial: { id: 'p1' } }), {
+        status: 200,
+      })
+    )
+
+    const user = userEvent.setup()
+    render(<NewMemorialForm />)
+
+    await user.type(screen.getByLabelText('Memorial Title'), 'Jane Doe')
+    await user.type(screen.getByLabelText('URL Slug'), 'jane-doe')
+    await user.type(screen.getByLabelText('Date of Birth'), '1980-01-02')
+    await user.type(screen.getByLabelText('Date of Death'), '2020-03-04')
+    await user.click(screen.getByRole('button', { name: 'Create Memorial' }))
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(JSON.parse(String(init.body))).toMatchObject({
+      dob: '1980-01-02',
+      dod: '2020-03-04',
+    })
+  })
+
+  it('falls back to the default create error when the response is not json', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('server unavailable', { status: 500 })
+    )
+
+    const user = userEvent.setup()
+    render(<NewMemorialForm />)
+
+    await user.type(screen.getByLabelText('Memorial Title'), 'Jane Doe')
+    await user.type(screen.getByLabelText('URL Slug'), 'jane-doe')
+    await user.click(screen.getByRole('button', { name: 'Create Memorial' }))
+
+    expect(
+      await screen.findByText('Unable to create memorial.')
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Create Memorial' })
+    ).toBeEnabled()
   })
 })

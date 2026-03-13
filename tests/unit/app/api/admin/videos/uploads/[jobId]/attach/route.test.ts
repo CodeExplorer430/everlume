@@ -230,6 +230,41 @@ describe('POST /api/admin/videos/uploads/[jobId]/attach', () => {
     expect(mockJobUpdate).not.toHaveBeenCalled()
   })
 
+  it('normalizes blank titles to null and returns 500 when insert succeeds without a video row', async () => {
+    mockJobSingle.mockResolvedValue({
+      data: {
+        id: 'job-1',
+        page_id: 'page-1',
+        status: 'completed',
+        title: '',
+        output_public_id: 'everlume/page/video-1',
+      },
+      error: null,
+    })
+    mockVideoInsertSingle.mockResolvedValue({
+      data: null,
+      error: null,
+    })
+
+    const req = new Request(
+      'http://localhost/api/admin/videos/uploads/550e8400-e29b-41d4-a716-446655440000/attach',
+      { method: 'POST' }
+    )
+    const res = await POST(req as never, {
+      params: Promise.resolve({
+        jobId: '550e8400-e29b-41d4-a716-446655440000',
+      }),
+    })
+
+    expect(res.status).toBe(500)
+    expect(mockVideoInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: null,
+      })
+    )
+    expect(mockJobUpdate).not.toHaveBeenCalled()
+  })
+
   it('returns 500 when upload job update fails', async () => {
     mockJobUpdateEq.mockResolvedValue({ error: { message: 'update failed' } })
 

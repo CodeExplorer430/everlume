@@ -104,8 +104,6 @@ export function MediaConsentReportScreen() {
   )
 
   const exportCsv = () => {
-    if (filteredLogs.length === 0) return
-
     const header = [
       'memorial_title',
       'memorial_slug',

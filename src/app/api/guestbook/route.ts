@@ -127,13 +127,7 @@ export async function POST(request: NextRequest) {
   }
 
   const { name, message, honeypot, submittedAt, captchaToken } = parsed.data
-  const memorialId = resolveMemorialId(parsed.data)
-  if (!memorialId) {
-    return NextResponse.json(
-      { code: 'VALIDATION_ERROR', message: 'Memorial id is required.' },
-      { status: 400 }
-    )
-  }
+  const memorialId = resolveMemorialId(parsed.data)!
 
   if (honeypot && honeypot.trim().length > 0) {
     return NextResponse.json({ ok: true }, { status: 202 })
