@@ -85,3 +85,12 @@ jobs:
             ${{ steps.backup.outputs.checksum_file }}
             ${{ steps.backup.outputs.manifest_file }}
           retention-days: 30
+
+      - name: Send backup failure alert
+        if: failure()
+        continue-on-error: true
+        env:
+          OPS_ALERT_WEBHOOK_URL: ${{ secrets.OPS_ALERT_WEBHOOK_URL }}
+          OPS_ALERT_SEVERITY: critical
+          OPS_ALERT_SUMMARY: Scheduled database backup workflow failed.
+        run: node scripts/ops/send-alert.mjs

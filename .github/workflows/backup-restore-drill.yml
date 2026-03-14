@@ -83,3 +83,12 @@ jobs:
           name: restore-drill-report-${{ github.run_id }}
           path: /tmp/restore-smoke-report.txt
           retention-days: 90
+
+      - name: Send restore drill failure alert
+        if: failure()
+        continue-on-error: true
+        env:
+          OPS_ALERT_WEBHOOK_URL: ${{ secrets.OPS_ALERT_WEBHOOK_URL }}
+          OPS_ALERT_SEVERITY: critical
+          OPS_ALERT_SUMMARY: Backup restore drill failed.
+        run: node scripts/ops/send-alert.mjs

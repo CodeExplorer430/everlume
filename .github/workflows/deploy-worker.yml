@@ -74,3 +74,12 @@ jobs:
           SUPABASE_SECRET_KEY: ${{ secrets.WORKER_SUPABASE_SECRET_KEY || secrets.WORKER_SUPABASE_SERVICE_ROLE_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.WORKER_SUPABASE_SERVICE_ROLE_KEY || secrets.WORKER_SUPABASE_SECRET_KEY }}
           FALLBACK_URL: ${{ secrets.WORKER_FALLBACK_URL }}
+
+      - name: Send worker deploy failure alert
+        if: failure()
+        continue-on-error: true
+        env:
+          OPS_ALERT_WEBHOOK_URL: ${{ secrets.OPS_ALERT_WEBHOOK_URL }}
+          OPS_ALERT_SEVERITY: critical
+          OPS_ALERT_SUMMARY: Cloudflare worker deploy failed.
+        run: node scripts/ops/send-alert.mjs

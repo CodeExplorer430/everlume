@@ -49,6 +49,20 @@ service objectives for the production system.
   - guestbook moderation queue
   - incident notes and rollback records
 
+## Alert Delivery
+
+- Primary delivery mechanism: generic webhook configured through repository
+  secret `OPS_ALERT_WEBHOOK_URL`.
+- Current failure alerts are wired for:
+  - `launch_readiness`
+  - `perf_a11y_gate`
+  - `backup-db`
+  - `backup-restore-drill`
+  - `deploy-worker`
+- Alert delivery failures must not block the originating workflow; the
+  workflow result remains the source of truth and the failed notification
+  should be noted during the next maintenance review.
+
 ## Review Cadence
 
 - Weekly: review public route, short-link, and backup health signals.

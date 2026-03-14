@@ -16,7 +16,9 @@ Use this for production issues affecting family admins or public visitors.
    - admin pages,
    - redirects/QR flows,
    - media/CDN.
-3. Apply immediate mitigation:
+3. Check whether the operational webhook alert was delivered and note the
+   GitHub/Vercel/Cloudflare run URL if available.
+4. Apply immediate mitigation:
    - disable problematic short link,
    - revert latest deployment,
    - pause moderation actions if data mismatch is suspected.
@@ -53,6 +55,13 @@ Use this for production issues affecting family admins or public visitors.
 - If bootstrap fails with missing `profiles.full_name`, apply migrations and verify schema:
   - `npm run ops:supabase:migrate:hosted -- <project-ref>`
   - `npm run ops:check-db-schema`
+
+### E) Credential Leak Or Secret Rotation Event
+
+- Follow `docs/security/key-rotation-procedure.md`.
+- Rotate the affected secret group before restoring normal deploy/admin access.
+- Record the affected integrations and verification evidence in the incident
+  review.
 
 ## 4) Rollback Procedures
 

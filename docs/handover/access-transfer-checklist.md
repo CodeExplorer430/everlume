@@ -26,6 +26,7 @@ Rotate after transfer and after any suspected leak:
 - `UPSTASH_REDIS_REST_TOKEN` (if used)
 - Cloudflare API tokens
 - Cloudinary API credentials (if server-side usage added)
+- `OPS_ALERT_WEBHOOK_URL` (if operational alert delivery is enabled)
 
 ## 4) Transfer Procedure
 
@@ -36,6 +37,7 @@ Rotate after transfer and after any suspected leak:
    - view backups,
    - manage env vars/secrets.
 3. Rotate secrets.
+   - Follow `docs/security/key-rotation-procedure.md` and record verification.
 4. Update `.env.local.example` / runbooks with new key names only (never values).
 5. Remove old owner access if no longer needed.
 

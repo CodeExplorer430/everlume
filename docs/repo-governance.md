@@ -34,6 +34,9 @@ These provide static analysis, dependency change review, and supply-chain
 artifact generation. They should remain enabled even when not yet wired into
 branch protection.
 
+Operational failure alerts are delivered through repository secret
+`OPS_ALERT_WEBHOOK_URL` when configured.
+
 ## GitHub Settings Checklist
 
 Configure in GitHub repository settings:

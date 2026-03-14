@@ -207,6 +207,14 @@ jobs:
       - run: npm ci
       - run: npm run test:e2e:install
       - run: npm run test:launch-readiness
+      - name: Send launch readiness alert
+        if: failure()
+        continue-on-error: true
+        env:
+          OPS_ALERT_WEBHOOK_URL: ${{ secrets.OPS_ALERT_WEBHOOK_URL }}
+          OPS_ALERT_SEVERITY: critical
+          OPS_ALERT_SUMMARY: Launch readiness checks failed.
+        run: node scripts/ops/send-alert.mjs
 
   perf_a11y_gate:
     runs-on: ubuntu-latest
@@ -234,6 +242,14 @@ jobs:
           name: lighthouse-reports
           path: .lighthouseci
           if-no-files-found: ignore
+      - name: Send perf budget alert
+        if: failure()
+        continue-on-error: true
+        env:
+          OPS_ALERT_WEBHOOK_URL: ${{ secrets.OPS_ALERT_WEBHOOK_URL }}
+          OPS_ALERT_SEVERITY: warning
+          OPS_ALERT_SUMMARY: Performance or accessibility budgets failed.
+        run: node scripts/ops/send-alert.mjs
 
   build:
     runs-on: ubuntu-latest
